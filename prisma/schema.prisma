@@ -1,0 +1,458 @@
+// Schema do Sistema de Gestão Financeira e Quitação de Passivos (Felipe Chaves)
+// Baseado na seção 5 do PRD. Todos os valores monetários são armazenados em
+// centavos (Int) para evitar erro de arredondamento de ponto flutuante.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoTransacao {
+  DESPESA
+  ENTRADA
+}
+
+enum OrigemTransacao {
+  MANUAL
+  EXTRATO_IMPORTADO
+  FATURA_IMPORTADA
+  IMAGEM
+}
+
+enum TipoConta {
+  CORRENTE_PF
+  CORRENTE_PJ
+  CHEQUE_ESPECIAL
+  POUPANCA
+  CARTAO_CREDITO
+}
+
+enum EstruturaPassivo {
+  AMORTIZA_NORMAL
+  SO_JUROS_SEM_AMORTIZACAO
+  SEM_JUROS
+}
+
+enum StatusPassivo {
+  ATIVO
+  QUITADO
+}
+
+enum TipoVinculoAtivoPassivo {
+  // Esse ativo serve de garantia/colateral pra essa dívida (ex: CDB
+  // penhorado num consignado) — a dívida existe por outro motivo.
+  GARANTIA
+  // O saldo desse ativo veio do dinheiro dessa dívida (ex: empréstimo
+  // caiu direto numa conta de investimento) — ainda não é patrimônio
+  // líquido novo, só dinheiro emprestado guardado em outro lugar.
+  FINANCIAMENTO
+}
+
+enum StatusMeta {
+  ATIVA
+  CONCLUIDA
+  CANCELADA
+}
+
+enum Confiabilidade {
+  CONFIRMADO
+  ESTIMADO
+}
+
+enum FrequenciaRecorrencia {
+  MENSAL
+  SEMANAL
+  ANUAL
+  UNICA
+}
+
+model Categoria {
+  id            String      @id @default(cuid())
+  nome          String
+  parentId      String?
+  parent        Categoria?  @relation("Subcategorias", fields: [parentId], references: [id], onDelete: Cascade)
+  subcategorias Categoria[] @relation("Subcategorias")
+
+  transacoes   Transacao[]
+  regras       RegraClassificacao[]
+  orcamentos   OrcamentoCategoria[]
+  recorrencias RecorrenciaFinanceira[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([nome, parentId])
+}
+
+model Conta {
+  id                           String    @id @default(cuid())
+  nome                         String
+  tipo                         TipoConta
+  saldoAtualCentavos           Int?
+  saldoAtualizadoEm            DateTime?
+  limiteChequeEspecialCentavos Int?
+  taxaJurosChequeEspecialPct   Float?
+  carenciaDiasChequeEspecial   Int?
+
+  transacoes Transacao[]
+
+  createdAt DateTime @default(now())
+}
+
+model Passivo {
+  id                    String           @id @default(cuid())
+  nome                  String
+  tipo                  String
+  // Nulo quando só a parcela/progresso são documentados, sem o saldo devedor total agregado.
+  valorQuitacaoCentavos Int?
+  custoMensalCentavos   Int?
+  custoMensalVariavel   Boolean          @default(false)
+  estrutura             EstruturaPassivo
+  taxaJurosPct          Float?
+  parcelaAtual          Int?
+  totalParcelas         Int?
+  status                StatusPassivo    @default(ATIVO)
+  // True quando este passivo não foi pago de verdade, só reorganizado/
+  // substituído por outros registros (ex: um passivo combinado separado
+  // em vários individuais) — não deve contar como vitória na trilha de
+  // saída mesmo estando com status QUITADO, já que nenhum dinheiro foi
+  // de fato quitado.
+  substituido           Boolean          @default(false)
+  observacao            String?
+  // Limite de crédito atualmente liberado — só documentado pra passivos
+  // tipo "cartao", usado na tela de limite de cartão pra comparar com o
+  // gasto essencial identificado.
+  limiteCartaoCentavos  Int?
+  // Teto de gasto mensal que o Felipe define pra si mesmo — também só
+  // pra passivos tipo "cartao", comparado com o gasto real do mês na
+  // tela de saúde dos cartões. Diferente de limiteCartaoCentavos (o que
+  // o banco libera) e de custoMensalCentavos (parcela/obrigação mínima).
+  metaGastoMensalCentavos Int?
+
+  documentoFonteId String?
+  documentoFonte   Documento? @relation("PassivoDocumentoFonte", fields: [documentoFonteId], references: [id])
+
+  historico        PassivoHistorico[]
+  ciclosFatura     CicloFaturaPassivo[]
+  transacoes       Transacao[]
+  metas            MetaPassivo[]
+  ativosVinculados AtivoPassivoVinculo[]
+  regras           RegraClassificacao[]
+  recorrencias     RecorrenciaFinanceira[]
+  cronograma       PassivoParcelaCronograma[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PassivoHistorico {
+  id            String  @id @default(cuid())
+  passivoId     String
+  passivo       Passivo @relation(fields: [passivoId], references: [id], onDelete: Cascade)
+  campo         String
+  valorAnterior String?
+  valorNovo     String
+  motivo        String?
+  // Só preenchido quando o valor registrado veio de uma estimativa
+  // aceita a partir do cronograma do contrato, sem pagamento real
+  // vinculado — distingue isso de uma confirmação de verdade (edição
+  // manual ou quitar/amortizar com transação vinculada), que fica null.
+  confiabilidade Confiabilidade?
+
+  documentoId String?
+  documento   Documento? @relation("HistoricoPassivoDocumento", fields: [documentoId], references: [id])
+
+  registradoEm DateTime @default(now())
+}
+
+// Cronograma real de amortização de um contrato (ex: "Documento
+// Descritivo de Crédito" do Itaú) — uma linha por parcela, com os
+// valores exatamente como documentados pelo credor. Hoje só existe
+// pros 6 consignados Itaú, que vieram com PDF completo de 72 parcelas;
+// outros passivos simplesmente não têm linhas aqui. Usado pra (a)
+// mostrar o preview real ao quitar/amortizar com uma transação
+// vinculada, e (b) estimar em que parcela o contrato já deveria estar
+// pela data, sem inventar nenhuma fórmula de amortização genérica.
+model PassivoParcelaCronograma {
+  id                   String     @id @default(cuid())
+  passivoId            String
+  passivo              Passivo    @relation(fields: [passivoId], references: [id], onDelete: Cascade)
+  numeroParcela        Int
+  vencimento           DateTime
+  principalCentavos    Int
+  jurosCentavos        Int
+  valorParcelaCentavos Int
+  // "Saldo devedor atual" conforme documentado pelo credor — atenção:
+  // em pelo menos um formato de documento (Itaú) esse número é a soma
+  // nominal das parcelas restantes, não o principal líquido descontado
+  // (ver observação em AtivoPassivoVinculo.valorGarantidoCentavos).
+  // Mantido aqui exatamente como documentado, sem reinterpretação.
+  saldoDevedorCentavos Int
+  documentoId          String?
+  documento            Documento? @relation("CronogramaPassivoDocumento", fields: [documentoId], references: [id])
+
+  @@unique([passivoId, numeroParcela])
+}
+
+model CicloFaturaPassivo {
+  id                  String    @id @default(cuid())
+  passivoId           String
+  passivo             Passivo   @relation(fields: [passivoId], references: [id], onDelete: Cascade)
+  referencia          String
+  valorCentavos       Int
+  valorMinimoCentavos Int?
+  vencimento          DateTime?
+
+  documentoId String?
+  documento   Documento? @relation("CicloFaturaDocumento", fields: [documentoId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([passivoId, referencia])
+}
+
+model Ativo {
+  id            String  @id @default(cuid())
+  nome          String
+  valorCentavos Int
+  liquidez      String
+  // Rendimento mensal documentado (% a.m.) — opcional, nunca inferido,
+  // só preenchido quando o Felipe sabe o número real (extrato,
+  // contrato do investimento etc.). Usado pra comparar com a taxa de
+  // juros de um passivo que esse ativo garante (ver
+  // src/lib/arbitragemGarantia.ts) — sem isso documentado, não dá pra
+  // fazer essa conta com segurança.
+  rendimentoMensalPct Float?
+  observacao    String?
+
+  vinculos   AtivoPassivoVinculo[]
+  historico  AtivoHistorico[]
+  regras     RegraClassificacao[]
+  transacoes Transacao[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AtivoHistorico {
+  id                    String   @id @default(cuid())
+  ativoId               String
+  ativo                 Ativo    @relation(fields: [ativoId], references: [id], onDelete: Cascade)
+  valorAnteriorCentavos Int?
+  valorNovoCentavos     Int
+  registradoEm          DateTime @default(now())
+}
+
+model AtivoPassivoVinculo {
+  id          String                  @id @default(cuid())
+  ativoId     String
+  ativo       Ativo                   @relation(fields: [ativoId], references: [id], onDelete: Cascade)
+  passivoId   String
+  passivo     Passivo                 @relation(fields: [passivoId], references: [id], onDelete: Cascade)
+  tipoVinculo TipoVinculoAtivoPassivo @default(GARANTIA)
+  observacao  String?
+  // Fatia do valor do Ativo penhorada como garantia desse Passivo
+  // específico (ex: saldo devedor do consignado na data do vínculo).
+  // Só faz sentido pra tipoVinculo GARANTIA; nulo em todo o resto —
+  // usado pra calcular quanto do ativo já está "livre" (soma dos
+  // vínculos cujo passivo já foi quitado) sem nunca alterar o
+  // valorCentavos documentado do próprio Ativo.
+  valorGarantidoCentavos Int?
+
+  @@unique([ativoId, passivoId])
+}
+
+model Meta {
+  id                String     @id @default(cuid())
+  nome              String
+  valorAlvoCentavos Int
+  dataAlvo          DateTime
+  status            StatusMeta @default(ATIVA)
+
+  passivosAlvo MetaPassivo[]
+  alocacoes    AlocacaoMeta[]
+  regras       RegraClassificacao[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MetaPassivo {
+  id        String  @id @default(cuid())
+  metaId    String
+  meta      Meta    @relation(fields: [metaId], references: [id], onDelete: Cascade)
+  passivoId String
+  passivo   Passivo @relation(fields: [passivoId], references: [id], onDelete: Cascade)
+
+  @@unique([metaId, passivoId])
+}
+
+model AlocacaoMeta {
+  id            String     @id @default(cuid())
+  metaId        String
+  meta          Meta       @relation(fields: [metaId], references: [id], onDelete: Cascade)
+  transacaoId   String?    @unique
+  transacao     Transacao? @relation(fields: [transacaoId], references: [id])
+  valorCentavos Int
+  data          DateTime
+
+  createdAt DateTime @default(now())
+}
+
+model RecorrenciaFinanceira {
+  id             String                @id @default(cuid())
+  nome           String
+  tipo           TipoTransacao
+  valorCentavos  Int
+  frequencia     FrequenciaRecorrencia
+  confiabilidade Confiabilidade
+  observacao     String?
+  ativa          Boolean               @default(true)
+  // Não pode parar de existir (assinatura, seguro etc.) — usado pra
+  // calcular o limite mínimo de cartão que precisa ficar liberado.
+  essencial      Boolean               @default(false)
+
+  categoriaId String?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id])
+
+  // Cartão (Passivo tipo "cartao") onde essa despesa recorrente é cobrada.
+  passivoId String?
+  passivo   Passivo? @relation(fields: [passivoId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model RegraClassificacao {
+  id              String        @id @default(cuid())
+  padraoDescricao String        @unique
+  tipo            TipoTransacao
+  categoriaId     String
+  categoria       Categoria     @relation(fields: [categoriaId], references: [id])
+  passivoId       String?
+  passivo         Passivo?      @relation(fields: [passivoId], references: [id])
+  ativoId         String?
+  ativo           Ativo?        @relation(fields: [ativoId], references: [id])
+  metaId          String?
+  meta            Meta?         @relation(fields: [metaId], references: [id])
+  vezesConfirmada Int           @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transacao {
+  id                String          @id @default(cuid())
+  data              DateTime
+  descricao         String
+  valorCentavos     Int
+  saldoAposCentavos Int?
+  tipo              TipoTransacao
+  origem            OrigemTransacao
+
+  contaId String?
+  conta   Conta?  @relation(fields: [contaId], references: [id])
+
+  categoriaId String?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id])
+
+  passivoId String?
+  passivo   Passivo? @relation(fields: [passivoId], references: [id])
+
+  ativoId String?
+  ativo   Ativo?  @relation(fields: [ativoId], references: [id])
+
+  alocacaoMeta AlocacaoMeta?
+
+  documentoId String?
+  documento   Documento? @relation("TransacaoDocumento", fields: [documentoId], references: [id])
+
+  hashDedupe String? @unique
+
+  // Quando essa transação é uma compra parcelada de fatura: qual parcela
+  // é essa e o total de parcelas da compra — mesmo padrão de
+  // Passivo.parcelaAtual/totalParcelas, só que por lançamento individual,
+  // não pelo passivo inteiro. Usado pra projetar as parcelas futuras
+  // ainda não cobradas (src/lib/parcelasFuturas.ts).
+  parcelaAtual  Int?
+  totalParcelas Int?
+
+  // Dinheiro que só mudou de conta (TED/DOC/PIX entre bancos do próprio
+  // Felipe, aporte em investimento) — nem gasto nem receita de verdade.
+  // Uma transação marcada aqui nunca conta em calcularMaioresOfensores/
+  // calcularOfensoresPorCredor/calcularTendenciaMensal (src/lib/ofensores.ts),
+  // esteja ela como DESPESA (saindo) ou ENTRADA (chegando). Vincular ao
+  // passivo/ativo de destino continua usando passivoId/ativoId, que já
+  // existem — esse campo só some ela do lado de "gasto"/"receita".
+  ehTransferencia Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model OrcamentoCategoria {
+  id                   String    @id @default(cuid())
+  categoriaId          String
+  categoria            Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  limiteMensalCentavos Int
+  // "recorrente" = vale todo mês; um valor tipo "2026-09" seria uma
+  // exceção pontual daquele mês (não usado na v1). Não é nulo de propósito:
+  // NULL não é deduplicado por UNIQUE no SQLite, o que quebraria o upsert
+  // de "um orçamento recorrente por categoria".
+  referencia           String    @default("recorrente")
+
+  createdAt DateTime @default(now())
+
+  @@unique([categoriaId, referencia])
+}
+
+model Documento {
+  id             String @id @default(cuid())
+  nomeArquivo    String
+  tipo           String
+  caminhoArquivo String
+
+  transacoes        Transacao[]                @relation("TransacaoDocumento")
+  passivosFonte     Passivo[]                  @relation("PassivoDocumentoFonte")
+  historicosPassivo PassivoHistorico[]         @relation("HistoricoPassivoDocumento")
+  ciclosFatura      CicloFaturaPassivo[]       @relation("CicloFaturaDocumento")
+  cronogramas       PassivoParcelaCronograma[] @relation("CronogramaPassivoDocumento")
+
+  createdAt DateTime @default(now())
+}
+
+// Linha única (singleton) de configurações gerais do sistema — hoje só o
+// aporte mensal extra usado pelo Mapa de Saída e pelo motor de otimização,
+// pra não precisar redigitar esse número toda vez.
+model Configuracao {
+  id                        String   @id @default("singleton")
+  aporteMensalExtraCentavos Int?
+  // Taxa mensal (%) usada pelo Consultor como referência de "quanto o dinheiro
+  // renderia investido" (tipo CDI) — comparada com Passivo.taxaJurosPct pra
+  // decidir se vale mais quitar uma dívida ou manter o mínimo e investir a sobra.
+  taxaReferenciaMensalPct  Float?
+  // Qual critério de ataque às dívidas o Felipe escolheu usar de verdade
+  // (trilha do Mapa, gráfico de saldo por credor em /ofensores) — em vez
+  // do sistema decidir sozinho que "menor juro" é sempre o certo.
+  // "menorTempo" | "menorJuros" | "maiorAlivio" | "hibrida". Null = ainda
+  // não escolheu, mantém o comportamento anterior (menor juro).
+  estrategiaEscolhida       String?
+  // % do aporte extra que vai pro primeiro alvo quando estrategiaEscolhida
+  // é "hibrida" (o resto vai pro segundo) — só usado nesse caso.
+  splitHibridoPct           Int?
+  updatedAt                 DateTime @updatedAt
+}
+
+// Uma "foto" do patrimônio líquido no fim de um mês, registrada manualmente
+// (sem cron no app local) — alimenta o termômetro de tendência no Mapa de
+// Saída (seção 4.3 do PRD: saindo do buraco vs. voltando pra ele).
+model PatrimonioSnapshot {
+  id                        String   @id @default(cuid())
+  mesReferencia             String   @unique // "2026-09"
+  patrimonioLiquidoCentavos Int
+  ativoTotalCentavos        Int
+  passivoTotalCentavos      Int
+  createdAt                 DateTime @default(now())
+}

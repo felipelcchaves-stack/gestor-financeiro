@@ -1,0 +1,214 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-sora);
+  --font-heading: var(--font-sora);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-liquidity: var(--liquidity);
+  --color-liquidity-soft: var(--liquidity-soft);
+  --color-debt: var(--debt);
+  --color-debt-soft: var(--debt-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@keyframes tombar {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(2px) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.animar-tombar {
+  animation: tombar 0.5s ease-out both;
+}
+
+/* Paleta inspirada no Cockpit 36M (felipelcchaves-stack/cockpit-36m-vision)
+   — mesma família de matiz OKLCH nos dois temas, com cores semânticas: verde
+   para liquidez, vermelho para dívidas, dourado para metas de longo prazo.
+   Tema claro é o :root (padrão do navegador/impressão); .dark sobrescreve
+   quando o toggle (src/components/ThemeToggle.tsx) ativa o modo escuro. */
+:root {
+  --radius: 0.9rem;
+  --background: oklch(0.98 0.004 250);
+  --foreground: oklch(0.2 0.02 260);
+  --surface: oklch(0.99 0.003 250);
+  --surface-2: oklch(0.95 0.008 260);
+  --card: oklch(0.99 0.003 250);
+  --card-foreground: oklch(0.2 0.02 260);
+  --popover: oklch(0.99 0.003 250);
+  --popover-foreground: oklch(0.2 0.02 260);
+  --primary: oklch(0.55 0.14 87);
+  --primary-foreground: oklch(0.99 0.005 90);
+  --secondary: oklch(0.94 0.01 260);
+  --secondary-foreground: oklch(0.2 0.02 260);
+  --muted: oklch(0.94 0.008 260);
+  --muted-foreground: oklch(0.46 0.02 260);
+  --accent: oklch(0.92 0.015 260);
+  --accent-foreground: oklch(0.2 0.02 260);
+  --destructive: oklch(0.55 0.22 22);
+  --border: oklch(0.88 0.012 260);
+  --input: oklch(0.88 0.012 260);
+  --ring: oklch(0.55 0.14 87);
+  --liquidity: oklch(0.5 0.14 158);
+  --liquidity-soft: oklch(0.65 0.12 158);
+  --debt: oklch(0.52 0.19 20);
+  --debt-soft: oklch(0.62 0.16 20);
+  --gold: oklch(0.55 0.14 87);
+  --gold-soft: oklch(0.68 0.11 87);
+  /* Paleta categórica pra gráficos multi-série (ex: comparativo mensal de
+     ofensores) — validada com o script de dataviz (validate_palette.js):
+     todas as checagens de daltonismo/contraste passam nessa ordem, contra
+     a superfície de gráfico deste tema. Não reordenar sem revalidar. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --sidebar: oklch(0.97 0.005 250);
+  --sidebar-foreground: oklch(0.22 0.02 260);
+  --sidebar-primary: oklch(0.55 0.14 87);
+  --sidebar-primary-foreground: oklch(0.99 0.005 90);
+  --sidebar-accent: oklch(0.92 0.015 260);
+  --sidebar-accent-foreground: oklch(0.2 0.02 260);
+  --sidebar-border: oklch(0.88 0.012 260);
+  --sidebar-ring: oklch(0.55 0.14 87);
+}
+
+.dark {
+  --background: oklch(0.16 0.015 260);
+  --foreground: oklch(0.96 0.005 250);
+  --surface: oklch(0.2 0.017 260);
+  --surface-2: oklch(0.24 0.019 260);
+  --card: oklch(0.2 0.017 260);
+  --card-foreground: oklch(0.96 0.005 250);
+  --popover: oklch(0.21 0.017 260);
+  --popover-foreground: oklch(0.96 0.005 250);
+  --primary: oklch(0.8 0.13 90);
+  --primary-foreground: oklch(0.19 0.02 90);
+  --secondary: oklch(0.27 0.02 260);
+  --secondary-foreground: oklch(0.96 0.005 250);
+  --muted: oklch(0.26 0.018 260);
+  --muted-foreground: oklch(0.72 0.02 260);
+  --accent: oklch(0.29 0.025 260);
+  --accent-foreground: oklch(0.97 0.005 250);
+  --destructive: oklch(0.62 0.21 22);
+  --border: oklch(0.3 0.02 260);
+  --input: oklch(0.3 0.02 260);
+  --ring: oklch(0.8 0.13 90);
+  --liquidity: oklch(0.78 0.17 158);
+  --liquidity-soft: oklch(0.5 0.11 158);
+  --debt: oklch(0.66 0.2 20);
+  --debt-soft: oklch(0.45 0.14 20);
+  --gold: oklch(0.83 0.14 87);
+  --gold-soft: oklch(0.55 0.1 87);
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --sidebar: oklch(0.18 0.016 260);
+  --sidebar-foreground: oklch(0.93 0.006 250);
+  --sidebar-primary: oklch(0.83 0.14 87);
+  --sidebar-primary-foreground: oklch(0.19 0.02 90);
+  --sidebar-accent: oklch(0.26 0.02 260);
+  --sidebar-accent-foreground: oklch(0.97 0.005 250);
+  --sidebar-border: oklch(0.28 0.02 260);
+  --sidebar-ring: oklch(0.83 0.14 87);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility glass-card {
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--surface-2) 90%, transparent),
+      color-mix(in oklab, var(--surface) 96%, transparent)
+    );
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  box-shadow: 0 20px 45px -30px oklch(0 0 0 / 0.9);
+}
+
+@utility gold-text {
+  background: linear-gradient(100deg, var(--gold), color-mix(in oklab, var(--gold) 55%, white));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
