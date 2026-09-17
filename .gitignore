@@ -49,3 +49,11 @@ next-env.d.ts
 # documentos e uploads sensíveis (extratos, faturas, contratos)
 /storage/documentos/*
 !/storage/documentos/.gitkeep
+
+# knowledge graph gerado localmente (graphify) — nunca commitar
+/graphify-out/
+
+# estado interno local do ruflo (benchmarks/policy/receipts, específico da máquina)
+/.claude-flow/
+/.claude/proven-config.json
+/.claude/.proven-config-version
