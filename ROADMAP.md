@@ -2790,8 +2790,14 @@ categorias específicas.
   (categoria raiz): mostra as 3 subcategorias e o total inteiro
   (R$13.677,33). Filtrando só a subcategoria "Potiguara": recalcula
   pra R$7.509,89, só ela.
-- Links novos: `/ofensores` → `/categorias` e `/categorias` →
-  `/ofensores` (pras ferramentas que só fazem sentido pra despesa:
-  orçamento, trajetória por credor, comparativo mensal); rodapé do
-  Mapa também linka pra `/categorias`.
+- Links novos: `/ofensores` → `/relatorio/categorias` e
+  `/relatorio/categorias` → `/ofensores` (pras ferramentas que só fazem
+  sentido pra despesa: orçamento, trajetória por credor, comparativo
+  mensal); rodapé do Mapa também linka pra `/relatorio/categorias`.
 - `npx tsc --noEmit` limpo. Nenhuma migração de schema.
+- **Faltou o menu lateral** — Felipe entrou direto pela URL, não achou
+  no menu, e perguntou. `src/components/AppSidebar.tsx` tem uma lista
+  fixa (`NAV_GROUPS`) que eu não tinha tocado; os links que adicionei
+  (rodapé do Mapa, topo de `/ofensores`) são fáceis de não notar.
+  Adicionado item "Relatório por categoria" no grupo "Ferramentas",
+  logo depois de "Maiores ofensores".
