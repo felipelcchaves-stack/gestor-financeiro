@@ -40,7 +40,25 @@ export async function calcularReconciliacaoPassivo(passivoId: string): Promise<R
     orderBy: { registradoEm: "desc" },
   });
 
-  const dataUltimaAtualizacao = ultimaAtualizacao?.registradoEm ?? passivo.createdAt;
+  // Sem nenhuma atualização confirmada ainda, o corte "ideal" seria a
+  // data de criação do passivo — mas um reset de banco pode ter
+  // reescrito createdAt pra depois de transações reais já importadas
+  // (aconteceu de fato: todo o Passivo ganhou createdAt = 09/09/2026
+  // numa auditoria, depois de meses de extrato real já vinculado). Usar
+  // só createdAt nesse caso excluiria silenciosamente um pagamento real
+  // do cálculo. Por isso o corte nunca é mais recente que a transação
+  // vinculada mais antiga — nunca inventa dado, só evita descartar
+  // evidência real por causa de uma data de cadastro pouco confiável.
+  let dataUltimaAtualizacao = ultimaAtualizacao?.registradoEm ?? passivo.createdAt;
+  if (!ultimaAtualizacao) {
+    const primeiraTransacaoVinculada = await prisma.transacao.aggregate({
+      where: { passivoId, tipo: { in: [TipoTransacao.DESPESA, TipoTransacao.ENTRADA] } },
+      _min: { data: true },
+    });
+    if (primeiraTransacaoVinculada._min.data && primeiraTransacaoVinculada._min.data < dataUltimaAtualizacao) {
+      dataUltimaAtualizacao = primeiraTransacaoVinculada._min.data;
+    }
+  }
 
   const [pagamentos, desembolsos] = await Promise.all([
     prisma.transacao.aggregate({

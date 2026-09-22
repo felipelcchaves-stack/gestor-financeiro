@@ -6,8 +6,15 @@
 import { formatarBRL, mesAnoDaquiA } from "@/lib/money";
 import { calcularProgressoMeta } from "@/lib/metrics";
 import type { EstadoAtual } from "@/lib/estadoAtual";
+import type { QualidadeDados } from "@/lib/qualidadeDados";
+import type { MovimentacaoDoMes, PontoSaldo } from "@/lib/ofensores";
 
-export function gerarResumoMarkdown(estado: EstadoAtual): string {
+export function gerarResumoMarkdown(
+  estado: EstadoAtual,
+  qualidadeDados: QualidadeDados,
+  movimentacaoDoMes: MovimentacaoDoMes,
+  trajetoriasPorPassivo: Map<string, PontoSaldo[]>
+): string {
   const linhas: string[] = [];
 
   linhas.push(`# Resumo financeiro — ${estado.hoje.toLocaleDateString("pt-BR")}`);
@@ -19,6 +26,77 @@ export function gerarResumoMarkdown(estado: EstadoAtual): string {
   linhas.push(
     `- Margem livre mensal: ${formatarBRL(estado.margemLivre.margemLivreCentavos)} (entradas recorrentes − despesas recorrentes − parcelas dos passivos − aporte de quitação)`
   );
+  linhas.push("");
+
+  linhas.push(`## Movimentação real deste mês (extrato, não configuração)`);
+  linhas.push(`- Entradas confirmadas no extrato: ${formatarBRL(movimentacaoDoMes.entradasCentavos)}`);
+  linhas.push(`- Despesas confirmadas no extrato: ${formatarBRL(movimentacaoDoMes.despesasTotalCentavos)}`);
+  if (movimentacaoDoMes.despesasPorCategoria.length > 0) {
+    linhas.push("- Por categoria:");
+    for (const c of movimentacaoDoMes.despesasPorCategoria) {
+      linhas.push(`  - ${c.nome}: ${formatarBRL(c.totalCentavos)}`);
+    }
+  }
+  linhas.push("");
+
+  linhas.push("## Evolução por dívida (o que já foi pago de verdade)");
+  if (estado.passivosAtivos.length === 0) {
+    linhas.push("Nenhum passivo ativo cadastrado.");
+  } else {
+    for (const p of estado.passivosAtivos) {
+      const trajetoria = trajetoriasPorPassivo.get(p.id) ?? [];
+      if (trajetoria.length > 1) {
+        const inicio = trajetoria[0];
+        const atual = trajetoria[trajetoria.length - 1];
+        const pago = Math.max(0, inicio.valorCentavos - atual.valorCentavos);
+        linhas.push(
+          `- ${p.nome}: começou em ${formatarBRL(inicio.valorCentavos)} (${new Date(inicio.data).toLocaleDateString("pt-BR")}), hoje ${formatarBRL(atual.valorCentavos)} — já pago ${formatarBRL(pago)}.`
+        );
+      } else {
+        linhas.push(`- ${p.nome}: ainda sem histórico confirmado no sistema (nenhuma atualização de saldo registrada desde o cadastro).`);
+      }
+    }
+  }
+  linhas.push("");
+
+  linhas.push("## O que estou pagando por dívida agora");
+  if (estado.passivosAtivos.length === 0) {
+    linhas.push("Nenhum passivo ativo cadastrado.");
+  } else {
+    for (const p of estado.passivosAtivos) {
+      const parcela = p.parcelaAtual != null && p.totalParcelas != null ? ` (parcela ${p.parcelaAtual}/${p.totalParcelas})` : "";
+      const custo = p.custoMensalCentavos != null ? formatarBRL(p.custoMensalCentavos) : "não documentado";
+      linhas.push(`- ${p.nome}: ${custo}/mês${parcela}`);
+    }
+  }
+  linhas.push("");
+
+  linhas.push("## Qualidade dos dados (leia antes de confiar 100% nos números acima)");
+  const semCadastro: string[] = [];
+  if (qualidadeDados.semCategoria > 0) semCadastro.push(`${qualidadeDados.semCategoria} transação(ões) sem categoria`);
+  if (qualidadeDados.semVinculo > 0) semCadastro.push(`${qualidadeDados.semVinculo} transação(ões) sem vínculo a um passivo/ativo/meta`);
+  if (semCadastro.length > 0) linhas.push(`- ${semCadastro.join("; ")}.`);
+  if (qualidadeDados.passivosComReconciliacaoPendente.length > 0) {
+    linhas.push(
+      `- Pagamento real já identificado no extrato mas ainda não confirmado no cadastro (saldo pode estar desatualizado): ${qualidadeDados.passivosComReconciliacaoPendente
+        .map((p) => p.nome)
+        .join(", ")}.`
+    );
+  }
+  if (qualidadeDados.passivosDesatualizados.length > 0) {
+    linhas.push(
+      `- Sem confirmação de saldo há 60+ dias (ou nunca confirmado): ${qualidadeDados.passivosDesatualizados
+        .map((p) => p.nome)
+        .join(", ")}.`
+    );
+  }
+  if (
+    semCadastro.length === 0 &&
+    qualidadeDados.passivosComReconciliacaoPendente.length === 0 &&
+    qualidadeDados.passivosDesatualizados.length === 0
+  ) {
+    linhas.push("Nenhuma pendência de qualidade de dados no momento — os números acima refletem o cadastro em dia.");
+  }
   linhas.push("");
 
   linhas.push(`## Sinal de rota: ${estado.sinal.titulo}`);

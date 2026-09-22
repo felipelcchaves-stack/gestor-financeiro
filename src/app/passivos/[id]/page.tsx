@@ -12,6 +12,8 @@ import {
 } from "../actions";
 import { calcularReconciliacaoPassivo } from "@/lib/passivoReconciliacao";
 import { proximaParcela, calcularEstimativaCronograma } from "@/lib/cronogramaAmortizacao";
+import { calcularTrajetoriaRealPassivo } from "@/lib/ofensores";
+import { TrajetoriaCredorChart } from "@/app/ofensores/TrajetoriaCredorChart";
 import { Button } from "@/components/ui/button";
 
 const ESTRUTURA_LABEL: Record<string, string> = {
@@ -22,7 +24,7 @@ const ESTRUTURA_LABEL: Record<string, string> = {
 
 export default async function PassivoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [passivo, transacoesVinculadas, reconciliacao, cronograma, transacoesCandidatas] = await Promise.all([
+  const [passivo, transacoesVinculadas, reconciliacao, cronograma, transacoesCandidatas, trajetoria] = await Promise.all([
     prisma.passivo.findUnique({
       where: { id },
       include: {
@@ -44,6 +46,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
       orderBy: { data: "desc" },
       take: 40,
     }),
+    calcularTrajetoriaRealPassivo(id),
   ]);
   if (!passivo) notFound();
 
@@ -125,6 +128,30 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
           }
         />
       </dl>
+
+      <section className="glass-card rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-foreground">Evolução</h2>
+        {trajetoria.length > 1 ? (
+          <>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Total pago desde {new Date(trajetoria[0].data).toLocaleDateString("pt-BR")}:{" "}
+              <span className="font-medium text-liquidity">
+                {formatarBRL(Math.max(0, trajetoria[0].valorCentavos - trajetoria[trajetoria.length - 1].valorCentavos))}
+              </span>
+            </p>
+            <div className="mt-3">
+              <TrajetoriaCredorChart nome={passivo.nome} real={trajetoria} projetado={null} mesQuitacao={null} />
+            </div>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ainda não há histórico confirmado no sistema pra desenhar sua evolução — o saldo documentado nunca
+            mudou desde o cadastro. Se você já pagou algo dessa dívida, confirme um pagamento no bloco
+            &quot;Quitar / Amortizar&quot; abaixo (ou espere o alerta de reconciliação, se houver) pra começar a
+            registrar.
+          </p>
+        )}
+      </section>
 
       {passivo.observacao && (
         <p className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-sm text-gold">

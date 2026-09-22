@@ -2482,3 +2482,147 @@ já existe, mas `Ativo` não documentava rendimento nenhum.
   que as páginas reais continuam funcionando normalmente (200, sem a
   seção nova) enquanto esse campo não for preenchido.
 - `npx tsc --noEmit` e `npm run lint` limpos.
+
+## VPS como fonte única de dados reais + Resumo pra IA cobrindo o sistema todo
+
+Duas questões levantadas ao rodar o projeto localmente pra revisão.
+
+**Local e VPS mostravam dados diferentes.** Investigado e confirmado:
+não é o mesmo banco. `DATABASE_URL="file:./dev.db"` (`.env`) resolve pra
+um arquivo físico — Mac e VPS têm cada um o seu, e nunca houve
+sincronização entre eles (o deploy via GitHub Actions só roda
+`prisma migrate deploy`, migração de schema, nunca de dados; a única vez
+que dado passou de um lado pro outro foi a cópia manual única no dia da
+migração original, com `md5sum`). Desde então os dois bancos vivem e
+divergem sozinhos, sem aviso nenhum. Decisão com o Felipe: **a VPS passa
+a ser a fonte única de dados reais**; local vira só ambiente de teste de
+código. Não rodei `npm run db:seed` no banco local pra "limpar pra
+dado de mentira" como o plano original cogitava — ao checar
+`prisma/seed.ts`, descobri que ele não é dado sintético: é o snapshot
+real da auditoria financeira de 09/09/2026 (comentário no próprio
+arquivo). Rodar `db:seed` apagaria as 1449 transações reais que ainda
+estão no banco local de teste sem que isso fosse necessário pro pedido —
+fica como decisão explícita do Felipe, não uma ação automática.
+
+- `scripts/pull-vps-db.sh` (novo): puxa uma cópia **somente leitura**
+  de `prisma/dev.db` da VPS via `scp -P 22022`, sempre pra um arquivo
+  separado (`prisma/dev.db.vps-snapshot-<data>`, já coberto pelo
+  `*.db` do `.gitignore`) — nunca sobrescreve o banco de teste local.
+  Verifica integridade com `md5sum` remoto vs. local antes de dar como
+  concluído, apagando a cópia se não bater (mesmo padrão já usado nas
+  migrações de deploy).
+- `DEPLOY_VPS.md`: nova seção "Local e VPS não são o mesmo banco"
+  explicando a arquitetura e apontando pro script de pull.
+- `~/.claude/skills/deploy-vps-hostgator/SKILL.md` (fora do repo, skill
+  de usuário): pegadinha #8 nova — mesmo alerta, generalizado pra
+  qualquer projeto SQLite nessa VPS, incluindo o cuidado de checar o
+  que o `seed.ts` de cada projeto realmente contém antes de sugerir
+  "resetar o banco local" como se fosse sempre seguro.
+
+**O resumo pra IA (`/resumo/ia`) não refletia o sistema todo.** Ele
+usava `gerarResumoMarkdown()` alimentado só por `carregarEstadoAtual()`,
+que nunca consulta `Transacao` — nenhuma entrada, despesa real ou
+pendência de conciliação chegava no texto (a "margem livre" impressa
+vinha só de `RecorrenciaFinanceira`, configuração manual, não do
+extrato). `calcularQualidadeDados()` (já usado em `/consultor`) também
+nunca era importado ali.
+
+- `src/lib/ofensores.ts`: nova função pura `calcularMovimentacaoDoMes(desde)`
+  — soma `ENTRADA` do período e `DESPESA` por categoria raiz num único
+  `findMany`, reaproveitando o mesmo agrupamento de
+  `calcularMaioresOfensores`/`calcularOfensoresPorCredor` (que hoje só
+  filtram `DESPESA`).
+- `src/app/resumo/ia/page.tsx`: busca em paralelo (mesmo padrão do
+  `/consultor`) `carregarEstadoAtual()`, `calcularQualidadeDados()` e
+  `calcularMovimentacaoDoMes(inicioDoPeriodo("mes"))`.
+- `src/lib/resumoIA.ts`: `gerarResumoMarkdown()` ganhou dois parâmetros
+  novos (`qualidadeDados`, `movimentacaoDoMes`) e três seções novas no
+  texto gerado: "Movimentação real deste mês" (entradas e despesas de
+  verdade, por categoria), "O que estou pagando por dívida agora"
+  (`custoMensalCentavos` + `parcelaAtual`/`totalParcelas` de cada
+  passivo ativo) e "Qualidade dos dados" (transações sem
+  categoria/vínculo, passivos com reconciliação pendente ou sem
+  confirmação há 60+ dias) — pra IA saber quando um número pode estar
+  defasado em vez de tratá-lo como fato absoluto.
+- Testado com dado real local (`scratch-test-resumo-ia.ts`,
+  descartável, apagado depois): saída conferida linha a linha —
+  entradas R$110.708,82 e despesas R$85.052,23 do mês, 17 passivos
+  listados com custo mensal, 14 sem confirmação há 60+ dias, 156
+  transações sem categoria e 1364 sem vínculo. Cruzei
+  `despesasTotalCentavos` contra a soma de `/ofensores`: bateu
+  diferente por R$644,53 — não é bug, é exatamente as despesas do mês
+  sem categoria (que `/ofensores` também não consegue agrupar), o que a
+  própria seção "Qualidade dos dados" já avisa.
+- `npx tsc --noEmit` limpo. Nenhum outro caller de `gerarResumoMarkdown()`
+  existia no repo.
+
+## Bug real: reconciliação cega a pagamentos anteriores ao reset de `createdAt` + evolução visível por dívida
+
+Felipe reportou a sensação de "enxugar gelo" — tem certeza que está
+pagando dívidas (ex: ~R$60 mil no Oluwo), mas o sistema não mostrava
+nenhuma evolução, nem gráfico nem comparação passado/presente.
+Investigando achei duas causas reais, não só percepção.
+
+**Causa 1 (bug confirmado)**: `calcularReconciliacaoPassivo()`
+(`src/lib/passivoReconciliacao.ts`) usava `passivo.createdAt` como data
+de corte pra buscar pagamentos vinculados, quando não havia nenhum
+`PassivoHistorico` ainda. Só que o `createdAt` de **todos** os passivos
+foi resetado pra 09/09/2026 (dia da auditoria/seed) — depois de meses
+de transações reais já importadas com data anterior a essa. Resultado:
+pagamentos reais vinculados ficavam invisíveis porque a data de corte
+era posterior à própria data do pagamento. Confirmado com query direta
+no banco: **8 passivos afetados, R$468.365,27 em pagamentos reais que
+nunca entravam na reconciliação** (Leka 1, Agiota, Itaú Personnalité
+Black, Oluwo, Empréstimo pessoal Itaú, e 3 dos Consignados Itaú).
+
+- Fix em `src/lib/passivoReconciliacao.ts`: quando não há
+  `PassivoHistorico`, o corte agora é `min(createdAt, data da
+  transação vinculada mais antiga)` em vez de só `createdAt` — nunca
+  inventa valor, só evita descartar uma transação real por causa de uma
+  data de cadastro pouco confiável.
+- Verificado contra o banco real (script descartável, apagado depois):
+  7 dos 8 passivos passaram a sugerir corretamente um novo saldo
+  (ex: Oluwo — R$133.800,00, batendo com R$165.000 − R$31.200 pagos).
+  O 8º (Agiota) continua sem sugestão **corretamente**: é
+  `SO_JUROS_SEM_AMORTIZACAO`, e os R$135.000 pagos ainda não atingem o
+  total de R$172.500 — esse tipo de dívida só abate quando quita de uma
+  vez, não é bug.
+- Efeito colateral automático (sem tocar em nenhum dos três arquivos):
+  o banner "pagamento pendente de confirmação" do `/consultor`, o mesmo
+  banner na própria página do passivo, e a seção "Qualidade dos dados"
+  do resumo de IA (adicionada nesta mesma sessão) passaram a mostrar os
+  7 passivos corretamente.
+- **Não confirmei nenhuma reconciliação automaticamente** — isso mudaria
+  o saldo documentado de dívidas reais sem revisão do Felipe. O fix só
+  faz o alerta aparecer certo; confirmar cada uma (fluxo
+  "Quitar/Amortizar" já existente) continua sendo decisão dele.
+
+**Causa 2**: o gráfico de trajetória real de saldo já existia
+(`calcularTrajetoriaRealPassivo()` em `src/lib/ofensores.ts`,
+componente `TrajetoriaCredorChart`), mas só era usado dentro de
+`/ofensores` — nunca na própria página do passivo, o lugar óbvio pra
+olhar "como essa dívida está evoluindo". Sem nenhum `PassivoHistorico`
+confirmado (causa 1), o gráfico também não tinha o que desenhar.
+
+- `src/app/passivos/[id]/page.tsx`: nova seção "Evolução" logo após o
+  cabeçalho/métricas, antes do bloco "Quitar/Amortizar" — reaproveita
+  `calcularTrajetoriaRealPassivo()` + `TrajetoriaCredorChart` (sem
+  projeção, só o que já aconteceu) e mostra "Total pago desde o
+  início". Quando só há 1 ponto (sem histórico confirmado ainda), uma
+  mensagem explicando o motivo em vez de gráfico vazio, apontando pro
+  bloco de confirmação logo abaixo.
+- `src/app/resumo/ia/page.tsx` + `src/lib/resumoIA.ts`: nova seção
+  "Evolução por dívida (o que já foi pago de verdade)" no resumo pra
+  IA — pra cada passivo ativo, "começou em R$X (data), hoje R$Y — já
+  pago R$Z" quando há histórico real, ou "ainda sem histórico
+  confirmado" quando não há, pra IA nunca confundir "sem histórico" com
+  "não está pagando".
+- Testado visualmente contra o servidor de dev real (`curl` no
+  `/passivos/[id-oluwo]`, `/consultor`, `/resumo/ia`): as três telas
+  refletem exatamente o esperado — banner de reconciliação com
+  R$133.800,00 sugerido pro Oluwo, banner do Consultor listando os 7
+  passivos, resumo de IA com a seção de evolução e a lista de
+  pendências batendo com a query SQL feita na investigação.
+- `npx tsc --noEmit` limpo.
+- Deploy pra VPS: sem migração de schema nova (nenhum campo Prisma
+  criado) — só código.

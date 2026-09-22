@@ -1,12 +1,22 @@
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
+import { calcularQualidadeDados } from "@/lib/qualidadeDados";
+import { calcularMovimentacaoDoMes, calcularTrajetoriaRealPassivo, inicioDoPeriodo, type PontoSaldo } from "@/lib/ofensores";
 import { gerarResumoMarkdown } from "@/lib/resumoIA";
 import { CopiarResumo } from "./CopiarResumo";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResumoIAPage() {
-  const estado = await carregarEstadoAtual();
-  const markdown = gerarResumoMarkdown(estado);
+  const [estado, qualidadeDados, movimentacaoDoMes] = await Promise.all([
+    carregarEstadoAtual(),
+    calcularQualidadeDados(),
+    calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
+  ]);
+
+  const trajetorias = await Promise.all(estado.passivosAtivos.map((p) => calcularTrajetoriaRealPassivo(p.id)));
+  const trajetoriasPorPassivo = new Map<string, PontoSaldo[]>(estado.passivosAtivos.map((p, i) => [p.id, trajetorias[i]]));
+
+  const markdown = gerarResumoMarkdown(estado, qualidadeDados, movimentacaoDoMes, trajetoriasPorPassivo);
 
   return (
     <div className="flex flex-col gap-4">

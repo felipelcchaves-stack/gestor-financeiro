@@ -36,6 +36,23 @@ início. Documentado aqui pra não se repetir.
   decida agora como proteger (Basic Auth no Nginx é o mais rápido) —
   não deixe pra descobrir isso só quando já estiver quase no ar.
 
+## Local e VPS não são o mesmo banco
+
+O `DATABASE_URL="file:./dev.db"` do `.env` aponta pra um arquivo SQLite
+físico — cada máquina (seu Mac e a VPS) tem o seu próprio, e nada
+sincroniza os dois automaticamente. O deploy via GitHub Actions só roda
+`prisma migrate deploy` (migração de **schema**, não de dados). A única
+vez que dados passam de um lado pro outro é uma cópia manual (scp +
+`md5sum`), como na migração inicial. Depois disso os dois bancos vivem e
+divergem de forma independente.
+
+Pra este projeto, a decisão é: **a VPS é a fonte única de dados reais**.
+O ambiente local serve só pra testar código — nunca lance dado
+financeiro real só localmente, ele não vai aparecer no site em produção.
+Pra analisar o dado real da VPS localmente quando precisar, use
+`scripts/pull-vps-db.sh` (copia read-only pra um arquivo separado, nunca
+sobrescreve o banco de teste local).
+
 ## Fatos fixos da VPS (não mudam entre projetos)
 
 - Provedor: HostGator. IP: 143.95.164.62

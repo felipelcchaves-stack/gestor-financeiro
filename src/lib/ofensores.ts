@@ -76,6 +76,53 @@ export async function calcularOfensoresPorCredor(desde: Date): Promise<ItemRanki
   return Array.from(porCredor.values()).sort((a, b) => b.totalCentavos - a.totalCentavos);
 }
 
+export type MovimentacaoDoMes = {
+  entradasCentavos: number;
+  despesasTotalCentavos: number;
+  despesasPorCategoria: ItemRanking[];
+};
+
+// Movimentação real do período (extrato de verdade, não configuração
+// manual de recorrência) — entradas e despesas de fato lançadas, com as
+// despesas detalhadas por categoria raiz. Usado no resumo pra IA
+// (src/lib/resumoIA.ts) pra garantir que o texto reflita o que
+// aconteceu de verdade, não só o que foi cadastrado como recorrência.
+export async function calcularMovimentacaoDoMes(desde: Date): Promise<MovimentacaoDoMes> {
+  const transacoes = await prisma.transacao.findMany({
+    where: { ehTransferencia: false, data: { gte: desde } },
+    select: {
+      tipo: true,
+      valorCentavos: true,
+      categoria: { select: { id: true, nome: true, parentId: true, parent: { select: { id: true, nome: true } } } },
+    },
+  });
+
+  let entradasCentavos = 0;
+  let despesasTotalCentavos = 0;
+  const porRaiz = new Map<string, { nome: string; totalCentavos: number }>();
+
+  for (const t of transacoes) {
+    if (t.tipo === "ENTRADA") {
+      entradasCentavos += t.valorCentavos;
+      continue;
+    }
+    if (t.tipo !== "DESPESA") continue;
+
+    despesasTotalCentavos += t.valorCentavos;
+    if (!t.categoria) continue;
+    const raiz = t.categoria.parent ?? { id: t.categoria.id, nome: t.categoria.nome };
+    const entradaRaiz = porRaiz.get(raiz.id) ?? { nome: raiz.nome, totalCentavos: 0 };
+    entradaRaiz.totalCentavos += t.valorCentavos;
+    porRaiz.set(raiz.id, entradaRaiz);
+  }
+
+  const despesasPorCategoria = Array.from(porRaiz.entries())
+    .map(([id, v]) => ({ id, nome: v.nome, totalCentavos: v.totalCentavos }))
+    .sort((a, b) => b.totalCentavos - a.totalCentavos);
+
+  return { entradasCentavos, despesasTotalCentavos, despesasPorCategoria };
+}
+
 export type PontoMensal = { mes: string; totalCentavos: number; projetado: boolean };
 export type SerieMensal = { id: string; nome: string; porMes: PontoMensal[] };
 
