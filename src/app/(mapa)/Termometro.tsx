@@ -1,4 +1,4 @@
-function formatarMesLabel(mesReferencia: string): string {
+export function formatarMesLabel(mesReferencia: string): string {
   const [ano, mes] = mesReferencia.split("-").map(Number);
   const data = new Date(ano, mes - 1, 1);
   return new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" }).format(data);
@@ -7,7 +7,7 @@ function formatarMesLabel(mesReferencia: string): string {
 export function Termometro({
   snapshots,
 }: {
-  snapshots: { mesReferencia: string; patrimonioLiquidoCentavos: number }[];
+  snapshots: { mesReferencia: string; patrimonioLiquidoCentavos: number; confiabilidade?: string | null }[];
 }) {
   if (snapshots.length < 2) {
     return (
@@ -47,8 +47,12 @@ export function Termometro({
               cx={escalaX(i)}
               cy={escalaY(s.patrimonioLiquidoCentavos)}
               r={4}
-              fill={s.patrimonioLiquidoCentavos >= 0 ? "var(--liquidity)" : "var(--debt)"}
-            />
+              fill={s.confiabilidade === "ESTIMADO" ? "none" : s.patrimonioLiquidoCentavos >= 0 ? "var(--liquidity)" : "var(--debt)"}
+              stroke={s.patrimonioLiquidoCentavos >= 0 ? "var(--liquidity)" : "var(--debt)"}
+              strokeWidth={s.confiabilidade === "ESTIMADO" ? 2 : 0}
+            >
+              <title>{s.confiabilidade === "ESTIMADO" ? "Lembrado de memória, não calculado" : "Calculado dos dados documentados"}</title>
+            </circle>
             <text x={escalaX(i)} y={altura + 16} textAnchor="middle" fontSize={10} fill="var(--muted-foreground)">
               {formatarMesLabel(s.mesReferencia)}
             </text>

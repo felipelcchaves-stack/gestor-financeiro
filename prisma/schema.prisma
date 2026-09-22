@@ -455,4 +455,11 @@ model PatrimonioSnapshot {
   ativoTotalCentavos        Int
   passivoTotalCentavos      Int
   createdAt                 DateTime @default(now())
+  // null/CONFIRMADO = calculado a partir dos dados documentados de
+  // verdade (snapshot do mês corrente, via registrarSnapshotMensal).
+  // ESTIMADO = mês passado documentado de memória pelo Felipe (via
+  // registrarSnapshotHistorico), pra dar um ponto de partida imediato
+  // sem esperar meses acumulando snapshot — nunca inventado pelo
+  // sistema, sempre o número que ele mesmo digitou.
+  confiabilidade Confiabilidade?
 }

@@ -8,16 +8,21 @@ import {
   Route as RouteIcon,
   Zap,
   Thermometer,
+  TrendingDown,
+  TrendingUp,
+  Receipt,
 } from "lucide-react";
 import { formatarBRL, mesAnoDaquiA } from "@/lib/money";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularQualidadeDados } from "@/lib/qualidadeDados";
+import { calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
 import type { NivelSinal } from "@/lib/sinal";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { GraficoLinhaTemporal, type SerieLinhaTemporal } from "@/components/GraficoLinhaTemporal";
 import { TrilhaDeSaida, type Estacao } from "./TrilhaDeSaida";
-import { Termometro } from "./Termometro";
-import { definirAporteMensal, registrarSnapshotMensal } from "./actions";
+import { Termometro, formatarMesLabel } from "./Termometro";
+import { definirAporteMensal, registrarSnapshotMensal, registrarSnapshotHistorico } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +33,11 @@ const ESTILO_SINAL: Record<NivelSinal, string> = {
 };
 
 export default async function MapaPage() {
-  const [estado, qualidadeDados] = await Promise.all([carregarEstadoAtual(), calcularQualidadeDados()]);
+  const [estado, qualidadeDados, movimentacaoDoMes] = await Promise.all([
+    carregarEstadoAtual(),
+    calcularQualidadeDados(),
+    calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
+  ]);
   const {
     passivosQuitados,
     passivoTotal,
@@ -75,38 +84,135 @@ export default async function MapaPage() {
   const mesAtual = estado.hoje.toISOString().slice(0, 7);
   const jaRegistrouEsteMes = snapshots.some((s) => s.mesReferencia === mesAtual);
 
+  const snapshotMaisAntigo = snapshots.length > 0 ? snapshots[0] : null;
+  const temComparacaoDeDivida = snapshotMaisAntigo != null && snapshotMaisAntigo.mesReferencia !== mesAtual;
+  const deltaDividaCentavos = temComparacaoDeDivida ? passivoTotal - snapshotMaisAntigo!.passivoTotalCentavos : 0;
+
+  const saldoDoMesCentavos = movimentacaoDoMes.entradasCentavos - movimentacaoDoMes.despesasTotalCentavos;
+
+  const dataMesAnterior = new Date(estado.hoje.getFullYear(), estado.hoje.getMonth() - 1, 1);
+  const mesAnteriorMax = `${dataMesAnterior.getFullYear()}-${String(dataMesAnterior.getMonth() + 1).padStart(2, "0")}`;
+
+  const serieDividaTotal: SerieLinhaTemporal[] = [
+    {
+      id: "divida",
+      nome: "Dívida total",
+      cor: "var(--debt)",
+      pontos: snapshots.map((s) => ({
+        label: `${formatarMesLabel(s.mesReferencia)}${s.confiabilidade === "ESTIMADO" ? " (lembrado)" : ""}`,
+        valorCentavos: s.passivoTotalCentavos,
+      })),
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader eyebrow="Rota de Saída" title="Meu Mapa" />
 
-      <p className="text-base text-foreground">
-        Você deve <span className="num font-semibold text-debt">{formatarBRL(passivoTotal)}</span> hoje.
-        {primeiraDaFila && primeiraQuitacao ? (
-          <>
-            {" "}
-            Seguindo a rota recomendada, a próxima dívida a cair (
-            <span className="font-medium">{primeiraDaFila.nome}</span>) zera em{" "}
-            <span className="font-medium">{mesAnoDaquiA(primeiraQuitacao.mes)}</span>.
-          </>
-        ) : (
-          " Ainda não dá pra calcular sua rota completa — falta 1 informação (veja abaixo)."
-        )}
-      </p>
-      <p className="-mt-4 text-xs text-muted-foreground">
-        Patrimônio líquido atual:{" "}
-        <span className="num">{formatarBRL(patrimonio)}</span> (ativos − passivos conhecidos; não é o saldo da sua
-        conta bancária)
-      </p>
+      <section className="glass-card rounded-2xl p-5">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Wallet className="size-4" />
+          <p className="text-xs font-semibold uppercase tracking-wider">Dívida total</p>
+        </div>
 
-      {qualidadeDados.passivosComReconciliacaoPendente.length > 0 && (
-        <p className="-mt-4 text-xs text-debt">
-          {qualidadeDados.passivosComReconciliacaoPendente.length} passivo(s) com pagamento real pendente de
-          confirmação — esse &ldquo;você deve&rdquo; e a rota abaixo podem estar desatualizados.{" "}
-          <Link href="/relatorio" className="underline underline-offset-4">
-            ver quais
-          </Link>
+        <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Hoje</p>
+            <p className="num text-2xl font-semibold text-debt">{formatarBRL(passivoTotal)}</p>
+          </div>
+
+          {temComparacaoDeDivida && (
+            <div className="border-l border-dashed border-border pl-8">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                Em {formatarMesLabel(snapshotMaisAntigo!.mesReferencia)}
+              </p>
+              <p className="num text-2xl font-semibold text-muted-foreground">
+                {formatarBRL(snapshotMaisAntigo!.passivoTotalCentavos)}
+              </p>
+            </div>
+          )}
+
+          {temComparacaoDeDivida && (
+            <div className="border-l border-dashed border-border pl-8">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Variação</p>
+              <p
+                className={`num flex items-center gap-1 text-2xl font-semibold ${
+                  deltaDividaCentavos <= 0 ? "text-liquidity" : "text-debt"
+                }`}
+              >
+                {deltaDividaCentavos <= 0 ? <TrendingDown className="size-5" /> : <TrendingUp className="size-5" />}
+                {formatarBRL(Math.abs(deltaDividaCentavos))}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {!temComparacaoDeDivida && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Só existe um registro (hoje) — ainda não dá pra comparar com o passado.{" "}
+            <a href="#documentar-mes-anterior" className="text-gold underline underline-offset-4">
+              Documente um mês anterior que você lembra
+            </a>{" "}
+            pra ver evolução de verdade agora, sem esperar meses acumulando snapshot.
+          </p>
+        )}
+
+        <p className="mt-3 text-sm text-foreground">
+          {primeiraDaFila && primeiraQuitacao ? (
+            <>
+              Seguindo a rota recomendada, a próxima dívida a cair (
+              <span className="font-medium">{primeiraDaFila.nome}</span>) zera em{" "}
+              <span className="font-medium">{mesAnoDaquiA(primeiraQuitacao.mes)}</span>.
+            </>
+          ) : (
+            "Ainda não dá pra calcular sua rota completa — falta 1 informação (veja abaixo)."
+          )}
         </p>
-      )}
+
+        <p className="mt-2 text-xs text-muted-foreground">
+          Patrimônio líquido atual: <span className="num">{formatarBRL(patrimonio)}</span> (ativos − passivos
+          conhecidos; não é o saldo da sua conta bancária)
+        </p>
+
+        {qualidadeDados.passivosComReconciliacaoPendente.length > 0 && (
+          <p className="mt-2 text-xs text-debt">
+            {qualidadeDados.passivosComReconciliacaoPendente.length} passivo(s) com pagamento real pendente de
+            confirmação — esse &ldquo;você deve&rdquo; e a rota abaixo podem estar desatualizados.{" "}
+            <Link href="/relatorio" className="underline underline-offset-4">
+              ver quais
+            </Link>
+          </p>
+        )}
+      </section>
+
+      <section className="glass-card rounded-2xl p-5">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Receipt className="size-4" />
+          <p className="text-xs font-semibold uppercase tracking-wider">Balanço deste mês (extrato real)</p>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Entradas</p>
+            <p className="num text-2xl font-semibold text-liquidity">{formatarBRL(movimentacaoDoMes.entradasCentavos)}</p>
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Despesas</p>
+            <p className="num text-2xl font-semibold text-debt">{formatarBRL(movimentacaoDoMes.despesasTotalCentavos)}</p>
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo do mês</p>
+            <p className={`num text-2xl font-semibold ${saldoDoMesCentavos >= 0 ? "text-liquidity" : "text-debt"}`}>
+              {formatarBRL(saldoDoMesCentavos)}
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Direto do extrato importado — entradas e despesas que já aconteceram de verdade, não configuração/orçamento
+          (isso é o card &ldquo;Fluxo do mês&rdquo; logo abaixo).
+        </p>
+      </section>
 
       <section className={`flex items-start gap-3 rounded-2xl border p-4 ${ESTILO_SINAL[sinal.nivel]}`}>
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -296,6 +402,66 @@ export default async function MapaPage() {
         <div className="glass-card mt-3 rounded-2xl p-4">
           <Termometro snapshots={snapshots} />
         </div>
+
+        {snapshots.length > 0 && (
+          <div className="mt-3">
+            <GraficoLinhaTemporal
+              series={serieDividaTotal}
+              tituloEixo="Dívida total documentada, mês a mês"
+              ariaLabel="Evolução da dívida total ao longo do tempo"
+              mostrarTotalPeriodo={false}
+            />
+          </div>
+        )}
+
+        <details id="documentar-mes-anterior" className="mt-3">
+          <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+            Documentar um mês anterior (de memória)
+          </summary>
+          <form
+            action={registrarSnapshotHistorico}
+            className="glass-card mt-3 flex flex-wrap items-end gap-3 rounded-2xl p-4"
+          >
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Mês</label>
+              <input
+                type="month"
+                name="mesReferencia"
+                required
+                max={mesAnteriorMax}
+                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Dívida total (R$)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                name="passivoTotal"
+                required
+                placeholder="ex: 1450000"
+                className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Ativos totais (R$, opcional)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                name="ativoTotal"
+                placeholder="deixe em branco se não lembrar"
+                className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              />
+            </div>
+            <Button type="submit" size="sm">
+              Documentar
+            </Button>
+          </form>
+          <p className="mt-2 text-[11px] text-muted-foreground/70">
+            Nunca calculado pelo sistema — o número que você lembra, marcado como estimativa (círculo vazado no
+            gráfico), só pra dar um ponto de partida até acumular snapshots reais mês a mês.
+          </p>
+        </details>
       </section>
 
       <div className="flex flex-wrap gap-4 text-xs text-gold">

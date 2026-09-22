@@ -2666,3 +2666,55 @@ estimativa por cronograma como caminho certo.
 - Verificado: página de um dos Consignados mostra o aviso; página do
   Oluwo (sem cronograma) não mostra.
 - `npx tsc --noEmit` limpo.
+
+## Dashboard prático: dívida antes vs agora + balanço real do mês
+
+Felipe continuou com a sensação de "enxugar gelo" mesmo sabendo de
+cabeça que a dívida caiu de ~R$1,4mi pra ~R$1.281.000 — porque só ele
+guardava esse número, o sistema não. Achei que os dados pra resolver
+isso já existiam, só nunca tinham virado uma visão de "antes vs agora":
+`PatrimonioSnapshot` já guarda `passivoTotalCentavos` por mês (só o
+patrimônio líquido era mostrado, nunca a dívida isolada), e a
+"movimentação real do mês" (`calcularMovimentacaoDoMes`, construída
+mais cedo nesta sessão) só existia como texto no resumo de IA, nunca
+como card visual na home.
+
+- `prisma/schema.prisma`: `PatrimonioSnapshot.confiabilidade Confiabilidade?`
+  (novo, opcional, reaproveita o enum já existente) — distingue um
+  snapshot calculado dos dados reais (mês corrente) de um documentado
+  de memória (mês passado). Migração `patrimonio_snapshot_confiabilidade`.
+- `src/app/(mapa)/actions.ts`: nova action `registrarSnapshotHistorico`
+  — deixa documentar AGORA um mês passado que o Felipe lembra de cabeça
+  (dívida total obrigatória, ativos opcional, patrimônio calculado a
+  partir dos dois), sempre `confiabilidade: ESTIMADO`, rejeitando mês
+  corrente/futuro (esse já tem o botão de sempre). Sem isso, a
+  comparação "antes vs agora" ficaria travada em 1 ponto só por meses.
+- `src/app/(mapa)/page.tsx`: bloco "Você deve X hoje" virou um painel
+  de verdade — tiles "Dívida hoje" / "Dívida no snapshot mais antigo" /
+  "Variação" (R$, verde se caiu) quando há mais de 1 snapshot, com aviso
+  claro + link pro formulário de mês anterior quando só há 1. Novo card
+  "Balanço deste mês (extrato real)" — entradas/despesas/saldo reais,
+  ao lado do "Fluxo do mês" já existente (que é projeção/configuração,
+  rotulado como tal pra não confundir os dois). Novo gráfico "Dívida
+  total documentada, mês a mês" reaproveitando `GraficoLinhaTemporal`
+  (já genérico, usado em `/ofensores`/`/otimizacao` — nenhum componente
+  novo de gráfico). Formulário de mês anterior num `<details>`
+  recolhível perto do botão "Registrar patrimônio deste mês".
+- `src/app/(mapa)/Termometro.tsx`: pontos com `confiabilidade: ESTIMADO`
+  (lembrados de memória) ganham círculo vazado em vez de preenchido no
+  gráfico de patrimônio, com tooltip explicando a diferença — nunca se
+  misturam visualmente com um valor calculado de verdade.
+- Testado com script descartável (`scratch-test-dashboard-dividas.ts`,
+  apagado depois): `registrarSnapshotHistorico` cria o snapshot com
+  `confiabilidade: ESTIMADO`, calcula patrimônio corretamente
+  (ativo − passivo), rejeita corretamente tentativa de documentar o mês
+  corrente, e o registro de teste foi removido e confirmado ausente ao
+  final.
+- Testado visualmente contra o banco real local (inserindo e depois
+  removendo um snapshot de teste via `sqlite3`, banco confirmado voltando
+  a 1 registro no final): com 2 snapshots, a tile "Variação" mostrou
+  corretamente R$ 138.934,97 e a marca "(lembrado)" apareceu no gráfico
+  e na legenda pro ponto histórico.
+- `npx tsc --noEmit` limpo (um erro solto de `LayoutProps` era só cache
+  `.next/types` obsoleto depois do `rm -rf .next` pós-migração — sumiu
+  ao rodar o dev server de novo, não era erro real de código).
