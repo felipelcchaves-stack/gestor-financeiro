@@ -14,6 +14,7 @@ import { calcularReconciliacaoPassivo } from "@/lib/passivoReconciliacao";
 import { proximaParcela, calcularEstimativaCronograma } from "@/lib/cronogramaAmortizacao";
 import { calcularTrajetoriaRealPassivo } from "@/lib/ofensores";
 import { TrajetoriaCredorChart } from "@/app/ofensores/TrajetoriaCredorChart";
+import { SeletorTransacaoPagamento } from "./SeletorTransacaoPagamento";
 import { Button } from "@/components/ui/button";
 
 const ESTRUTURA_LABEL: Record<string, string> = {
@@ -41,10 +42,14 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
     // vinculado manualmente em /transacoes antes de existir este fluxo
     // (ex: Sem Parar/Afinz, Magazine Luiza/Luizacred), e nesse caso ele
     // nunca apareceria numa busca só por passivoId: null.
+    // Sem "take": com centenas de transações reais, um limite fixo
+    // corta silenciosamente a que você procura se ela não estiver entre
+    // as mais recentes (já aconteceu — débito automático "sumindo" do
+    // dropdown). O filtro por texto no navegador (SeletorTransacaoPagamento)
+    // é quem resolve achar a certa, não um limite aqui.
     prisma.transacao.findMany({
       where: { tipo: "DESPESA", ehTransferencia: false, OR: [{ passivoId: null }, { passivoId: id }] },
       orderBy: { data: "desc" },
-      take: 40,
     }),
     calcularTrajetoriaRealPassivo(id),
   ]);
@@ -176,6 +181,14 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
               {formatarBRL(parcelaSeguinte.jurosCentavos)} seriam juro.
             </p>
           )}
+          {cronograma.length > 0 && (
+            <p className="mt-2 rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-xs text-gold">
+              Empréstimo consignado é descontado direto do salário, antes de cair na conta — ele nunca vai aparecer
+              no extrato bancário importado, não importa quanto extrato você importe. Pra esse tipo de dívida,
+              prefira a estimativa por cronograma (baseada no contrato) logo abaixo, quando disponível, em vez de
+              procurar uma transação aqui.
+            </p>
+          )}
           {transacoesCandidatas.length === 0 ? (
             <p className="mt-3 text-sm text-gold">
               Nenhuma transação de saída sem vínculo encontrada. Importe/classifique o extrato primeiro em{" "}
@@ -186,21 +199,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
             </p>
           ) : (
             <form action={confirmarPagamentoPassivo.bind(null, id)} className="mt-3 flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-muted-foreground">Transação de pagamento</label>
-                <select
-                  name="transacaoId"
-                  required
-                  className="w-80 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
-                >
-                  <option value="">selecione…</option>
-                  {transacoesCandidatas.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {new Date(t.data).toLocaleDateString("pt-BR")} — {t.descricao} — {formatarBRL(t.valorCentavos)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SeletorTransacaoPagamento transacoes={transacoesCandidatas} />
               <Button type="submit">Confirmar pagamento</Button>
             </form>
           )}

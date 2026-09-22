@@ -2626,3 +2626,43 @@ confirmado (causa 1), o gráfico também não tinha o que desenhar.
 - `npx tsc --noEmit` limpo.
 - Deploy pra VPS: sem migração de schema nova (nenhum campo Prisma
   criado) — só código.
+
+## Achar a transação certa pra conciliar (débito automático "sumindo")
+
+Felipe perguntou por que débito automático não aparecia pra conciliar.
+Duas causas reais, achadas por investigação direta no banco:
+
+**1. Truncamento silencioso.** O dropdown "Transação de pagamento" em
+`/passivos/[id]` (query `transacoesCandidatas`) usava `take: 40` sobre
+um total de 761-812 transações de despesa sem vínculo no banco real —
+se a transação procurada não estivesse entre as 40 mais recentes, ela
+simplesmente não aparecia, sem aviso nenhum. Confirmado: as 18
+transações de débito automático do extrato ("DEB AUTOR GLOBO COM" etc)
+foram importadas certinho (tipo DESPESA, sem vínculo,
+`EXTRATO_IMPORTADO`), só ficavam fora da janela de 40.
+
+- Removido o `take: 40` da query.
+- `src/app/passivos/[id]/SeletorTransacaoPagamento.tsx` (novo,
+  componente cliente): campo de busca por texto (filtra por
+  descrição/data/valor no navegador, `useMemo`) + o `<select
+  name="transacaoId">` já filtrado, mostrando "X de Y transação(ões)"
+  — nunca mais um corte invisível. Continua um `<select>` HTML normal
+  dentro do mesmo `<form action={confirmarPagamentoPassivo...}>`, sem
+  mudar nada no back-end.
+- Verificado: página do Oluwo agora mostra "761 de 761 transação(ões)"
+  (antes seriam só 40).
+
+**2. Consignado nunca vai aparecer no extrato — limitação estrutural,
+não bug.** Desconto em folha acontece antes do salário cair na conta;
+confirmado zero transações no banco contendo "CONSIGNADO". A mensagem
+antiga ("importe o extrato primeiro") era enganosa pra esse caso — mas
+como `transacoesCandidatas` inclui todas as transações sem vínculo do
+sistema inteiro (não só desse passivo), a lista praticamente nunca fica
+vazia, então um aviso só no estado "vazio" nunca apareceria de verdade
+pra esses 6 passivos. Corrigido: quando o passivo tem `cronograma`
+(hoje só os 6 Consignados Itaú), um aviso fixo aparece sempre nessa
+seção — não só no caso vazio — explicando o motivo e apontando pra
+estimativa por cronograma como caminho certo.
+- Verificado: página de um dos Consignados mostra o aviso; página do
+  Oluwo (sem cronograma) não mostra.
+- `npx tsc --noEmit` limpo.
