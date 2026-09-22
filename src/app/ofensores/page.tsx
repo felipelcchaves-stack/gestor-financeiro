@@ -22,6 +22,7 @@ export const dynamic = "force-dynamic";
 const LABEL_PERIODO: Record<Periodo, string> = {
   mes: "Este mês",
   trimestre: "Trimestre",
+  semestre: "6 meses",
   ano: "Este ano",
   tudo: "Todo o histórico",
 };
@@ -35,7 +36,9 @@ export default async function OfensoresPage({
 }) {
   const { periodo: periodoRaw, visao: visaoRaw } = await searchParams;
   const periodo: Periodo =
-    periodoRaw === "trimestre" || periodoRaw === "ano" || periodoRaw === "tudo" ? periodoRaw : "mes";
+    periodoRaw === "trimestre" || periodoRaw === "semestre" || periodoRaw === "ano" || periodoRaw === "tudo"
+      ? periodoRaw
+      : "mes";
   const visao: Visao = visaoRaw === "credor" ? "credor" : "categoria";
 
   const desde = inicioDoPeriodo(periodo);
@@ -109,6 +112,14 @@ export default async function OfensoresPage({
         title="Maiores ofensores"
         description="Com o que você tá gastando mais — sem precisar reconstruir isso de cabeça a partir do extrato."
       />
+
+      <p className="-mt-4 text-xs text-muted-foreground">
+        Quer ver despesa e receita lado a lado, com filtro por categoria específica?{" "}
+        <Link href="/relatorio/categorias" className="text-gold underline underline-offset-4">
+          Relatório por categoria
+        </Link>
+        .
+      </p>
 
       <div className="flex gap-2 text-sm">
         {(Object.keys(LABEL_PERIODO) as Periodo[]).map((p) => (

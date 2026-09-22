@@ -13,6 +13,7 @@ import { inicioDoPeriodo, type Periodo } from "@/lib/ofensores";
 const LABEL_PERIODO: Record<Periodo, string> = {
   mes: "Este mês",
   trimestre: "Trimestre",
+  semestre: "6 meses",
   ano: "Este ano",
   tudo: "Todo o histórico",
 };
@@ -104,7 +105,9 @@ export default async function TransacoesPage({
   const transferencia = transferenciaRaw === "1";
   const parecido = parecidoRaw === "1";
   const periodo: Periodo =
-    periodoRaw === "mes" || periodoRaw === "trimestre" || periodoRaw === "ano" ? periodoRaw : "tudo";
+    periodoRaw === "mes" || periodoRaw === "trimestre" || periodoRaw === "semestre" || periodoRaw === "ano"
+      ? periodoRaw
+      : "tudo";
   const filtroAtual: FiltroAtual = {
     tipo: tipoRaw,
     semCategoria: semCategoriaRaw,

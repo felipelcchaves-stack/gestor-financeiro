@@ -2741,3 +2741,57 @@ sem nenhuma lógica de reset.
   conferida a checagem de sanidade "pago em dívidas ≤ despesas do ano".
 - `npx tsc --noEmit` limpo. Nenhuma migração de schema — só reaproveita
   funções e o campo `Periodo` que já existiam.
+
+## Relatório por categoria (despesa e receita, por período)
+
+Felipe pediu um relatório pra filtrar por categoria (despesa e
+receita) e por período (mês, 6 meses, ano) pra achar onde cortar e
+sobrar mais pra dívida. Quase tudo já existia — `/ofensores` já tinha o
+seletor de período e o agrupamento por categoria raiz+subcategoria, só
+nunca tinha sido generalizado pra receita nem exposto como filtro de
+categorias específicas.
+
+- `src/lib/ofensores.ts`: `Periodo` ganhou `"semestre"` (6 meses,
+  mesmo padrão do `"trimestre"` que já existia pra 3 meses).
+  `calcularMaioresOfensores(desde, tipo: TipoTransacao = DESPESA)`
+  ganhou o parâmetro `tipo` com valor padrão — as duas chamadas
+  existentes (`/ofensores`, `/relatorio`) continuam funcionando sem
+  mudar nada, e agora dá pra chamar com `ENTRADA` também.
+- `src/app/ofensores/page.tsx` e `src/app/transacoes/page.tsx`:
+  atualizados só pra incluir `"semestre"` no `Record<Periodo, string>`
+  e na validação do parâmetro de URL (o TypeScript já obrigou essa
+  atualização — `Record` exaustivo pegou os dois lugares que precisavam
+  mudar).
+- `src/app/relatorio/categorias/page.tsx` (novo): período (mesmo
+  padrão de `Link`+`?periodo=`), duas seções lado a lado — "Despesas
+  por categoria" e "Receitas por categoria" — cada uma usando
+  `calcularMaioresOfensores` com o tipo certo; card "Saldo do período"
+  no topo; formulário de filtro com checkboxes agrupadas por Despesa/
+  Receita (usando `calcularTipoPredominantePorCategoria`, que já
+  existia em `src/lib/categorias.ts`, pra separar automaticamente qual
+  categoria é de qual lado, mesmo sem campo `tipo` no schema).
+  **Autocorreção**: comecei escrevendo isso direto em
+  `src/app/categorias/page.tsx` sem checar antes se a rota já existia —
+  existia, e não era vazia: era a página de CRUD de categorias
+  (listar/criar/editar/excluir, com `actions.ts`, `CategoriaForm.tsx`,
+  `novo/`, `[id]/editar/`). Sobrescrevi sem querer, percebi pelo
+  `git status` mostrando "modified" em vez de "new file", restaurei
+  com `git checkout HEAD --` antes de qualquer commit (nada perdido,
+  nada chegou a ir pro git) e recriei o relatório novo em
+  `src/app/relatorio/categorias/` — rota que não colide com nada.
+- Filtro: marcar a categoria raiz mostra ela inteira (todas as
+  subcategorias, total original); marcar só subcategorias específicas
+  recalcula o total pra refletir exatamente o que foi escolhido.
+  Nenhuma marcada = mostra tudo.
+- Verificado contra o servidor real: sem filtro, Receitas R$110.708,82
+  / Despesas R$84.407,70 / Saldo R$26.301,12 (a pequena diferença pro
+  "Balanço deste mês" do Mapa é esperada — aqui só soma o que tem
+  categoria, igual `/ofensores` já fazia). Filtrando só "Moradia"
+  (categoria raiz): mostra as 3 subcategorias e o total inteiro
+  (R$13.677,33). Filtrando só a subcategoria "Potiguara": recalcula
+  pra R$7.509,89, só ela.
+- Links novos: `/ofensores` → `/categorias` e `/categorias` →
+  `/ofensores` (pras ferramentas que só fazem sentido pra despesa:
+  orçamento, trajetória por credor, comparativo mensal); rodapé do
+  Mapa também linka pra `/categorias`.
+- `npx tsc --noEmit` limpo. Nenhuma migração de schema.

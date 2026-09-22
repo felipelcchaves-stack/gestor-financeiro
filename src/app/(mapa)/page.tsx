@@ -518,6 +518,9 @@ export default async function MapaPage() {
         <Link href="/resumo/ia" className="underline underline-offset-4">
           Gerar resumo para revisar com IA
         </Link>
+        <Link href="/relatorio/categorias" className="underline underline-offset-4">
+          Relatório por categoria (despesa e receita)
+        </Link>
       </div>
 
       <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">

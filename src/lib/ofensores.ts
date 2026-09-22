@@ -5,22 +5,31 @@
 // partir do extrato.
 
 import { prisma } from "@/lib/prisma";
+import { TipoTransacao } from "@/generated/prisma";
 
 export type ItemRanking = { id: string; nome: string; totalCentavos: number };
 export type CategoriaComDetalhe = ItemRanking & { subcategorias: ItemRanking[] };
 
-export type Periodo = "mes" | "trimestre" | "ano" | "tudo";
+export type Periodo = "mes" | "trimestre" | "semestre" | "ano" | "tudo";
 
 export function inicioDoPeriodo(periodo: Periodo, hoje: Date = new Date()): Date {
   if (periodo === "mes") return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   if (periodo === "trimestre") return new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1);
+  if (periodo === "semestre") return new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1);
   if (periodo === "tudo") return new Date(2000, 0, 1);
   return new Date(hoje.getFullYear(), 0, 1);
 }
 
-export async function calcularMaioresOfensores(desde: Date): Promise<CategoriaComDetalhe[]> {
+// tipo tem DESPESA como padrão pra não quebrar quem já chama isso sem
+// o segundo argumento — passar ENTRADA reaproveita o mesmo agrupamento
+// (categoria raiz + subcategoria) pro lado da receita, pro relatório
+// de /categorias que olha os dois lados ao mesmo tempo.
+export async function calcularMaioresOfensores(
+  desde: Date,
+  tipo: TipoTransacao = TipoTransacao.DESPESA
+): Promise<CategoriaComDetalhe[]> {
   const transacoes = await prisma.transacao.findMany({
-    where: { tipo: "DESPESA", ehTransferencia: false, data: { gte: desde } },
+    where: { tipo, ehTransferencia: false, data: { gte: desde } },
     select: {
       valorCentavos: true,
       categoria: { select: { id: true, nome: true, parentId: true, parent: { select: { id: true, nome: true } } } },
