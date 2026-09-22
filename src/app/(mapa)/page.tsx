@@ -15,7 +15,7 @@ import {
 import { formatarBRL, mesAnoDaquiA } from "@/lib/money";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularQualidadeDados } from "@/lib/qualidadeDados";
-import { calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
+import { calcularMovimentacaoDoMes, calcularOfensoresPorCredor, inicioDoPeriodo } from "@/lib/ofensores";
 import type { NivelSinal } from "@/lib/sinal";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,12 @@ const ESTILO_SINAL: Record<NivelSinal, string> = {
 };
 
 export default async function MapaPage() {
-  const [estado, qualidadeDados, movimentacaoDoMes] = await Promise.all([
+  const [estado, qualidadeDados, movimentacaoDoMes, movimentacaoDoAno, ofensoresPorCredorDoAno] = await Promise.all([
     carregarEstadoAtual(),
     calcularQualidadeDados(),
     calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
+    calcularMovimentacaoDoMes(inicioDoPeriodo("ano")),
+    calcularOfensoresPorCredor(inicioDoPeriodo("ano")),
   ]);
   const {
     passivosQuitados,
@@ -89,6 +91,11 @@ export default async function MapaPage() {
   const deltaDividaCentavos = temComparacaoDeDivida ? passivoTotal - snapshotMaisAntigo!.passivoTotalCentavos : 0;
 
   const saldoDoMesCentavos = movimentacaoDoMes.entradasCentavos - movimentacaoDoMes.despesasTotalCentavos;
+  const saldoDoAnoCentavos = movimentacaoDoAno.entradasCentavos - movimentacaoDoAno.despesasTotalCentavos;
+  const pagoEmDividasDoAnoCentavos = ofensoresPorCredorDoAno
+    .filter((c) => c.id !== "sem-vinculo")
+    .reduce((acc, c) => acc + c.totalCentavos, 0);
+  const anoCorrente = estado.hoje.getFullYear();
 
   const dataMesAnterior = new Date(estado.hoje.getFullYear(), estado.hoje.getMonth() - 1, 1);
   const mesAnteriorMax = `${dataMesAnterior.getFullYear()}-${String(dataMesAnterior.getMonth() + 1).padStart(2, "0")}`;
@@ -211,6 +218,40 @@ export default async function MapaPage() {
         <p className="mt-3 text-xs text-muted-foreground">
           Direto do extrato importado — entradas e despesas que já aconteceram de verdade, não configuração/orçamento
           (isso é o card &ldquo;Fluxo do mês&rdquo; logo abaixo).
+        </p>
+      </section>
+
+      <section className="glass-card rounded-2xl p-5">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Receipt className="size-4" />
+          <p className="text-xs font-semibold uppercase tracking-wider">Resumo de {anoCorrente}</p>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Entradas no ano</p>
+            <p className="num text-2xl font-semibold text-liquidity">{formatarBRL(movimentacaoDoAno.entradasCentavos)}</p>
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Despesas no ano</p>
+            <p className="num text-2xl font-semibold text-debt">{formatarBRL(movimentacaoDoAno.despesasTotalCentavos)}</p>
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo do ano</p>
+            <p className={`num text-2xl font-semibold ${saldoDoAnoCentavos >= 0 ? "text-liquidity" : "text-debt"}`}>
+              {formatarBRL(saldoDoAnoCentavos)}
+            </p>
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Pago em dívidas</p>
+            <p className="num text-2xl font-semibold text-gold">{formatarBRL(pagoEmDividasDoAnoCentavos)}</p>
+          </div>
+        </div>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Desde 1º de janeiro de {anoCorrente}, direto do extrato real — &ldquo;Pago em dívidas&rdquo; é a parte das
+          despesas que foi vinculada a algum passivo (subconjunto de &ldquo;Despesas no ano&rdquo;, não um valor
+          extra). Zera sozinho a cada virada de ano.
         </p>
       </section>
 

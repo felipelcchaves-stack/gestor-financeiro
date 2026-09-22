@@ -2718,3 +2718,26 @@ como card visual na home.
 - `npx tsc --noEmit` limpo (um erro solto de `LayoutProps` era só cache
   `.next/types` obsoleto depois do `rm -rf .next` pós-migração — sumiu
   ao rodar o dev server de novo, não era erro real de código).
+
+## Card "Resumo do ano" no Mapa
+
+Felipe perguntou se fazia sentido ter um card com saldo e total pago no
+ano vigente, resetando a cada ano. Fazia sentido e saiu barato: as duas
+funções que o card precisava já existiam, só nunca tinham sido chamadas
+com o período "ano" — `calcularMovimentacaoDoMes(inicioDoPeriodo("ano"))`
+(apesar do nome, funciona pra qualquer intervalo) e
+`calcularOfensoresPorCredor(inicioDoPeriodo("ano"))`. Como
+`inicioDoPeriodo("ano")` sempre calcula a partir do ano corrente
+(`new Date().getFullYear()`), o card já muda sozinho na virada do ano,
+sem nenhuma lógica de reset.
+
+- `src/app/(mapa)/page.tsx`: novo card "Resumo de {ano}" logo depois do
+  "Balanço deste mês" — Entradas/Despesas/Saldo do ano (mesmas duas
+  chamadas acima) e "Pago em dívidas" (soma de
+  `calcularOfensoresPorCredor` excluindo o bucket `sem-vinculo` —
+  subconjunto das despesas, não um valor à parte).
+- Verificado com dado real: Entradas R$1.487.211,83, Despesas
+  R$1.705.887,95, Saldo -R$218.676,12, Pago em dívidas R$497.335,15 —
+  conferida a checagem de sanidade "pago em dívidas ≤ despesas do ano".
+- `npx tsc --noEmit` limpo. Nenhuma migração de schema — só reaproveita
+  funções e o campo `Periodo` que já existiam.
