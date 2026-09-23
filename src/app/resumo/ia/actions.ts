@@ -4,16 +4,33 @@ import { prisma } from "@/lib/prisma";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
 import { calcularStatusRateio } from "@/lib/rateio";
-import { gerarPromptCorteDeGastos, parseSugestaoCorte, nomesProtegidos, SUGESTAO_CORTE_SCHEMA, type CorteSugerido } from "@/lib/promptCorteDeGastos";
+import {
+  gerarPromptCorteDeGastos,
+  parseSugestaoCorte,
+  nomesProtegidos,
+  achatarDespesasPorCategoria,
+  compararComAnalise,
+  SUGESTAO_CORTE_SCHEMA,
+  type CorteSugerido,
+  type ComparacaoAnalise,
+} from "@/lib/promptCorteDeGastos";
 import type { Projecao } from "@/lib/projecaoMeta";
 import { chamarGemini } from "@/lib/gemini";
 
-export type { CorteSugerido, Projecao };
+export type { CorteSugerido, Projecao, ComparacaoAnalise };
 
 // `projecao` só existe pra sugestão de uma meta específica (tem
 // saldo-alvo pra comparar, ver src/lib/projecaoMeta.ts) — a sugestão
-// geral (essa página) fica com `projecao: null`.
-export type SugestaoGerada = { resumo: string; cortes: CorteSugerido[]; geradoEm: string; projecao: Projecao | null };
+// geral (essa página) fica com `projecao: null`. `comparacao` é
+// congelada no momento da geração (não recalculada ao reabrir "Ver
+// última análise") — ver src/lib/promptCorteDeGastos.ts.
+export type SugestaoGerada = {
+  resumo: string;
+  cortes: CorteSugerido[];
+  geradoEm: string;
+  projecao: Projecao | null;
+  comparacao: ComparacaoAnalise | null;
+};
 
 export type ResultadoSugestaoIA = ({ ok: true } & SugestaoGerada) | { ok: false; erro: string };
 
@@ -31,23 +48,32 @@ const ID_CACHE_GERAL = "geral-resumo-ia";
 export async function gerarSugestaoCorteIA(): Promise<ResultadoSugestaoIA> {
   try {
     const estado = await carregarEstadoAtual();
-    const [movimentacaoDoMes, statusRateio] = await Promise.all([
+    const [movimentacaoDoMes, statusRateio, anterior] = await Promise.all([
       calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
       calcularStatusRateio(estado),
+      prisma.sugestaoIACache.findUnique({ where: { id: ID_CACHE_GERAL } }),
     ]);
 
-    const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio);
+    const comparacao = compararComAnalise(
+      anterior?.despesasPorCategoriaJson,
+      anterior?.geradoEm,
+      movimentacaoDoMes.despesasPorCategoria
+    );
+
+    const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, undefined, comparacao);
     const textoJson = await chamarGemini(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
     const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
 
     const geradoEm = new Date();
+    const despesasPorCategoriaJson = JSON.stringify(achatarDespesasPorCategoria(movimentacaoDoMes.despesasPorCategoria));
+    const comparacaoJson = JSON.stringify(comparacao);
     await prisma.sugestaoIACache.upsert({
       where: { id: ID_CACHE_GERAL },
-      create: { id: ID_CACHE_GERAL, resumo, cortesJson: JSON.stringify(cortes), geradoEm },
-      update: { resumo, cortesJson: JSON.stringify(cortes), geradoEm },
+      create: { id: ID_CACHE_GERAL, resumo, cortesJson: JSON.stringify(cortes), despesasPorCategoriaJson, comparacaoJson, geradoEm },
+      update: { resumo, cortesJson: JSON.stringify(cortes), despesasPorCategoriaJson, comparacaoJson, geradoEm },
     });
 
-    return { ok: true, resumo, cortes, geradoEm: geradoEm.toISOString(), projecao: null };
+    return { ok: true, resumo, cortes, geradoEm: geradoEm.toISOString(), projecao: null, comparacao };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha desconhecida ao gerar a sugestão." };
   }
@@ -56,5 +82,11 @@ export async function gerarSugestaoCorteIA(): Promise<ResultadoSugestaoIA> {
 export async function obterUltimaSugestaoGeral(): Promise<SugestaoGerada | null> {
   const row = await prisma.sugestaoIACache.findUnique({ where: { id: ID_CACHE_GERAL } });
   if (!row) return null;
-  return { resumo: row.resumo, cortes: JSON.parse(row.cortesJson), geradoEm: row.geradoEm.toISOString(), projecao: null };
+  return {
+    resumo: row.resumo,
+    cortes: JSON.parse(row.cortesJson),
+    geradoEm: row.geradoEm.toISOString(),
+    projecao: null,
+    comparacao: row.comparacaoJson ? JSON.parse(row.comparacaoJson) : null,
+  };
 }

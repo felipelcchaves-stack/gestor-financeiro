@@ -310,6 +310,18 @@ model SugestaoIACache {
   meta     Meta?    @relation(fields: [metaId], references: [id], onDelete: Cascade)
   resumo   String
   cortesJson String
+  // Retrato achatado do gasto real por categoria/subcategoria NESSA
+  // geração — vira o "antes" da comparação da PRÓXIMA geração
+  // (src/lib/promptCorteDeGastos.ts, compararComAnalise). Opcional
+  // porque linhas gravadas antes desse campo existir (já tem uma real
+  // na VPS) não têm retrato — a próxima geração pra elas simplesmente
+  // não tem "antes" pra comparar, não quebra nada.
+  despesasPorCategoriaJson String?
+  // Comparação já calculada NESSA geração (contra a anterior),
+  // congelada junto com o `resumo` que a descreve — de propósito não
+  // recalculada ao reabrir "Ver última análise", pra nunca destoar do
+  // texto que a IA escreveu em cima desses números.
+  comparacaoJson           String?
   geradoEm DateTime @default(now())
 }
 

@@ -8,7 +8,15 @@ import { somaValorPassivosCentavos } from "@/app/metas/actions";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
 import { calcularStatusRateio, type StatusRateio } from "@/lib/rateio";
-import { gerarPromptCorteDeGastos, parseSugestaoCorte, nomesProtegidos, SUGESTAO_CORTE_SCHEMA, type MetaAlvoPrompt } from "@/lib/promptCorteDeGastos";
+import {
+  gerarPromptCorteDeGastos,
+  parseSugestaoCorte,
+  nomesProtegidos,
+  achatarDespesasPorCategoria,
+  compararComAnalise,
+  SUGESTAO_CORTE_SCHEMA,
+  type MetaAlvoPrompt,
+} from "@/lib/promptCorteDeGastos";
 import { resolverAlvoDaMeta, calcularProjecaoMeta } from "@/lib/projecaoMeta";
 import { chamarGemini } from "@/lib/gemini";
 import type { ResultadoSugestaoIA, SugestaoGerada } from "@/app/resumo/ia/actions";
@@ -62,10 +70,13 @@ function saldoDoCofre(statusRateio: StatusRateio | null, contaOrigemSaldoCentavo
 // pega o(s) passivo(s)-alvo de QUALQUER metaId recebido.
 export async function gerarSugestaoParaMeta(metaId: string): Promise<ResultadoSugestaoIA> {
   try {
-    const meta = await prisma.meta.findUnique({
-      where: { id: metaId },
-      include: { passivosAlvo: { include: { passivo: true } }, contaOrigem: true },
-    });
+    const [meta, anterior] = await Promise.all([
+      prisma.meta.findUnique({
+        where: { id: metaId },
+        include: { passivosAlvo: { include: { passivo: true } }, contaOrigem: true },
+      }),
+      prisma.sugestaoIACache.findUnique({ where: { metaId } }),
+    ]);
     if (!meta) return { ok: false, erro: "Meta não encontrada." };
 
     const estado = await carregarEstadoAtual();
@@ -78,33 +89,47 @@ export async function gerarSugestaoParaMeta(metaId: string): Promise<ResultadoSu
     const alvo = resolverAlvoDaMeta(meta, passivosAlvo);
     const saldoJaSeparadoCentavos = saldoDoCofre(statusRateio, meta.contaOrigem?.saldoAtualCentavos);
     const metaAlvo: MetaAlvoPrompt = { ...alvo, saldoJaSeparadoCentavos };
+    const comparacao = compararComAnalise(
+      anterior?.despesasPorCategoriaJson,
+      anterior?.geradoEm,
+      movimentacaoDoMes.despesasPorCategoria
+    );
 
-    const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, metaAlvo);
+    const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, metaAlvo, comparacao);
     const textoJson = await chamarGemini(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
     const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
 
     const geradoEm = new Date();
+    const despesasPorCategoriaJson = JSON.stringify(achatarDespesasPorCategoria(movimentacaoDoMes.despesasPorCategoria));
+    const comparacaoJson = JSON.stringify(comparacao);
     await prisma.sugestaoIACache.upsert({
       where: { metaId },
-      create: { metaId, resumo, cortesJson: JSON.stringify(cortes), geradoEm },
-      update: { resumo, cortesJson: JSON.stringify(cortes), geradoEm },
+      create: { metaId, resumo, cortesJson: JSON.stringify(cortes), despesasPorCategoriaJson, comparacaoJson, geradoEm },
+      update: { resumo, cortesJson: JSON.stringify(cortes), despesasPorCategoriaJson, comparacaoJson, geradoEm },
     });
 
     const projecao = calcularProjecaoMeta(alvo.saldoCentavos, saldoJaSeparadoCentavos, cortes);
-    return { ok: true, resumo, cortes, geradoEm: geradoEm.toISOString(), projecao };
+    return { ok: true, resumo, cortes, geradoEm: geradoEm.toISOString(), projecao, comparacao };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha desconhecida ao gerar a sugestão." };
   }
 }
 
-// Só a parte salva (resumo/cortes) — a projeção não é cacheada de
-// propósito, ela é recalculada em src/app/cofre/page.tsx com o saldo
-// ATUAL do cofre (já carregado ali pra outros fins), pra "Ver última
-// análise" nunca mostrar uma previsão desatualizada.
+// Só a parte salva (resumo/cortes/comparação) — a projeção não é
+// cacheada de propósito, ela é recalculada em src/app/cofre/page.tsx
+// com o saldo ATUAL do cofre (já carregado ali pra outros fins), pra
+// "Ver última análise" nunca mostrar uma previsão desatualizada. A
+// comparação, ao contrário, fica congelada como foi gerada — ver
+// src/lib/promptCorteDeGastos.ts.
 export async function obterUltimaSugestaoMeta(
   metaId: string
 ): Promise<Omit<SugestaoGerada, "projecao"> | null> {
   const row = await prisma.sugestaoIACache.findUnique({ where: { metaId } });
   if (!row) return null;
-  return { resumo: row.resumo, cortes: JSON.parse(row.cortesJson), geradoEm: row.geradoEm.toISOString() };
+  return {
+    resumo: row.resumo,
+    cortes: JSON.parse(row.cortesJson),
+    geradoEm: row.geradoEm.toISOString(),
+    comparacao: row.comparacaoJson ? JSON.parse(row.comparacaoJson) : null,
+  };
 }

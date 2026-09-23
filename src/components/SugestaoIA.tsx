@@ -11,6 +11,47 @@ function formatarDataHora(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function ComparacaoTabela({ comparacao }: { comparacao: NonNullable<SugestaoGerada["comparacao"]> }) {
+  if (comparacao.categorias.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-medium text-muted-foreground">
+        Desde a análise de {formatarDataHora(comparacao.analisadaEmAnterior)}
+      </p>
+      <div className="overflow-x-auto rounded-xl border border-border">
+        <table className="w-full text-xs">
+          <thead className="bg-surface-2 text-left uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">Categoria</th>
+              <th className="px-2 py-2 text-right font-medium">Antes</th>
+              <th className="px-2 py-2 text-right font-medium">Agora</th>
+              <th className="px-3 py-2 text-right font-medium">Variação</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {comparacao.categorias.map((c) => (
+              <tr key={c.categoria}>
+                <td className="px-3 py-2 text-foreground">{c.categoria}</td>
+                <td className="num px-2 py-2 text-right text-muted-foreground">{formatarBRL(c.antesCentavos)}</td>
+                <td className="num px-2 py-2 text-right text-muted-foreground">{formatarBRL(c.agoraCentavos)}</td>
+                <td
+                  className={`num px-3 py-2 text-right font-medium ${
+                    c.variacaoCentavos > 0 ? "text-debt" : c.variacaoCentavos < 0 ? "text-liquidity" : "text-muted-foreground"
+                  }`}
+                >
+                  {c.variacaoCentavos > 0 ? "+" : ""}
+                  {formatarBRL(c.variacaoCentavos)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ProjecaoBanner({ projecao }: { projecao: NonNullable<SugestaoGerada["projecao"]> }) {
   if (projecao.faltaParaQuitarCentavos === 0) {
     return (
@@ -101,6 +142,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
               <>
                 {sugestao.projecao && <ProjecaoBanner projecao={sugestao.projecao} />}
                 <p className="whitespace-pre-wrap text-sm text-foreground">{sugestao.resumo}</p>
+                {sugestao.comparacao && <ComparacaoTabela comparacao={sugestao.comparacao} />}
                 <CorteSugeridoChart cortes={sugestao.cortes} />
               </>
             ) : (

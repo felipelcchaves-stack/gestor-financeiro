@@ -3245,3 +3245,49 @@ considerando o saldo de verdade do cofre.
   (local); mesma configuração aplicada na VPS depois do deploy (fonte
   real de dados).
 - `npx tsc --noEmit` limpo.
+
+## Comparar cada nova sugestão com a análise anterior
+
+Felipe ficou satisfeito com o corte agressivo ("era exatamente o que
+eu queria") e pediu o próximo passo: toda vez que gerar uma sugestão
+nova, comparar com a anterior — por categoria, dizer se ele melhorou,
+piorou, ou se alguma precisa de medida drástica. Mesmo princípio da
+projeção de meses: a comparação **nunca é calculada pelo Gemini**
+(LLM erra conta), é matemática nossa — a IA só recebe os números
+prontos e narra/julga em cima deles.
+
+- `prisma/schema.prisma`: `SugestaoIACache` ganhou dois campos opcionais
+  — `despesasPorCategoriaJson` (retrato achatado do gasto real nessa
+  geração, vira o "antes" da próxima) e `comparacaoJson` (a comparação
+  já calculada, congelada junto com o `resumo` que a descreve — não
+  recalculada ao reabrir "Ver última análise", pra nunca destoar do que
+  a IA escreveu). Opcionais de propósito: já existia uma linha real na
+  VPS gerada antes desse recurso.
+- `src/lib/promptCorteDeGastos.ts`: `achatarDespesasPorCategoria`
+  (retrato leaf-level) e `compararComAnalise` (diff determinístico,
+  só categorias com variação real — mostrar 15 categorias "estáveis em
+  R$0,00" é ruído puro, descoberto testando com dado real). O prompt
+  ganhou uma seção "Comparação com a análise de {data}" quando existe
+  comparação, com instrução explícita pra IA julgar cada categoria
+  (melhorou/piorou/precisa de corte drástico) na narrativa do `resumo`.
+- `src/app/resumo/ia/actions.ts` e `src/app/cofre/actions.ts`: antes de
+  gerar, leem a linha de cache atual (o "antes"), calculam a
+  comparação, e ao salvar gravam o novo retrato pra próxima vez.
+- `src/components/SugestaoIA.tsx`: tabela "Desde a análise de {data}"
+  (categoria | antes | agora | variação, verde quando caiu, vermelho
+  quando subiu) antes do gráfico de cortes.
+- Achado real testando: a chave do Gemini é **free tier, limite de 20
+  requisições/dia** pro modelo `gemini-3-flash`
+  (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`) — a cota
+  estourou no meio da bateria de testes desse recurso (código do erro
+  429, mensagem completa capturada num script descartável). Como a
+  comparação em si nunca depende do Gemini pra calcular os números,
+  testei a lógica pura (`compararComAnalise`) direto, sem API: gerei um
+  retrato "antes", adicionei uma despesa real de R$500 em "Templo",
+  gerei o retrato "agora", e confirmei que a variação bateu exatamente
+  com R$500,00 e que sem retrato anterior a comparação vem `null`.
+  Transação de teste removida ao final. A narrativa do Gemini em cima
+  dessa comparação (a parte que dependia da API) ficou sem teste de
+  ponta a ponta hoje por causa da cota — vale reverificar depois que
+  ela resetar, ou considerar uma chave paga se o uso for frequente.
+- `npx tsc --noEmit` limpo.

@@ -6,7 +6,7 @@
 
 import { formatarBRL } from "@/lib/money";
 import type { EstadoAtual } from "@/lib/estadoAtual";
-import type { MovimentacaoDoMes } from "@/lib/ofensores";
+import type { MovimentacaoDoMes, CategoriaComDetalhe } from "@/lib/ofensores";
 import type { StatusRateio } from "@/lib/rateio";
 
 // Alvo específico pra sugestão "corte agressivo pra fechar essa meta
@@ -54,6 +54,68 @@ export const SUGESTAO_CORTE_SCHEMA = {
   required: ["resumo", "cortes"],
 };
 
+// Achatamento leaf-level: categoria-raiz com subcategoria vira uma
+// linha por subcategoria; raiz sem subcategoria vira uma linha só —
+// mesmo nível de granularidade que os `cortes` sugeridos usam, pra dar
+// pra comparar corte sugerido com gasto real categoria a categoria.
+type ItemAchatado = { nome: string; totalCentavos: number };
+
+export function achatarDespesasPorCategoria(despesasPorCategoria: CategoriaComDetalhe[]): ItemAchatado[] {
+  const linhas: ItemAchatado[] = [];
+  for (const c of despesasPorCategoria) {
+    if (c.subcategorias.length > 0) {
+      for (const sub of c.subcategorias) linhas.push({ nome: sub.nome, totalCentavos: sub.totalCentavos });
+    } else {
+      linhas.push({ nome: c.nome, totalCentavos: c.totalCentavos });
+    }
+  }
+  return linhas;
+}
+
+export type ComparacaoCategoria = { categoria: string; antesCentavos: number; agoraCentavos: number; variacaoCentavos: number };
+export type ComparacaoAnalise = { analisadaEmAnterior: string; categorias: ComparacaoCategoria[] };
+
+// Diferença real, calculada por nós — nunca pedida pro Gemini fazer de
+// conta (mesmo motivo de calcularProjecaoMeta em src/lib/projecaoMeta.ts:
+// LLM erra matemática de várias etapas). Sem retrato anterior gravado
+// (primeira geração pra esse escopo, ou linha de cache de antes desse
+// recurso existir), não tem "antes" pra comparar — devolve null, nunca
+// inventa uma comparação vazia ou zerada.
+export function compararComAnalise(
+  despesasPorCategoriaJsonAnterior: string | null | undefined,
+  geradoEmAnterior: Date | null | undefined,
+  atual: CategoriaComDetalhe[]
+): ComparacaoAnalise | null {
+  if (!despesasPorCategoriaJsonAnterior || !geradoEmAnterior) return null;
+
+  let antes: ItemAchatado[];
+  try {
+    antes = JSON.parse(despesasPorCategoriaJsonAnterior);
+  } catch {
+    return null;
+  }
+
+  const agora = achatarDespesasPorCategoria(atual);
+  const porNome = new Map<string, { antesCentavos: number; agoraCentavos: number }>();
+  for (const item of antes) porNome.set(item.nome, { antesCentavos: item.totalCentavos, agoraCentavos: 0 });
+  for (const item of agora) {
+    const entrada = porNome.get(item.nome) ?? { antesCentavos: 0, agoraCentavos: 0 };
+    entrada.agoraCentavos = item.totalCentavos;
+    porNome.set(item.nome, entrada);
+  }
+
+  // Só categorias que de fato mudaram — com 15+ categorias reais,
+  // listar as que "ficaram estáveis em R$0,00 de variação" é ruído
+  // puro, tanto pro prompt (gasta token à toa) quanto pra tabela na
+  // sheet (esconde o que realmente importa: o que mudou).
+  const categorias = Array.from(porNome.entries())
+    .map(([categoria, v]) => ({ categoria, ...v, variacaoCentavos: v.agoraCentavos - v.antesCentavos }))
+    .filter((c) => c.variacaoCentavos !== 0)
+    .sort((a, b) => Math.abs(b.variacaoCentavos) - Math.abs(a.variacaoCentavos));
+
+  return { analisadaEmAnterior: geradoEmAnterior.toISOString(), categorias };
+}
+
 function listarDespesasPorCategoria(movimentacaoDoMes: MovimentacaoDoMes): string[] {
   const linhas: string[] = [];
   for (const c of movimentacaoDoMes.despesasPorCategoria) {
@@ -85,7 +147,8 @@ export function gerarPromptCorteDeGastos(
   estado: EstadoAtual,
   movimentacaoDoMes: MovimentacaoDoMes,
   statusRateio: StatusRateio | null,
-  metaAlvo?: MetaAlvoPrompt
+  metaAlvo?: MetaAlvoPrompt,
+  comparacao?: ComparacaoAnalise | null
 ): string {
   const linhas: string[] = [];
 
@@ -130,6 +193,22 @@ export function gerarPromptCorteDeGastos(
     linhas.push(
       "Essa dívida está drenando o caixa agora — não existe um prazo confortável pra ela, o objetivo é quitar o quanto antes, não seguir um ritmo lento. Seja agressivo: liste o máximo de corte plausível por categoria/subcategoria não protegida (não se limite a um valor mínimo ou conservador)."
     );
+  }
+
+  if (comparacao && comparacao.categorias.length > 0) {
+    const dataAnterior = new Date(comparacao.analisadaEmAnterior).toLocaleDateString("pt-BR");
+    linhas.push(`## Comparação com a análise de ${dataAnterior} (gasto real, categoria a categoria)`);
+    for (const c of comparacao.categorias) {
+      const sinal = c.variacaoCentavos > 0 ? "piorou" : c.variacaoCentavos < 0 ? "melhorou" : "ficou estável";
+      linhas.push(
+        `- ${c.categoria}: ${formatarBRL(c.antesCentavos)} → ${formatarBRL(c.agoraCentavos)} (${sinal} ${formatarBRL(Math.abs(c.variacaoCentavos))})`
+      );
+    }
+    linhas.push("");
+    linhas.push(
+      "Use essa comparação real (já calculada, não precisa recalcular) pra dizer explicitamente, categoria por categoria, se o corte sugerido da vez passada foi seguido — onde melhorou, onde piorou, e se alguma categoria específica agora pede uma medida mais drástica. Inclua esse julgamento na narrativa do `resumo`."
+    );
+    linhas.push("");
   }
 
   linhas.push(
