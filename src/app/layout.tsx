@@ -7,8 +7,10 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { HelpSheet } from "@/components/HelpSheet";
 import { NotificacoesSheet } from "@/components/NotificacoesSheet";
+import { PendenciasWizard } from "@/components/PendenciasWizard";
 import { contarSugestoesPendentes } from "@/lib/sugestoesPendentes";
 import { carregarNotificacoes } from "@/lib/notificacoes";
+import { calcularPendenciasWizard } from "@/lib/pendenciasWizard";
 
 const SCRIPT_TEMA_INICIAL = `
 (function () {
@@ -45,7 +47,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [sugestoesPendentes, notificacoes] = await Promise.all([contarSugestoesPendentes(), carregarNotificacoes()]);
+  const [sugestoesPendentes, notificacoes, pendenciasWizard] = await Promise.all([
+    contarSugestoesPendentes(),
+    carregarNotificacoes(),
+    calcularPendenciasWizard(),
+  ]);
 
   return (
     <html
@@ -76,6 +82,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
           </SidebarInset>
         </SidebarProvider>
+        <PendenciasWizard pendencias={pendenciasWizard} />
       </body>
     </html>
   );

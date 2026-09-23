@@ -3605,3 +3605,53 @@ resumir isso com sugestões numa sheet que também tem gráfico.
   em 3 meses reais; 9 meses de histórico real detectados sozinhos, sem
   configuração; cache de teste removido ao final.
 - `npx tsc --noEmit` limpo.
+
+## Wizard de pendências: abre sozinho até fechar todo dado estrutural faltando
+
+Felipe pediu um wizard que apareça sozinho ao entrar/atualizar o
+sistema, populando tudo que estiver pendente de valor, pra nunca ter
+cálculo errado por dado faltando. Escopo definido como a mesma camada
+"dado estrutural faltando" que `calcularProximasAcoes`
+(`src/lib/proximaAcao.ts`) já prioriza acima de tudo — "absolutamente
+tudo" literal (todo campo opcional do schema) não tem fim e muita
+coisa é opcional de propósito.
+
+- `src/lib/pendenciasWizard.ts` (novo): `calcularPendenciasWizard()` —
+  mesmo critério já usado em `proximaAcao.ts`, mas granular (um passo
+  por item, não agrupado/limitado a 3): cada passivo ativo sem
+  `valorQuitacaoCentavos`, cada conta sem `saldoAtualizadoEm`, e o
+  aporte mensal extra quando não configurado. Queries leves, sem
+  `carregarEstadoAtual()` (mesmo princípio de custo de
+  `sugestoesPendentes.ts`, roda em toda navegação a partir do layout
+  raiz).
+- `src/app/passivos/actions.ts`: nova `atualizarSaldoPassivo(id,
+  formData)` — ação mínima só do saldo, mesmo padrão de
+  `atualizarSaldoConta` (`src/app/contas/actions.ts`, já existia e foi
+  reaproveitada direto). Não reaproveita `atualizarPassivo` porque ele
+  exige o formulário inteiro de edição.
+- `src/components/PendenciasWizard.tsx` (novo): sheet que abre sozinha
+  (`useEffect` no primeiro carregamento, sem botão de gatilho) quando
+  há pelo menos uma pendência, um passo por vez com formulário mínimo
+  específico pra cada tipo, avançando automaticamente ao salvar.
+  "Fazer isso depois" só adia pro resto da aba/sessão do navegador
+  (`sessionStorage`) — quem decide se ela volta a aparecer é sempre o
+  dado real, nunca esse storage.
+- Limitação conhecida, documentada no próprio código: as ações
+  reaproveitadas aqui (`atualizarSaldoConta`, `atualizarSaldoPassivo`,
+  `definirAporteMensal`) lançam `Error` em vez de devolver
+  `{ok, erro}` — em produção o Next.js apaga a mensagem real desses
+  erros, então o wizard mostra um erro genérico ("confira o valor")
+  em vez do motivo exato. Aceitável pra validação simples de número;
+  se um dia precisar de mensagem específica, o caminho é converter
+  essas ações pro mesmo formato `{ok, erro}` já usado nas sugestões de
+  IA.
+- Testado com dado real local: `calcularPendenciasWizard()` bateu
+  exatamente com os 2 passivos sem saldo já vistos antes (Itaú Uniclass
+  Black, Mercado Pago) + 2 contas sem saldo atualizado; resolvido um
+  passivo de teste e confirmado que a contagem cai em exatamente 1 e
+  ele some da lista, revertido ao final; confirmado via HTML renderizado
+  que os dados reais chegam corretos até a prop do componente cliente
+  (a sheet em si só monta o conteúdo depois de aberta via JS, não dá
+  pra ver no HTML estático — mesmo padrão já usado em outras sheets
+  desse app).
+- `npx tsc --noEmit` limpo.

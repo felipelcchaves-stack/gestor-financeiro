@@ -148,6 +148,35 @@ export async function atualizarPassivo(id: string, formData: FormData) {
   redirect(`/passivos/${id}`);
 }
 
+// Ação mínima, só o saldo — mesmo padrão de atualizarSaldoConta
+// (src/app/contas/actions.ts). Não reaproveita atualizarPassivo direto
+// porque ele exige o formulário inteiro de edição (nome, tipo,
+// estrutura...); usada pelo wizard de pendências
+// (src/components/PendenciasWizard.tsx), que só pede o campo que
+// falta. Mesmo registro de histórico já usado em atualizarPassivo.
+export async function atualizarSaldoPassivo(id: string, formData: FormData) {
+  const valorQuitacaoCentavos = centavosDoForm(formData, "valorQuitacao");
+  if (valorQuitacaoCentavos == null) throw new Error("Informe o saldo atual.");
+
+  const atual = await prisma.passivo.findUniqueOrThrow({ where: { id } });
+
+  await prisma.$transaction([
+    prisma.passivo.update({ where: { id }, data: { valorQuitacaoCentavos } }),
+    prisma.passivoHistorico.create({
+      data: {
+        passivoId: id,
+        campo: "valorQuitacaoCentavos",
+        valorAnterior: atual.valorQuitacaoCentavos?.toString() ?? null,
+        valorNovo: valorQuitacaoCentavos.toString(),
+        motivo: "Preenchido pelo wizard de pendências",
+      },
+    }),
+  ]);
+
+  revalidatePath("/passivos");
+  revalidatePath(`/passivos/${id}`);
+}
+
 export async function marcarPassivoQuitado(id: string) {
   await prisma.passivo.update({ where: { id }, data: { status: StatusPassivo.QUITADO } });
   revalidatePath("/passivos");
