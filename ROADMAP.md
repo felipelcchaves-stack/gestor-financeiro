@@ -3492,3 +3492,38 @@ ambiente, visível em qualquer página.
   (`/transacoes`) não mudou de forma perceptível — o banco é SQLite
   local, a query extra é praticamente grátis.
 - `npx tsc --noEmit` limpo.
+
+## Sino de notificações no cabeçalho: alertas + tarefas + parcelas vencendo
+
+Felipe pediu um ícone de notificação global mostrando alertas do
+sistema e qualquer informação relevante pra decisão. O app já
+calculava duas coisas nessa linha (`calcularAlertas`,
+`calcularProximasAcoes`), só visíveis no Mapa — e ainda faltava um tipo
+de alerta real que nunca existiu: parcela de dívida vencendo ou
+vencida. O motor pra isso também já existia, usado só no preview de
+quitar/amortizar em `/passivos/[id]`
+(`src/lib/cronogramaAmortizacao.ts` — `proximaParcela`,
+`parcelasPendentesPorData`, a partir do cronograma real de parcela dos
+6 consignados Itaú documentados).
+
+- `src/lib/notificacoes.ts` (novo): `carregarNotificacoes()` agrega,
+  sem duplicar nenhuma lógica: `calcularAlertas` (severidade "alerta"),
+  `calcularProximasAcoes` filtrado só nas de `tipo: "tarefa"`, e um
+  novo cruzamento — pra cada passivo com cronograma, parcela vencida
+  não confirmada vira "alerta", próxima parcela dentro de 7 dias vira
+  "tarefa". De propósito não chama `carregarEstadoAtual()` (simulação
+  de otimização inteira, desnecessária aqui) nem mistura com o contador
+  de sugestões do Cofre (esse já tem selo próprio).
+- `src/components/NotificacoesSheet.tsx` (novo, mesmo padrão de
+  `HelpSheet.tsx`): sino no cabeçalho com selo numérico (vermelho se
+  houver alerta, dourado se só tarefa), sheet lateral listando cada
+  notificação com link pro contexto.
+- `src/app/layout.tsx` (raiz) carrega as notificações em paralelo com o
+  contador de sugestões já existente e passa pro novo componente.
+- Testado com dado real local: sem alterar nada, já apareceram 2
+  alertas reais genuínos (parcelas de dois consignados Itaú vencidas
+  há dias, nunca confirmadas) e 1 tarefa (parcela vencendo em 7 dias) —
+  achado incidental de um problema de verdade, não simulado. Testado
+  também colocando uma parcela vencida ontem de propósito e confirmando
+  que vira alerta; revertido ao final.
+- `npx tsc --noEmit` limpo.
