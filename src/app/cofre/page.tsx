@@ -7,7 +7,8 @@ import { calcularStatusRateio } from "@/lib/rateio";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { criarMetaCofre } from "./actions";
+import { SugestaoIA } from "@/components/SugestaoIA";
+import { criarMetaCofre, gerarSugestaoParaMeta } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -240,6 +241,23 @@ export default async function CofrePage() {
                   <Link href="/metas" className="mt-2 inline-block text-xs text-gold underline underline-offset-4">
                     editar em Metas
                   </Link>
+
+                  <details className="mt-3 border-t border-border pt-3">
+                    <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+                      Corte agressivo pra fechar essa meta mais rápido (IA)
+                    </summary>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Envia os totais por categoria e o custo mensal das dívidas (nunca transações individuais) pra
+                      API do Gemini (Google), pedindo o corte mais agressivo plausível pra quitar essa dívida o
+                      quanto antes — sem se prender a um ritmo lento. Tem custo por chamada.
+                    </p>
+                    <div className="mt-2">
+                      <SugestaoIA
+                        acao={gerarSugestaoParaMeta.bind(null, meta.id)}
+                        label="Gerar corte agressivo com IA (Gemini)"
+                      />
+                    </div>
+                  </details>
                 </div>
               );
             })}

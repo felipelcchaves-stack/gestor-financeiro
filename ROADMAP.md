@@ -3131,3 +3131,50 @@ inexistente.
   R$172.500 → "0,1%" e barra visível) — tudo removido/revertido ao
   final.
 - `npx tsc --noEmit` limpo.
+
+## IA sugerindo corte máximo pra fechar a meta o mais rápido possível
+
+Felipe rejeitou a primeira versão desse plano (IA mirando um "ritmo
+necessário" derivado de uma data-alvo distante, tipo 33 meses/2029) com
+o argumento: "não posso conviver com esse passivo por muito tempo — ele
+drena meu fluxo de caixa". O pedido real era o oposto: a IA olhar as
+categorias de gasto de verdade e sugerir o corte mais agressivo
+plausível, sem se prender a ritmo lento, pra fechar a meta o quanto
+antes. O "me avisar quando já dá pra quitar" já existia (card
+`alvoSugerido`/`dividaQuitavel` em `/cofre`, pura matemática de saldo
+vs. saldo documentado) — faltava só o "me ajude a chegar lá mais
+rápido".
+
+- `src/lib/promptCorteDeGastos.ts`: `gerarPromptCorteDeGastos` ganhou
+  um parâmetro opcional `metaAlvo` (nome da dívida, saldo, custo
+  mensal e saldo já separado — **sem** ritmo necessário nem data-alvo).
+  Quando presente, a instrução final muda de "sugira até 6 cortes" pra
+  "seja agressivo, liste o máximo de corte plausível por categoria e
+  diga em quantos meses isso fecharia a dívida-alvo".
+- `src/app/cofre/actions.ts`: nova `gerarSugestaoParaMeta(metaId)` —
+  carrega a meta e o(s) passivo(s)-alvo dela, monta o `metaAlvo` (saldo
+  do passivo se for um único alvo, senão o valor-alvo da própria meta;
+  custo mensal só se todos os passivos tiverem custo documentado) e
+  chama a mesma `chamarGemini` já usada em `/resumo/ia`. Mesmo formato
+  `{ok, texto|erro}`, nunca lança exceção (mesmo motivo do bug do
+  "Minified React error #441" anterior).
+- `src/components/SugestaoIA.tsx`: componente movido de
+  `src/app/resumo/ia/` pra cá e generalizado pra receber `acao` e
+  `label` como props, reaproveitado tanto em `/resumo/ia` (sugestão
+  genérica) quanto em cada card de meta em `/cofre` (botão "Corte
+  agressivo pra fechar essa meta mais rápido").
+- `src/app/cofre/page.tsx`: cada meta financiada pelo cofre ganhou um
+  `<details>` com o mesmo aviso de transparência do `/resumo/ia`
+  (o que sai da máquina, custo por chamada) e o botão de sugestão
+  ligado a essa meta específica.
+- Testado com a chave real: criado um script descartável que sobe uma
+  meta de teste ("Quitar Agiota", saldo do Bradesco setado
+  temporariamente pra R$5.000) e chama `gerarSugestaoParaMeta` de
+  verdade — a resposta veio focada em maximizar corte por categoria
+  (sem menção a ritmo ou prazo confortável), citou a dívida-alvo certa
+  (Agiota) e estimou o tempo pra quitar considerando o saldo já
+  separado. Meta de teste e saldo revertidos ao final, script apagado.
+- Confirmado que `/resumo/ia` continua funcionando normalmente depois
+  de mover o componente (`curl` retornou 200, sugestão genérica
+  intacta).
+- `npx tsc --noEmit` limpo.

@@ -4,7 +4,8 @@ import { calcularMovimentacaoDoMes, calcularTrajetoriaRealPassivo, inicioDoPerio
 import { calcularStatusRateio } from "@/lib/rateio";
 import { gerarResumoMarkdown } from "@/lib/resumoIA";
 import { CopiarResumo } from "./CopiarResumo";
-import { SugestaoIA } from "./SugestaoIA";
+import { SugestaoIA } from "@/components/SugestaoIA";
+import { gerarSugestaoCorteIA } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function ResumoIAPage() {
           sua máquina — diferente do bloco acima, que só sai se você mesmo colar em algum lugar.
         </p>
         <div className="mt-3">
-          <SugestaoIA />
+          <SugestaoIA acao={gerarSugestaoCorteIA} label="Gerar sugestão com IA (Gemini)" />
         </div>
       </div>
     </div>

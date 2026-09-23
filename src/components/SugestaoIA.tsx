@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { gerarSugestaoCorteIA } from "./actions";
+import type { ResultadoSugestaoIA } from "@/app/resumo/ia/actions";
 
-export function SugestaoIA() {
+type Props = {
+  acao: () => Promise<ResultadoSugestaoIA>;
+  label: string;
+  labelCarregando?: string;
+};
+
+export function SugestaoIA({ acao, label, labelCarregando = "Gerando…" }: Props) {
   const [carregando, setCarregando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -13,7 +19,7 @@ export function SugestaoIA() {
     setErro(null);
     setResultado(null);
     try {
-      const resposta = await gerarSugestaoCorteIA();
+      const resposta = await acao();
       if (resposta.ok) {
         setResultado(resposta.texto);
       } else {
@@ -37,7 +43,7 @@ export function SugestaoIA() {
         disabled={carregando}
         className="w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
       >
-        {carregando ? "Gerando…" : "Gerar sugestão com IA (Gemini)"}
+        {carregando ? labelCarregando : label}
       </button>
 
       {erro && (
