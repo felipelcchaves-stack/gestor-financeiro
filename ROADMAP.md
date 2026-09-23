@@ -3337,3 +3337,37 @@ provedor; o Felipe escolheu trocar pro Claude.
   o provedor de IA desse app agora é Claude, não Gemini; nunca mais
   compartilhar uma chave paga entre dev e produção.
 - `npx tsc --noEmit` limpo.
+
+## Alvos oportunistas no cofre: quitar dívidas menores pra aliviar o fluxo de caixa
+
+O `/cofre` só apontava UM alvo — o próximo passivo na rota de menor
+juro (`alvoSugerido`/`dividaQuitavel`, hoje o Agiota). O Felipe notou
+que o saldo do cofre pode, em algum momento, já cobrir integralmente
+uma dívida bem menor (um consignado, por exemplo) que não é a próxima
+da fila — abrindo mão de um pouco de otimalidade de juro, mas liberando
+a parcela mensal daquela dívida AGORA. E se esse valor liberado virar
+aporte extra, acelera o alvo principal também — não é só "menos uma
+dívida", é "o Agiota fecha mais rápido por tabela".
+
+- `src/lib/alvosOportunistas.ts` (novo): `calcularAlvosOportunistas`
+  escaneia todo `estado.elegiveis` (exceto o alvo principal), separa em
+  já quitáveis (ordenados pelo maior alívio de caixa mensal primeiro) e
+  os que faltam pouco (ordenados pelo marco mais próximo), limitado a 4.
+  Pros já quitáveis (no máximo 2, pra não rodar simulação exaustiva
+  demais), reaproveita `escolherEstrategia`/`encontrarOrdemMenosJuros`
+  (`src/lib/otimizacao.ts`, motor já em produção — nenhuma matemática
+  nova) com um cenário hipotético (esse passivo já pago, aporte extra
+  maior) pra calcular quantos meses o alvo principal adianta.
+- `src/app/cofre/page.tsx`: nova seção "Outras dívidas que esse cofre
+  já poderia aliviar", um card por alvo com a mesma UX de "Criar meta
+  pra esse alvo" já usada no card do `alvoSugerido` (mesma
+  `criarMetaCofre`, nenhuma migração de banco).
+- Testado com dado real local: saldo do Bradesco setado temporariamente
+  pra cobrir vários passivos amortizáveis (mas não o Agiota) — a lista
+  veio ordenada certo pelo maior alívio mensal, o Agiota nunca apareceu
+  nela (é o alvo principal, excluído de propósito), e a aceleração do
+  primeiro colocado (Nubank Capital de Giro, R$2.991,12/mês) bateu
+  exatamente com uma segunda chamada de `escolherEstrategia` feita à
+  mão fora da função, confirmando que a "aceleração" é conta real, não
+  estimativa. Saldo revertido ao final.
+- `npx tsc --noEmit` limpo.

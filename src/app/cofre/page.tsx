@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { PiggyBank, Target } from "lucide-react";
+import { PiggyBank, Target, Zap } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatarBRL, mesAnoDaquiA } from "@/lib/money";
 import { calcularProgressoMeta } from "@/lib/metrics";
 import { calcularStatusRateio } from "@/lib/rateio";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
+import { calcularAlvosOportunistas } from "@/lib/alvosOportunistas";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { SugestaoIA } from "@/components/SugestaoIA";
@@ -53,20 +54,24 @@ export default async function CofrePage() {
     })
   );
 
-  // Data-alvo real pra criar a meta sugerida com um clique — só existe
-  // quando a rota de menor juro já foi simulada (aporte mensal extra
+  // Data-alvo real pra criar uma meta com um clique — só existe quando
+  // a rota de menor juro já foi simulada (aporte mensal extra
   // configurado em Consultor). Sem isso, não inventamos prazo nenhum.
-  const dataAlvoSugeridaISO =
-    statusRateio?.alvoSugerido?.mesQuitacaoProjetado != null
-      ? new Date(
-          estado.hoje.getFullYear(),
-          estado.hoje.getMonth() + statusRateio.alvoSugerido.mesQuitacaoProjetado,
-          1
-        )
-          .toISOString()
-          .slice(0, 10)
-      : null;
+  // Reaproveitado tanto pro alvoSugerido quanto pros alvos oportunistas.
+  function dataDaquiAMeses(meses: number | null): string | null {
+    if (meses == null) return null;
+    return new Date(estado.hoje.getFullYear(), estado.hoje.getMonth() + meses, 1).toISOString().slice(0, 10);
+  }
+
+  const dataAlvoSugeridaISO = dataDaquiAMeses(statusRateio?.alvoSugerido?.mesQuitacaoProjetado ?? null);
   const alvoJaEhQuitavel = statusRateio?.alvoSugerido?.passivoId === statusRateio?.dividaQuitavel?.passivoId;
+
+  // Alvos "fora da fila" — dívidas menores que o saldo atual do cofre já
+  // cobriria (ou cobriria em breve), mesmo sem ser a próxima da rota de
+  // menor juro. Ver src/lib/alvosOportunistas.ts pro raciocínio.
+  const alvosOportunistas = statusRateio
+    ? calcularAlvosOportunistas(estado, statusRateio.contaDestinoSaldoCentavos ?? 0, statusRateio.alvoSugerido?.passivoId ?? null)
+    : [];
 
   if (!statusRateio) {
     return (
@@ -186,6 +191,60 @@ export default async function CofrePage() {
           </div>
         )}
       </section>
+
+      {alvosOportunistas.length > 0 && (
+        <section>
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Zap className="size-4 text-gold" /> Outras dívidas que esse cofre já poderia aliviar
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Não é a rota de menor juro (essa continua sendo {statusRateio.alvoSugerido?.nome ?? "a prioridade acima"})
+            — é fluxo de caixa: quitar uma dívida menor libera a parcela mensal dela mesmo sem ser a próxima da fila.
+          </p>
+          <div className="mt-3 flex flex-col gap-3">
+            {alvosOportunistas.map((alvo) => {
+              const dataAlvoISO = dataDaquiAMeses(alvo.mesQuitacaoProjetado);
+              return (
+                <div key={alvo.passivoId} className="glass-card rounded-2xl p-4">
+                  <p className="text-sm text-foreground">
+                    <Link href={`/passivos/${alvo.passivoId}`} className="font-medium text-gold underline underline-offset-4">
+                      {alvo.nome}
+                    </Link>{" "}
+                    — custo mensal {formatarBRL(alvo.custoMensalCentavos)}, saldo {formatarBRL(alvo.saldoCentavos)}.{" "}
+                    {alvo.jaQuitavel ? (
+                      <>O saldo atual do cofre já cobre essa dívida inteira.</>
+                    ) : (
+                      <>
+                        Faltam {formatarBRL(alvo.faltaParaQuitarCentavos)} pro cofre cobrir ela inteira
+                        {alvo.mesQuitacaoProjetado != null && ` — a rota atual projeta quitação em ${mesAnoDaquiA(alvo.mesQuitacaoProjetado)}`}
+                        .
+                      </>
+                    )}
+                  </p>
+                  {alvo.aceleracao && (
+                    <p className="mt-2 text-sm text-liquidity">
+                      Quitando essa dívida e redirecionando os {formatarBRL(alvo.custoMensalCentavos)}/mês liberados pro
+                      aporte extra, {alvo.aceleracao.alvoPrincipalNome} fecha{" "}
+                      <strong>{alvo.aceleracao.mesesAdiantados} {alvo.aceleracao.mesesAdiantados === 1 ? "mês" : "meses"} mais cedo</strong>{" "}
+                      (mês {alvo.aceleracao.mesComAceleracao} em vez do mês {alvo.aceleracao.mesAtual} da rota atual).
+                    </p>
+                  )}
+                  {dataAlvoISO && (
+                    <form action={criarMetaCofre.bind(null, statusRateio.contaDestinoId)} className="mt-3">
+                      <input type="hidden" name="passivosAlvo" value={alvo.passivoId} />
+                      <input type="hidden" name="nome" value={`Quitar ${alvo.nome}`} />
+                      <input type="hidden" name="dataAlvo" value={dataAlvoISO} />
+                      <Button type="submit" size="sm" variant="outline">
+                        Criar meta pra esse alvo
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section>
         <div className="flex items-center justify-between">
