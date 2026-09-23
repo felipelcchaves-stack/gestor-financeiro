@@ -1,4 +1,4 @@
-import { centavosParaReais } from "@/lib/money";
+import { centavosParaReais, formatarBRL } from "@/lib/money";
 import type { Meta } from "@/generated/prisma";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +12,7 @@ export function MetaForm({
 }: {
   action: (formData: FormData) => void;
   meta?: MetaComPassivos;
-  passivosDisponiveis: { id: string; nome: string }[];
+  passivosDisponiveis: { id: string; nome: string; valorQuitacaoCentavos: number | null }[];
   modoEdicao?: boolean;
 }) {
   const dataAlvoValue = meta ? new Date(meta.dataAlvo).toISOString().slice(0, 10) : undefined;
@@ -30,12 +30,11 @@ export function MetaForm({
           />
         </Campo>
 
-        <Campo label="Valor-alvo (R$)" required>
+        <Campo label="Valor-alvo (R$) — opcional se marcar passivo-alvo com saldo documentado, o valor final vem de lá">
           <input
             name="valorAlvo"
             type="text"
             inputMode="decimal"
-            required
             defaultValue={meta ? centavosParaReais(meta.valorAlvoCentavos) : undefined}
             className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
           />
@@ -78,6 +77,9 @@ export function MetaForm({
                 defaultChecked={passivosSelecionados.has(p.id)}
               />
               {p.nome}
+              {p.valorQuitacaoCentavos != null && (
+                <span className="text-muted-foreground">— {formatarBRL(p.valorQuitacaoCentavos)}</span>
+              )}
             </label>
           ))}
         </div>

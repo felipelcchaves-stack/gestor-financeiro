@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { centavosDoForm, textoDoForm } from "@/lib/form-helpers";
+import { somaValorPassivosCentavos } from "@/app/metas/actions";
 
 function passivosDoForm(formData: FormData): string[] {
   return formData.getAll("passivosAlvo").map(String).filter(Boolean);
@@ -14,12 +15,15 @@ function passivosDoForm(formData: FormData): string[] {
 // de /metas — a meta continua aparecendo em /metas normalmente também.
 export async function criarMetaCofre(contaOrigemId: string, formData: FormData) {
   const nome = textoDoForm(formData, "nome");
-  const valorAlvoCentavos = centavosDoForm(formData, "valorAlvo");
+  const valorAlvoInformado = centavosDoForm(formData, "valorAlvo");
   const dataAlvoRaw = textoDoForm(formData, "dataAlvo");
   const passivoIds = passivosDoForm(formData);
 
-  if (!nome || valorAlvoCentavos == null || !dataAlvoRaw) {
-    throw new Error("Preencha nome, valor-alvo e data-alvo.");
+  if (!nome || !dataAlvoRaw) throw new Error("Preencha nome e data-alvo.");
+
+  const valorAlvoCentavos = valorAlvoInformado ?? (await somaValorPassivosCentavos(passivoIds));
+  if (valorAlvoCentavos == null) {
+    throw new Error("Informe o valor-alvo, ou marque um passivo-alvo com saldo de quitação documentado.");
   }
 
   await prisma.meta.create({

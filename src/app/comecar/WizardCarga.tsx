@@ -91,7 +91,12 @@ export function WizardCarga({ passivosIniciais }: { passivosIniciais: ItemCriado
     }
   }
 
-  const passivosParaMeta = [...passivosIniciais, ...passivos.filter((p) => !passivosIniciais.some((pi) => pi.id === p.id))];
+  // Nesta etapa do wizard o saldo do passivo ainda não é conhecido em
+  // memória (o formulário de meta é mais simples aqui de propósito) —
+  // valor-alvo continua obrigatório de digitar nesse fluxo específico.
+  const passivosParaMeta = [...passivosIniciais, ...passivos.filter((p) => !passivosIniciais.some((pi) => pi.id === p.id))].map(
+    (p) => ({ ...p, valorQuitacaoCentavos: null })
+  );
 
   return (
     <div className="flex flex-col gap-6">

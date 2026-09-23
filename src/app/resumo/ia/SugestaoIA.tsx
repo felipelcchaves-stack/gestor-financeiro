@@ -13,10 +13,17 @@ export function SugestaoIA() {
     setErro(null);
     setResultado(null);
     try {
-      const texto = await gerarSugestaoCorteIA();
-      setResultado(texto);
-    } catch (err) {
-      setErro(err instanceof Error ? err.message : "Falha ao gerar a sugestão.");
+      const resposta = await gerarSugestaoCorteIA();
+      if (resposta.ok) {
+        setResultado(resposta.texto);
+      } else {
+        setErro(resposta.erro);
+      }
+    } catch {
+      // Só sobra aqui uma falha de rede real entre o navegador e o
+      // próprio servidor (não da API do Gemini, essa já vem tratada
+      // acima) — a action nunca lança exceção de propósito.
+      setErro("Não consegui falar com o servidor. Recarregue a página e tente de novo.");
     } finally {
       setCarregando(false);
     }

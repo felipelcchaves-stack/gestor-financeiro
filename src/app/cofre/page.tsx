@@ -21,7 +21,11 @@ export default async function CofrePage() {
           orderBy: { dataAlvo: "asc" },
         })
       : Promise.resolve([]),
-    prisma.passivo.findMany({ where: { status: "ATIVO" }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
+    prisma.passivo.findMany({
+      where: { status: "ATIVO" },
+      orderBy: { nome: "asc" },
+      select: { id: true, nome: true, valorQuitacaoCentavos: true },
+    }),
   ]);
 
   if (!statusRateio) {
@@ -121,6 +125,16 @@ export default async function CofrePage() {
                 meta.passivosAlvo.map((mp) => mp.passivo),
                 meta.alocacoes
               );
+              // Progresso à parte, baseado no saldo real do cofre — o
+              // valorFaltanteCentavos acima já reflete o saldo do
+              // passivo (se documentado); este é literalmente "quanto
+              // do que já tenho guardado aqui cobre essa meta",
+              // crescendo à medida que o saldo do Bradesco sobe.
+              const saldoCofreCentavos = statusRateio.contaDestinoSaldoCentavos ?? 0;
+              const progressoCofrePct =
+                meta.valorAlvoCentavos > 0
+                  ? Math.min(100, Math.round((saldoCofreCentavos / meta.valorAlvoCentavos) * 100))
+                  : 0;
               return (
                 <div key={meta.id} className="glass-card rounded-2xl p-5">
                   <div className="flex items-baseline justify-between">
@@ -140,6 +154,24 @@ export default async function CofrePage() {
                     Falta {formatarBRL(progresso.valorFaltanteCentavos)}
                     {progresso.ritmoNecessarioCentavos != null && `, ritmo necessário ${formatarBRL(progresso.ritmoNecessarioCentavos)}/mês`}
                   </p>
+
+                  <div className="mt-3">
+                    <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
+                      <span>Coberto pelo saldo do cofre</span>
+                      <span className="num">{progressoCofrePct}%</span>
+                    </div>
+                    <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full ${progressoCofrePct >= 100 ? "bg-liquidity" : "bg-gold"}`}
+                        style={{ width: `${progressoCofrePct}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground/70">
+                      {formatarBRL(saldoCofreCentavos)} de {formatarBRL(meta.valorAlvoCentavos)} — sobe conforme o
+                      saldo de {statusRateio.contaDestinoNome} for atualizado.
+                    </p>
+                  </div>
+
                   <Link href="/metas" className="mt-2 inline-block text-xs text-gold underline underline-offset-4">
                     editar em Metas
                   </Link>
@@ -167,12 +199,13 @@ export default async function CofrePage() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-muted-foreground">Valor-alvo (R$)</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Valor-alvo (R$) — opcional se marcar passivo-alvo com saldo documentado
+                </label>
                 <input
                   name="valorAlvo"
                   type="text"
                   inputMode="decimal"
-                  required
                   className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
                 />
               </div>
@@ -193,6 +226,9 @@ export default async function CofrePage() {
                   <label key={p.id} className="flex items-center gap-2 text-sm text-foreground">
                     <input type="checkbox" name="passivosAlvo" value={p.id} />
                     {p.nome}
+                    {p.valorQuitacaoCentavos != null && (
+                      <span className="text-muted-foreground">— {formatarBRL(p.valorQuitacaoCentavos)}</span>
+                    )}
                   </label>
                 ))}
               </div>

@@ -2970,3 +2970,78 @@ chamada de API externa deste projeto inteiro (confirmado: nenhum
 - **Pendência do Felipe**: adicionar `GEMINI_API_KEY` no `.env` da VPS
   pra funcionar em produção — sem isso o botão aparece mas falha com a
   mensagem clara de chave ausente (comportamento esperado, não bug).
+- Felipe passou a chave real do Gemini na própria conversa. Configurada
+  no `.env` local e no `.env` da VPS (via SSH, `pm2 restart` depois pra
+  carregar a variável nova) — nunca repetida em texto visível depois de
+  usada. `.gitignore` ganhou `!.env.example` (a regra `.env*` também
+  escondia o `.env.example`, que devia ser versionado por não ter
+  segredo nenhum). Testado de ponta a ponta com a chave real, local e
+  na VPS (via `node` direto lá, leitura), confirmando resposta real do
+  Gemini antes de considerar a integração pronta.
+
+## Correção: erro do Gemini virava "Minified React error" em produção
+
+Felipe testou o botão "Gerar sugestão com IA (Gemini)" na VPS e a tela
+mostrou um erro genérico do React em vez de uma mensagem legível.
+Investigando (logs da VPS): a chamada ao Gemini tinha falhado de
+verdade (uma falha passageira de rede, não um bug — testei a chamada
+direto da VPS logo depois e funcionou normalmente, resposta real
+recebida). O bug real era outro: **em produção, o Next.js apaga a
+mensagem de qualquer erro lançado (`throw`) numa Server Action**, por
+segurança — o cliente só recebe um código genérico, nunca o texto
+real, não importa quão bem tratado o `try/catch` do componente esteja.
+Isso significava que qualquer falha futura (mesmo uma reconexão
+passageira normal de chamar uma API externa) ia sempre aparecer como
+uma tela ilegível, nunca a mensagem clara que eu tinha desenhado.
+
+- `src/app/resumo/ia/actions.ts`: `gerarSugestaoCorteIA()` nunca mais
+  lança exceção — sempre devolve `{ ok: true, texto } | { ok: false,
+  erro }`, um valor normal que atravessa a fronteira da Server Action
+  sem ser redigido.
+- `src/app/resumo/ia/SugestaoIA.tsx`: lê o campo `ok` em vez de confiar
+  em `catch`; o `catch` que sobra é só pra falha real de rede entre o
+  navegador e o próprio servidor (não da API do Gemini).
+- Verificado: o problema só aparece indo pela Server Action de verdade
+  (chamar a função TypeScript direto num script, como eu tinha feito
+  antes de publicar, não passa pela mesma redação de erro do Next.js —
+  por isso meu teste anterior não pegou isso; lição pra próxima vez
+  que eu testar um caminho de erro de Server Action).
+- `npx tsc --noEmit` limpo.
+
+## Meta herdar o valor do passivo vinculado + progresso pelo saldo do cofre
+
+Felipe notou que criar uma meta pedia um "Valor-alvo (R$)" digitado à
+mão mesmo já marcando qual passivo ela mira — e perguntou por que o
+progresso da meta não reflete o saldo do cofre subindo.
+
+- `src/app/metas/actions.ts`: novo `somaValorPassivosCentavos()`
+  (exportado) soma o saldo documentado dos passivos-alvo selecionados;
+  `criarMeta`, `criarMetaSemRedirecionar` e `atualizarMeta` usam isso
+  como valor-alvo quando o campo do formulário vem vazio — grava o
+  valor real no banco, não um placeholder (`calcularProgressoMeta` em
+  `src/lib/metrics.ts` já preferia o saldo do passivo sobre
+  `valorAlvoCentavos` digitado; o formulário só não deixava isso
+  claro).
+- `src/app/cofre/actions.ts`: `criarMetaCofre` reaproveita o mesmo
+  helper.
+- `src/app/metas/MetaForm.tsx` + formulário embutido em
+  `src/app/cofre/page.tsx`: cada passivo-alvo agora mostra o saldo ao
+  lado do nome; "Valor-alvo" deixou de ser obrigatório, com rótulo
+  explicando que é opcional quando um passivo é marcado.
+- `src/app/comecar/WizardCarga.tsx`: ajuste de tipo mínimo pra manter
+  compatível (esse fluxo de primeira carga continua pedindo valor-alvo
+  manual — não há saldo de passivo confiável ainda nesse ponto do
+  wizard).
+- **Progresso pelo saldo do cofre** (`src/app/cofre/page.tsx`): cada
+  meta financiada pelo cofre ganhou uma segunda barra de progresso —
+  "coberto pelo saldo do cofre" — calculada como
+  `min(saldo atual do Bradesco, valorAlvo da meta) / valorAlvo`, cresce
+  conforme o saldo é atualizado. Separado de propósito do progresso já
+  existente (baseado no saldo do passivo): são duas noções diferentes
+  de "progresso" pra mesma meta, cada uma rotulada com clareza.
+- Testado com script descartável (apagado depois) e dado sintético
+  (Agiota real pra herança de valor; saldo/meta fictícios pra barra de
+  progresso, R$50.000 de R$100.000 = 50% confirmado na tela) — tudo
+  revertido no banco local ao final, inclusive um resíduo de teste
+  anterior encontrado durante a limpeza.
+- `npx tsc --noEmit` limpo.
