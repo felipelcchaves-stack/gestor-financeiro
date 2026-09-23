@@ -54,3 +54,18 @@ export function calcularProjecaoMeta(
     totalLiberadoMensalCentavos > 0 ? Math.ceil(faltaParaQuitarCentavos / totalLiberadoMensalCentavos) : null;
   return { totalLiberadoMensalCentavos, saldoJaSeparadoCentavos, faltaParaQuitarCentavos, mesesEstimados };
 }
+
+// "Qual meta atacar primeiro" — nunca um critério novo, é a MESMA
+// rota de ataque já usada em toda parte (alvoSugerido no cofre, Mapa,
+// /otimizacao): `ordemRota` já decide, passivo a passivo, se quitar
+// de uma vez ou amortizar aos poucos é o certo, recalculada do zero a
+// cada carregamento — nunca uma prioridade congelada. Meta com vários
+// passivos-alvo usa a posição do mais urgente entre eles. Null quando
+// nenhum passivo-alvo dessa meta está na rota (sem rota calculada
+// ainda, ou passivo fora da simulação por falta de saldo documentado)
+// — nunca inventa uma posição pra quem não tem uma real.
+export function calcularPrioridadeMeta(passivoIds: string[], ordemRota: string[] | undefined): number | null {
+  if (!ordemRota || ordemRota.length === 0) return null;
+  const posicoes = passivoIds.map((id) => ordemRota.indexOf(id)).filter((i) => i !== -1);
+  return posicoes.length > 0 ? Math.min(...posicoes) : null;
+}

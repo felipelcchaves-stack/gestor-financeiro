@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { SugestaoIA } from "@/components/SugestaoIA";
 import { criarMetaCofre, gerarSugestaoParaMeta, obterUltimaSugestaoMeta } from "./actions";
-import { resolverAlvoDaMeta, calcularProjecaoMeta } from "@/lib/projecaoMeta";
+import { resolverAlvoDaMeta, calcularProjecaoMeta, calcularPrioridadeMeta } from "@/lib/projecaoMeta";
 import type { SugestaoGerada } from "@/app/resumo/ia/actions";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +33,11 @@ export default async function CofrePage() {
       select: { id: true, nome: true, valorQuitacaoCentavos: true },
     }),
   ]);
+
+  // Passivos que já têm meta criada nesse cofre — usado tanto pra
+  // esconder sugestões obsoletas (alvoSugerido/alvos oportunistas)
+  // quanto pra ordenar a lista de metas por prioridade real.
+  const passivoIdsComMeta = new Set(metas.flatMap((m) => m.passivosAlvo.map((mp) => mp.passivoId)));
 
   // Sugestão salva de cada meta (se já foi gerada alguma vez) — a
   // projeção ("fecha em X meses") é recalculada aqui, não guardada no
@@ -70,8 +75,40 @@ export default async function CofrePage() {
   // cobriria (ou cobriria em breve), mesmo sem ser a próxima da rota de
   // menor juro. Ver src/lib/alvosOportunistas.ts pro raciocínio.
   const alvosOportunistas = statusRateio
-    ? calcularAlvosOportunistas(estado, statusRateio.contaDestinoSaldoCentavos ?? 0, statusRateio.alvoSugerido?.passivoId ?? null)
+    ? calcularAlvosOportunistas(
+        estado,
+        statusRateio.contaDestinoSaldoCentavos ?? 0,
+        statusRateio.alvoSugerido?.passivoId ?? null,
+        passivoIdsComMeta
+      )
     : [];
+
+  // "Mapa" de prioridade: mesma rota de menor juro já usada em toda
+  // parte (nunca um critério novo), recalculada do zero a cada
+  // carregamento — nunca uma prioridade congelada.
+  const ordemRota = estado.rota?.resultado.ordemIds;
+  const metasComPrioridade = metas
+    .map((meta) => ({
+      meta,
+      prioridade: calcularPrioridadeMeta(
+        meta.passivosAlvo.map((mp) => mp.passivoId),
+        ordemRota
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.prioridade == null && b.prioridade == null) return 0;
+      if (a.prioridade == null) return 1;
+      if (b.prioridade == null) return -1;
+      return a.prioridade - b.prioridade;
+    });
+  // Rótulo "1ª, 2ª, ..." é a posição RELATIVA entre as metas com
+  // prioridade calculada — não o índice bruto na rota (que pode ter
+  // buracos, ex: 0, 3, 7, se nem todo passivo da rota tem meta).
+  let proximoRotulo = 1;
+  const rotuloPorMetaId = new Map<string, number>();
+  for (const { meta, prioridade } of metasComPrioridade) {
+    if (prioridade != null) rotuloPorMetaId.set(meta.id, proximoRotulo++);
+  }
 
   if (!statusRateio) {
     return (
@@ -170,7 +207,9 @@ export default async function CofrePage() {
                 ` — a rota atual projeta quitação em ${mesAnoDaquiA(statusRateio.alvoSugerido.mesQuitacaoProjetado)}`}
               .
             </p>
-            {dataAlvoSugeridaISO ? (
+            {passivoIdsComMeta.has(statusRateio.alvoSugerido.passivoId) ? (
+              <p className="mt-2 text-xs text-gold/80">Já existe uma meta pra esse alvo — ver na lista abaixo.</p>
+            ) : dataAlvoSugeridaISO ? (
               <form action={criarMetaCofre.bind(null, statusRateio.contaDestinoId)} className="mt-3">
                 <input type="hidden" name="passivosAlvo" value={statusRateio.alvoSugerido.passivoId} />
                 <input type="hidden" name="nome" value={`Quitar ${statusRateio.alvoSugerido.nome}`} />
@@ -257,7 +296,8 @@ export default async function CofrePage() {
           <p className="mt-3 text-sm text-muted-foreground">Nenhuma meta cadastrada pra esse cofre ainda.</p>
         ) : (
           <div className="mt-3 flex flex-col gap-4">
-            {metas.map((meta) => {
+            {metasComPrioridade.map(({ meta }) => {
+              const rotulo = rotuloPorMetaId.get(meta.id);
               const progresso = calcularProgressoMeta(
                 meta,
                 meta.passivosAlvo.map((mp) => mp.passivo),
@@ -284,15 +324,29 @@ export default async function CofrePage() {
                 progressoCofrePctExato > 0 ? Math.max(progressoCofrePctExato, 1) : 0;
               return (
                 <div key={meta.id} className="glass-card rounded-2xl p-5">
-                  <div className="flex items-baseline justify-between">
+                  <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-base font-medium text-foreground">{meta.nome}</h3>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        meta.status === "ATIVA" ? "bg-liquidity/[0.06] text-liquidity" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {meta.status}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {rotulo != null ? (
+                        <span
+                          className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold"
+                          title="Posição na rota de menor juro — recalculada a cada carregamento, nunca fixa."
+                        >
+                          {rotulo}ª prioridade
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                          fora da rota agora
+                        </span>
+                      )}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          meta.status === "ATIVA" ? "bg-liquidity/[0.06] text-liquidity" : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {meta.status}
+                      </span>
+                    </div>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Data-alvo: {new Date(meta.dataAlvo).toLocaleDateString("pt-BR")}

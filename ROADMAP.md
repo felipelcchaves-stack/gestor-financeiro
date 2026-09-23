@@ -3422,3 +3422,41 @@ julgamento" que o corte de gastos já resolveu em outro contexto.
   confiáveis, a prosa é sempre "o que saiu da máquina", nunca fonte de
   verdade.
 - `npx tsc --noEmit` limpo.
+
+## Cofre: sugestões param de ficar obsoletas + mapa de prioridade dinâmico
+
+Felipe notou que, ao criar uma meta a partir de uma sugestão (alvo
+principal ou alvo oportunista), a sugestão continuava aparecendo do
+mesmo jeito — "poluído", como se nada tivesse acontecido. E com várias
+metas na lista, não ficava claro qual atacar primeiro; ele pediu um
+"mapa" de prioridade, mas deixou explícito que não pode ser uma
+verdade fixa — precisa recalcular sozinho conforme extrato/saldo
+mudam, e refletir a mesma lógica de "às vezes amortizar já é o certo"
+que o motor de otimização já entende.
+
+- `src/lib/alvosOportunistas.ts`: `calcularAlvosOportunistas` ganhou o
+  parâmetro `passivoIdsComMeta` — candidatos que já têm meta criada
+  saem da lista ANTES de rankear, então o próximo candidato real sobe
+  automaticamente pra ocupar a vaga (sem candidato nenhum sobrando, a
+  seção some, comportamento que já existia).
+- `src/app/cofre/page.tsx`: o card do alvo principal, quando o alvo já
+  tem meta, troca o botão "Criar meta pra esse alvo" por uma nota
+  ("já existe uma meta pra esse alvo") — a análise continua visível,
+  só a ação duplicada some.
+- `src/lib/projecaoMeta.ts`: nova `calcularPrioridadeMeta` — não é um
+  critério novo, é a posição de cada meta dentro de
+  `estado.rota.resultado.ordemIds` (a MESMA rota de menor juro usada
+  em toda parte: Mapa, `/otimizacao`, alvo principal do cofre),
+  recalculada do zero a cada carregamento. Meta sem passivo na rota
+  fica sem prioridade calculada (nunca inventa uma).
+- A lista "Metas financiadas por este cofre" passou a ordenar por essa
+  prioridade e cada card ganhou um selo ("1ª prioridade", "2ª
+  prioridade", ... ou "fora da rota agora" pra quem não tem posição).
+- Testado com dado real local: criada uma meta pro topo do ranking de
+  oportunistas (Nubank Capital de Giro) — confirmado que ele some da
+  lista e o próximo candidato real (que estava cortado pelo limite de
+  4) sobe pra ocupar o lugar; criada uma meta pro Agiota — confirmado
+  que o botão vira a nota; prioridade calculada de duas metas reais
+  bateu exatamente com o índice real delas em `ordemIds`. Tudo
+  revertido ao final.
+- `npx tsc --noEmit` limpo.

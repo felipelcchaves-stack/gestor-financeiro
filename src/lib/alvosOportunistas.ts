@@ -50,10 +50,15 @@ const LIMITE_SIMULACOES_ACELERACAO = 2;
 export function calcularAlvosOportunistas(
   estado: EstadoAtual,
   saldoCofreCentavos: number,
-  alvoPrincipalId: string | null
+  alvoPrincipalId: string | null,
+  // Passivos que já têm meta criada — saem da lista de propósito
+  // (a sugestão já foi atendida), abrindo espaço pro próximo candidato
+  // real subir dentro do LIMITE_ALVOS, em vez de deixar uma sugestão
+  // obsoleta ocupando o lugar.
+  passivoIdsComMeta: Set<string> = new Set()
 ): AlvoOportunista[] {
   const candidatosBase = estado.elegiveis
-    .filter((p) => p.id !== alvoPrincipalId && p.saldoCentavos > 0)
+    .filter((p) => p.id !== alvoPrincipalId && p.saldoCentavos > 0 && !passivoIdsComMeta.has(p.id))
     .map((p) => ({
       passivoId: p.id,
       nome: p.nome,
