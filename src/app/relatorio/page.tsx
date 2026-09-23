@@ -36,14 +36,14 @@ function gerarAcaoPrioritaria(
 }
 
 export default async function RelatorioPage() {
-  const [estado, contas, entradasPontuais, ofensores, qualidadeDados, tendenciaCategoria, statusRateio] = await Promise.all([
-    carregarEstadoAtual(),
+  const estado = await carregarEstadoAtual();
+  const [contas, entradasPontuais, ofensores, qualidadeDados, tendenciaCategoria, statusRateio] = await Promise.all([
     prisma.conta.findMany(),
     prisma.recorrenciaFinanceira.findMany({ where: { tipo: "ENTRADA", frequencia: "UNICA", ativa: true } }),
     calcularMaioresOfensores(inicioDoPeriodo("mes")),
     calcularQualidadeDados(),
     calcularTendenciaMensal(inicioDoPeriodo("trimestre"), "categoria"),
-    calcularStatusRateio(),
+    calcularStatusRateio(estado),
   ]);
 
   const maioresVariacoes = calcularMaioresVariacoes(tendenciaCategoria).slice(0, 5);

@@ -9,11 +9,11 @@ import { SugestaoIA } from "./SugestaoIA";
 export const dynamic = "force-dynamic";
 
 export default async function ResumoIAPage() {
-  const [estado, qualidadeDados, movimentacaoDoMes, statusRateio] = await Promise.all([
-    carregarEstadoAtual(),
+  const estado = await carregarEstadoAtual();
+  const [qualidadeDados, movimentacaoDoMes, statusRateio] = await Promise.all([
     calcularQualidadeDados(),
     calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
-    calcularStatusRateio(),
+    calcularStatusRateio(estado),
   ]);
 
   const trajetorias = await Promise.all(estado.passivosAtivos.map((p) => calcularTrajetoriaRealPassivo(p.id)));

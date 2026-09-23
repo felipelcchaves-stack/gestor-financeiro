@@ -16,10 +16,10 @@ export type ResultadoSugestaoIA = { ok: true; texto: string } | { ok: false; err
 // normal, a mensagem real chega inteira, sempre.
 export async function gerarSugestaoCorteIA(): Promise<ResultadoSugestaoIA> {
   try {
-    const [estado, movimentacaoDoMes, statusRateio] = await Promise.all([
-      carregarEstadoAtual(),
+    const estado = await carregarEstadoAtual();
+    const [movimentacaoDoMes, statusRateio] = await Promise.all([
       calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
-      calcularStatusRateio(),
+      calcularStatusRateio(estado),
     ]);
 
     const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio);

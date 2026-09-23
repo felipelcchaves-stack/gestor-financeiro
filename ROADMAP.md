@@ -3045,3 +3045,47 @@ progresso da meta não reflete o saldo do cofre subindo.
   revertido no banco local ao final, inclusive um resíduo de teste
   anterior encontrado durante a limpeza.
 - `npx tsc --noEmit` limpo.
+
+## Sugerir a melhor meta pro cofre (considerando juros)
+
+Felipe pediu uma sugestão de qual dívida é o melhor alvo pro dinheiro
+do cofre, "considerando juros e outras questões". Achei que o app já
+resolve exatamente isso em outro lugar: `src/lib/otimizacao.ts`
+(`encontrarOrdemMenosJuros`/`escolherEstrategia`, já usado no Mapa e em
+`/otimizacao`) simula todas as dívidas elegíveis e devolve a ordem que
+minimiza juro total — só que o `dividaQuitavel` do cofre usava um
+critério diferente (maior gasto real recente via
+`calcularOfensoresPorCredor`), competindo com esse cálculo em vez de
+reaproveitá-lo.
+
+- `src/lib/rateio.ts`: `calcularStatusRateio` passa a receber `estado`
+  (já calculado por quem chama) em vez de fazer sua própria query de
+  passivos — reaproveita `estado.elegiveis` e
+  `estado.rota.resultado.ordemIds` (a ordem de menor juro já
+  simulada). Sem `estado.rota` (falta aporte mensal extra configurado),
+  cai num fallback simples (maior custo mensal).
+  - `dividaQuitavel` agora escolhe o primeiro da ordem de menor juro
+    que cabe no saldo — não mais o maior ofensor recente.
+  - Novo campo `alvoSugerido`: o próximo alvo da mesma ordem, mesmo
+    quando ainda não cabe no saldo — com quanto falta separar e o mês
+    de quitação projetado pela rota real (nunca inventado).
+  - `calcularOfensoresPorCredor` deixou de ser usado aqui — uma query
+    a menos.
+- Os 4 lugares que chamam essa função (`/consultor`, `/cofre`,
+  `/resumo/ia`, `/relatorio`) passaram a buscar `estado` antes, em vez
+  de em paralelo — mudança pequena de ordem, sem impacto perceptível.
+- `src/app/cofre/page.tsx`: novo card "alvo mais eficiente" quando
+  `alvoSugerido` existe e ainda não é igual ao `dividaQuitavel` —
+  mostra a dívida, custo mensal, saldo, quanto falta e a data de
+  quitação projetada, com um botão **"Criar meta pra esse alvo"** que
+  cria a meta com um clique só (passivo, nome e data-alvo já
+  preenchidos; valor herda do saldo documentado, reaproveitando o que
+  já foi construído antes). Sem rota calculada (sem data real pra
+  usar), mostra só a recomendação com um link pra configurar o aporte
+  em Consultor, em vez de inventar uma data.
+- Testado com dado real local: `alvoSugerido` bateu exatamente com
+  `estado.rota.resultado.ordemIds[0]` (Agiota, a mais cara em juro);
+  botão "Criar meta pra esse alvo" testado de ponta a ponta (script
+  descartável, apagado depois) — meta criada com passivo, nome, data e
+  valor corretos, removida ao final.
+- `npx tsc --noEmit` limpo.

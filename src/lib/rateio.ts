@@ -11,9 +11,22 @@
 
 import { prisma } from "@/lib/prisma";
 import { TipoTransacao } from "@/generated/prisma";
-import { calcularOfensoresPorCredor } from "@/lib/ofensores";
+import type { EstadoAtual } from "@/lib/estadoAtual";
 
 export type DividaQuitavel = { passivoId: string; nome: string; valorQuitacaoCentavos: number };
+
+// Mesmo alvo de DividaQuitavel, mas sem exigir que o saldo já cubra o
+// valor inteiro — "pra qual dívida vale mais a pena direcionar esse
+// dinheiro", mesmo que ainda falte separar mais. mesQuitacaoProjetado
+// vem da própria rota já simulada (nunca inventado).
+export type AlvoSugerido = {
+  passivoId: string;
+  nome: string;
+  valorQuitacaoCentavos: number;
+  custoMensalCentavos: number;
+  faltaParaQuitarCentavos: number;
+  mesQuitacaoProjetado: number | null;
+};
 
 export type StatusRateio = {
   categoriaNome: string;
@@ -28,15 +41,21 @@ export type StatusRateio = {
   totalDepositadoCentavos: number;
   faltaSepararCentavos: number;
   dividaQuitavel: DividaQuitavel | null;
+  alvoSugerido: AlvoSugerido | null;
 };
 
-// Janela usada só pra ranquear qual dívida quitável "mais sangra" —
-// mesmo horizonte que o Felipe usou pra analisar os próprios gastos
-// nesta conversa (últimos 6 meses), não o `ativoDesde` da regra (que
-// pode ser bem mais recente).
-const MESES_JANELA_OFENSOR = 6;
+// Ordem de ataque pra decidir tanto dividaQuitavel quanto
+// alvoSugerido: preferência é a ordem de menor juro total já simulada
+// (estado.rota — o mesmo motor usado no Mapa/Otimização), que já
+// considera taxa e estrutura de cada passivo. Sem rota calculada
+// (falta aporte mensal extra configurado em /consultor), cai num
+// critério simples — maior custo mensal — em vez de não sugerir nada.
+function ordemDeAtaque(estado: EstadoAtual): string[] {
+  if (estado.rota) return estado.rota.resultado.ordemIds;
+  return [...estado.elegiveis].sort((a, b) => b.custoMensalCentavos - a.custoMensalCentavos).map((p) => p.id);
+}
 
-export async function calcularStatusRateio(hoje: Date = new Date()): Promise<StatusRateio | null> {
+export async function calcularStatusRateio(estado: EstadoAtual): Promise<StatusRateio | null> {
   const config = await prisma.configuracao.findUnique({ where: { id: "singleton" } });
   if (
     !config?.categoriaRateioId ||
@@ -47,7 +66,7 @@ export async function calcularStatusRateio(hoje: Date = new Date()): Promise<Sta
     return null;
   }
 
-  const [categoria, contaDestino, recebido, depositado, passivosElegiveis] = await Promise.all([
+  const [categoria, contaDestino, recebido, depositado] = await Promise.all([
     prisma.categoria.findUnique({ where: { id: config.categoriaRateioId } }),
     prisma.conta.findUnique({ where: { id: config.contaRateioDestinoId } }),
     prisma.transacao.aggregate({
@@ -57,10 +76,6 @@ export async function calcularStatusRateio(hoje: Date = new Date()): Promise<Sta
     prisma.transacao.aggregate({
       where: { contaDestinoId: config.contaRateioDestinoId, ehTransferencia: true, data: { gte: config.rateioAtivoDesde } },
       _sum: { valorCentavos: true },
-    }),
-    prisma.passivo.findMany({
-      where: { status: "ATIVO", valorQuitacaoCentavos: { not: null } },
-      select: { id: true, nome: true, valorQuitacaoCentavos: true },
     }),
   ]);
 
@@ -72,19 +87,28 @@ export async function calcularStatusRateio(hoje: Date = new Date()): Promise<Sta
   const faltaSepararCentavos = Math.max(0, metaSepararCentavos - totalDepositadoCentavos);
 
   const saldoCentavos = contaDestino.saldoAtualCentavos ?? 0;
-  const candidatos = passivosElegiveis.filter((p) => (p.valorQuitacaoCentavos ?? Infinity) <= saldoCentavos);
+  const ordem = ordemDeAtaque(estado);
+  const porId = new Map(estado.elegiveis.map((p) => [p.id, p]));
 
   let dividaQuitavel: DividaQuitavel | null = null;
-  if (candidatos.length > 0) {
-    const desdeJanela = new Date(hoje.getFullYear(), hoje.getMonth() - (MESES_JANELA_OFENSOR - 1), 1);
-    const ranking = await calcularOfensoresPorCredor(desdeJanela);
-    const candidatosIds = new Set(candidatos.map((c) => c.id));
-    const maiorOfensor = ranking.find((r) => candidatosIds.has(r.id));
-    const passivoEscolhido = candidatos.find((c) => c.id === maiorOfensor?.id) ?? candidatos[0];
-    dividaQuitavel = {
-      passivoId: passivoEscolhido.id,
-      nome: passivoEscolhido.nome,
-      valorQuitacaoCentavos: passivoEscolhido.valorQuitacaoCentavos!,
+  const idQuitavel = ordem.find((id) => (porId.get(id)?.saldoCentavos ?? Infinity) <= saldoCentavos);
+  if (idQuitavel) {
+    const p = porId.get(idQuitavel)!;
+    dividaQuitavel = { passivoId: p.id, nome: p.nome, valorQuitacaoCentavos: p.saldoCentavos };
+  }
+
+  let alvoSugerido: AlvoSugerido | null = null;
+  const idAlvo = ordem[0];
+  if (idAlvo) {
+    const p = porId.get(idAlvo)!;
+    const quitacao = estado.rota?.resultado.quitacoes.find((q) => q.passivoId === idAlvo);
+    alvoSugerido = {
+      passivoId: p.id,
+      nome: p.nome,
+      valorQuitacaoCentavos: p.saldoCentavos,
+      custoMensalCentavos: p.custoMensalCentavos,
+      faltaParaQuitarCentavos: Math.max(0, p.saldoCentavos - saldoCentavos),
+      mesQuitacaoProjetado: quitacao?.mes ?? null,
     };
   }
 
@@ -101,5 +125,6 @@ export async function calcularStatusRateio(hoje: Date = new Date()): Promise<Sta
     totalDepositadoCentavos,
     faltaSepararCentavos,
     dividaQuitavel,
+    alvoSugerido,
   };
 }

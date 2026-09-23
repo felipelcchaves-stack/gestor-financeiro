@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { PiggyBank, Target } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { formatarBRL } from "@/lib/money";
+import { formatarBRL, mesAnoDaquiA } from "@/lib/money";
 import { calcularProgressoMeta } from "@/lib/metrics";
 import { calcularStatusRateio } from "@/lib/rateio";
+import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { criarMetaCofre } from "./actions";
@@ -11,7 +12,8 @@ import { criarMetaCofre } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function CofrePage() {
-  const statusRateio = await calcularStatusRateio();
+  const estado = await carregarEstadoAtual();
+  const statusRateio = await calcularStatusRateio(estado);
 
   const [metas, passivosDisponiveis] = await Promise.all([
     statusRateio
@@ -27,6 +29,21 @@ export default async function CofrePage() {
       select: { id: true, nome: true, valorQuitacaoCentavos: true },
     }),
   ]);
+
+  // Data-alvo real pra criar a meta sugerida com um clique — só existe
+  // quando a rota de menor juro já foi simulada (aporte mensal extra
+  // configurado em Consultor). Sem isso, não inventamos prazo nenhum.
+  const dataAlvoSugeridaISO =
+    statusRateio?.alvoSugerido?.mesQuitacaoProjetado != null
+      ? new Date(
+          estado.hoje.getFullYear(),
+          estado.hoje.getMonth() + statusRateio.alvoSugerido.mesQuitacaoProjetado,
+          1
+        )
+          .toISOString()
+          .slice(0, 10)
+      : null;
+  const alvoJaEhQuitavel = statusRateio?.alvoSugerido?.passivoId === statusRateio?.dividaQuitavel?.passivoId;
 
   if (!statusRateio) {
     return (
@@ -102,9 +119,48 @@ export default async function CofrePage() {
             <Link href={`/passivos/${statusRateio.dividaQuitavel.passivoId}`} className="font-medium underline underline-offset-4">
               {statusRateio.dividaQuitavel.nome}
             </Link>{" "}
-            ({formatarBRL(statusRateio.dividaQuitavel.valorQuitacaoCentavos)}) inteira — a que mais custou de verdade
-            nos últimos 6 meses entre as que cabem no saldo.
+            ({formatarBRL(statusRateio.dividaQuitavel.valorQuitacaoCentavos)}) inteira — a próxima da rota de menor
+            juro entre as que cabem no saldo.
           </p>
+        )}
+
+        {statusRateio.alvoSugerido && !alvoJaEhQuitavel && (
+          <div className="mt-4 rounded-lg border border-gold/30 bg-gold/[0.06] p-4">
+            <p className="text-sm text-gold">
+              O alvo mais eficiente pra essa reserva agora é{" "}
+              <Link
+                href={`/passivos/${statusRateio.alvoSugerido.passivoId}`}
+                className="font-medium underline underline-offset-4"
+              >
+                {statusRateio.alvoSugerido.nome}
+              </Link>{" "}
+              — é a próxima dívida na rota de menor juro (custo mensal{" "}
+              {formatarBRL(statusRateio.alvoSugerido.custoMensalCentavos)}, saldo{" "}
+              {formatarBRL(statusRateio.alvoSugerido.valorQuitacaoCentavos)}). Faltam{" "}
+              {formatarBRL(statusRateio.alvoSugerido.faltaParaQuitarCentavos)} pro cofre cobrir ela inteira
+              {statusRateio.alvoSugerido.mesQuitacaoProjetado != null &&
+                ` — a rota atual projeta quitação em ${mesAnoDaquiA(statusRateio.alvoSugerido.mesQuitacaoProjetado)}`}
+              .
+            </p>
+            {dataAlvoSugeridaISO ? (
+              <form action={criarMetaCofre.bind(null, statusRateio.contaDestinoId)} className="mt-3">
+                <input type="hidden" name="passivosAlvo" value={statusRateio.alvoSugerido.passivoId} />
+                <input type="hidden" name="nome" value={`Quitar ${statusRateio.alvoSugerido.nome}`} />
+                <input type="hidden" name="dataAlvo" value={dataAlvoSugeridaISO} />
+                <Button type="submit" size="sm" variant="outline">
+                  Criar meta pra esse alvo
+                </Button>
+              </form>
+            ) : (
+              <p className="mt-2 text-xs text-gold/80">
+                Configure um aporte mensal extra em{" "}
+                <Link href="/consultor" className="underline underline-offset-4">
+                  Consultor
+                </Link>{" "}
+                pra ver a data projetada e criar essa meta com um clique.
+              </p>
+            )}
+          </div>
         )}
       </section>
 

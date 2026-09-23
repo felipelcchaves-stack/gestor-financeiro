@@ -36,12 +36,12 @@ const FAIXA_CLASSES: Record<string, string> = {
 };
 
 export default async function ConsultorPage() {
-  const [estado, contas, qualidadeDados, ativosComVinculos, statusRateio, categorias] = await Promise.all([
-    carregarEstadoAtual(),
+  const estado = await carregarEstadoAtual();
+  const [contas, qualidadeDados, ativosComVinculos, statusRateio, categorias] = await Promise.all([
     prisma.conta.findMany(),
     calcularQualidadeDados(),
     prisma.ativo.findMany({ include: { vinculos: { include: { passivo: true } } } }),
-    calcularStatusRateio(),
+    calcularStatusRateio(estado),
     prisma.categoria.findMany({ orderBy: { nome: "asc" } }),
   ]);
   const arbitragemGarantia = calcularArbitragemGarantia(ativosComVinculos);
