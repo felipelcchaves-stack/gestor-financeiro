@@ -19,18 +19,28 @@ export function gerarPromptAnaliseEvolucao(pontos: PontoEvolucaoMensal[], movime
   const linhas: string[] = [];
 
   linhas.push(
-    "Você é um consultor financeiro pessoal. Analise a evolução real de entradas e despesas mês a mês abaixo (dados reais, já calculados — não invente nem recalcule) e diga se a tendência geral é de melhora ou piora, com sugestões práticas pra melhorar a gestão."
+    "Você é um consultor financeiro pessoal. Analise a evolução de entradas e despesas mês a mês abaixo (dados já calculados — não invente nem recalcule) e diga se a tendência geral é de melhora ou piora, com sugestões práticas pra melhorar a gestão."
   );
   linhas.push("");
 
   linhas.push("## Entradas x despesas por mês (histórico completo importado)");
   for (const p of pontos) {
     const saldo = p.entradasCentavos - p.despesasCentavos;
+    const marcadorProjetado = p.projetado
+      ? " (PROJETADO — calculado a partir de renda e despesa recorrente e parcela mínima de dívida já cadastradas no sistema; ainda não é fato, ninguém fechou esse mês)"
+      : "";
     linhas.push(
-      `- ${nomeMes(p.mes)}: entradas ${formatarBRL(p.entradasCentavos)}, despesas ${formatarBRL(p.despesasCentavos)}, saldo ${formatarBRL(saldo)}`
+      `- ${nomeMes(p.mes)}: entradas ${formatarBRL(p.entradasCentavos)}, despesas ${formatarBRL(p.despesasCentavos)}, saldo ${formatarBRL(saldo)}${marcadorProjetado}`
     );
   }
   linhas.push("");
+
+  if (pontos.some((p) => p.projetado)) {
+    linhas.push(
+      "IMPORTANTE: o mês marcado (PROJETADO) acima é uma estimativa, não um fato consumado — NUNCA fale dele como algo que já aconteceu, já foi fechado ou já está garantido. Trate-o sempre como expectativa (ex: \"a projeção para o próximo mês indica...\") e não o misture com os meses reais ao descrever a tendência observada até aqui."
+    );
+    linhas.push("");
+  }
 
   linhas.push(`## Despesas do mês mais recente por categoria (total: ${formatarBRL(movimentacaoDoMesAtual.despesasTotalCentavos)})`);
   linhas.push(...listarDespesasPorCategoria(movimentacaoDoMesAtual));

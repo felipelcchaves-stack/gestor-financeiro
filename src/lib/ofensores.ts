@@ -6,6 +6,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { TipoTransacao } from "@/generated/prisma";
+import type { MargemLivre } from "@/lib/margemLivre";
 
 // `protegida` reflete `Categoria.protegidaDeCorte` — só populado por
 // `calcularMaioresOfensores` (a única fonte com categoria de verdade),
@@ -145,7 +146,11 @@ export async function calcularMovimentacaoDoMes(desde: Date): Promise<Movimentac
   };
 }
 
-export type PontoEvolucaoMensal = { mes: string; entradasCentavos: number; despesasCentavos: number };
+export type PontoEvolucaoMensal = { mes: string; entradasCentavos: number; despesasCentavos: number; projetado: boolean };
+
+function somarMesesData(data: Date, offset: number): Date {
+  return new Date(data.getFullYear(), data.getMonth() + offset, 1);
+}
 
 // Entrada x despesa real, mês a mês, pro gráfico de evolução do Mapa
 // (src/app/(mapa)/page.tsx) — "estou melhorando ou piorando" de cara,
@@ -153,7 +158,14 @@ export type PontoEvolucaoMensal = { mes: string; entradasCentavos: number; despe
 // Map nunca cria uma entrada vazia), então chamar com
 // inicioDoPeriodo("tudo") já devolve exatamente o histórico real, sem
 // precisar de uma query separada pra achar a transação mais antiga.
-export async function calcularEvolucaoMensal(desde: Date): Promise<PontoEvolucaoMensal[]> {
+//
+// `margemLivre` opcional acrescenta UM ponto a mais no final — o mês
+// seguinte, projetado a partir de entrada/despesa recorrente e parcela
+// mínima já documentadas (mesma composição que calcularMargemLivre já
+// usa como "saídas conhecidas", só exposta aqui, não recalculada).
+// Só 1 mês à frente: recorrência é um regime permanente, projetar mais
+// adiante repetiria o mesmo número sem informação nova.
+export async function calcularEvolucaoMensal(desde: Date, margemLivre?: MargemLivre): Promise<PontoEvolucaoMensal[]> {
   const transacoes = await prisma.transacao.findMany({
     where: { ehTransferencia: false, data: { gte: desde } },
     select: { data: true, tipo: true, valorCentavos: true },
@@ -163,13 +175,28 @@ export async function calcularEvolucaoMensal(desde: Date): Promise<PontoEvolucao
   for (const t of transacoes) {
     if (t.tipo !== "ENTRADA" && t.tipo !== "DESPESA") continue;
     const mes = `${t.data.getFullYear()}-${String(t.data.getMonth() + 1).padStart(2, "0")}`;
-    const ponto = porMes.get(mes) ?? { mes, entradasCentavos: 0, despesasCentavos: 0 };
+    const ponto = porMes.get(mes) ?? { mes, entradasCentavos: 0, despesasCentavos: 0, projetado: false };
     if (t.tipo === "ENTRADA") ponto.entradasCentavos += t.valorCentavos;
     else ponto.despesasCentavos += t.valorCentavos;
     porMes.set(mes, ponto);
   }
 
-  return Array.from(porMes.values()).sort((a, b) => a.mes.localeCompare(b.mes));
+  const pontos = Array.from(porMes.values()).sort((a, b) => a.mes.localeCompare(b.mes));
+
+  if (margemLivre) {
+    const ultimoMesReal = pontos.length > 0 ? pontos[pontos.length - 1].mes : null;
+    const [ano, mesNum] = ultimoMesReal ? ultimoMesReal.split("-").map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+    const proximoMes = somarMesesData(new Date(ano, mesNum - 1, 1), 1);
+    pontos.push({
+      mes: `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}`,
+      entradasCentavos: margemLivre.entradasConfirmadasCentavos + margemLivre.entradasEstimadasCentavos,
+      despesasCentavos:
+        margemLivre.despesasRecorrentesCentavos + margemLivre.custoMensalPassivosCentavos + margemLivre.aporteMensalExtraCentavos,
+      projetado: true,
+    });
+  }
+
+  return pontos;
 }
 
 export type PontoMensal = { mes: string; totalCentavos: number; projetado: boolean };

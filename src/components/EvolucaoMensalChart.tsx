@@ -9,9 +9,10 @@ import { formatarBRL } from "@/lib/money";
 const COR_ENTRADA = "var(--liquidity)";
 const COR_DESPESA = "var(--debt)";
 
-function nomeMes(mes: string) {
+function nomeMes(mes: string, projetado = false) {
   const [ano, mesNum] = mes.split("-").map(Number);
-  return new Date(ano, mesNum - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+  const base = new Date(ano, mesNum - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+  return projetado ? `${base} (proj.)` : base;
 }
 
 // Mesma regra de dataviz já usada em GraficoComparativoMensal.tsx:
@@ -61,7 +62,7 @@ export function EvolucaoMensalChart({ pontos }: { pontos: PontoEvolucaoMensal[] 
     <div className="flex flex-col gap-4">
       <div className="overflow-x-auto glass-card rounded-2xl p-4">
         <svg
-          viewBox={`0 0 ${largura + 12} ${ALTURA + 24}`}
+          viewBox={`0 0 ${largura + 12} ${ALTURA + 32}`}
           className="w-full"
           style={{ minWidth: `${Math.min(largura + 12, 1100)}px` }}
           role="img"
@@ -90,14 +91,22 @@ export function EvolucaoMensalChart({ pontos }: { pontos: PontoEvolucaoMensal[] 
                 <path
                   d={pathBarra(xEntrada, ALTURA - MARGEM_BASE - alturaEntrada, LARGURA_BARRA, alturaEntrada, 4)}
                   fill={COR_ENTRADA}
+                  fillOpacity={ponto.projetado ? 0.5 : 1}
+                  stroke={ponto.projetado ? COR_ENTRADA : "none"}
+                  strokeWidth={ponto.projetado ? 1 : 0}
+                  strokeDasharray={ponto.projetado ? "3 2" : undefined}
                 >
-                  <title>{`Entradas — ${nomeMes(ponto.mes)} — ${formatarBRL(ponto.entradasCentavos)}`}</title>
+                  <title>{`${ponto.projetado ? "Projeção de entradas" : "Entradas"} — ${nomeMes(ponto.mes, ponto.projetado)} — ${formatarBRL(ponto.entradasCentavos)}`}</title>
                 </path>
                 <path
                   d={pathBarra(xDespesa, ALTURA - MARGEM_BASE - alturaDespesa, LARGURA_BARRA, alturaDespesa, 4)}
                   fill={COR_DESPESA}
+                  fillOpacity={ponto.projetado ? 0.5 : 1}
+                  stroke={ponto.projetado ? COR_DESPESA : "none"}
+                  strokeWidth={ponto.projetado ? 1 : 0}
+                  strokeDasharray={ponto.projetado ? "3 2" : undefined}
                 >
-                  <title>{`Despesas — ${nomeMes(ponto.mes)} — ${formatarBRL(ponto.despesasCentavos)}`}</title>
+                  <title>{`${ponto.projetado ? "Projeção de despesas" : "Despesas"} — ${nomeMes(ponto.mes, ponto.projetado)} — ${formatarBRL(ponto.despesasCentavos)}`}</title>
                 </path>
                 <line
                   x1={xCluster}
@@ -107,14 +116,17 @@ export function EvolucaoMensalChart({ pontos }: { pontos: PontoEvolucaoMensal[] 
                   stroke="var(--border)"
                   strokeWidth={1}
                 />
-                <text
-                  x={xCluster + larguraCluster / 2}
-                  y={ALTURA + 14}
-                  textAnchor="middle"
-                  fontSize={9}
-                  fill="var(--muted-foreground)"
-                >
-                  {nomeMes(ponto.mes)}
+                <text x={xCluster + larguraCluster / 2} y={ALTURA + 14} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)">
+                  {ponto.projetado ? (
+                    <>
+                      <tspan x={xCluster + larguraCluster / 2}>{nomeMes(ponto.mes)}</tspan>
+                      <tspan x={xCluster + larguraCluster / 2} dy={10}>
+                        (proj.)
+                      </tspan>
+                    </>
+                  ) : (
+                    nomeMes(ponto.mes)
+                  )}
                 </text>
               </g>
             );
@@ -147,8 +159,11 @@ export function EvolucaoMensalChart({ pontos }: { pontos: PontoEvolucaoMensal[] 
             {pontos.map((p) => {
               const saldo = p.entradasCentavos - p.despesasCentavos;
               return (
-                <tr key={p.mes}>
-                  <td className="px-3 py-2 text-foreground">{nomeMes(p.mes)}</td>
+                <tr key={p.mes} className={p.projetado ? "italic opacity-70" : undefined}>
+                  <td className="px-3 py-2 text-foreground">
+                    {nomeMes(p.mes)}
+                    {p.projetado && <span className="text-muted-foreground"> (projetado)</span>}
+                  </td>
                   <td className="num px-2 py-2 text-right text-liquidity">{formatarBRL(p.entradasCentavos)}</td>
                   <td className="num px-2 py-2 text-right text-debt">{formatarBRL(p.despesasCentavos)}</td>
                   <td className={`num px-3 py-2 text-right font-medium ${saldo >= 0 ? "text-liquidity" : "text-debt"}`}>

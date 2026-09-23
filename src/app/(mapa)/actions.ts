@@ -23,10 +23,11 @@ const ID_CACHE_ANALISE_EVOLUCAO = "analise-evolucao-mapa";
 // mensagem de erro lançado em produção).
 export async function gerarAnaliseEvolucao(): Promise<ResultadoAnaliseEvolucao> {
   try {
-    const [pontos, movimentacaoDoMesAtual] = await Promise.all([
-      calcularEvolucaoMensal(inicioDoPeriodo("tudo")),
+    const [estado, movimentacaoDoMesAtual] = await Promise.all([
+      carregarEstadoAtual(),
       calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
     ]);
+    const pontos = await calcularEvolucaoMensal(inicioDoPeriodo("tudo"), estado.margemLivre);
     if (pontos.length === 0) {
       return { ok: false, erro: "Sem transação importada ainda pra analisar — importe um extrato primeiro." };
     }

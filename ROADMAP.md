@@ -3655,3 +3655,50 @@ coisa é opcional de propósito.
   pra ver no HTML estático — mesmo padrão já usado em outras sheets
   desse app).
 - `npx tsc --noEmit` limpo.
+
+## Ponto projetado (próximo mês) no gráfico de evolução + na análise da IA
+
+Felipe perguntou se um segundo eixo em linha no gráfico de evolução
+mensal traria informação real ou só seria "bonitinho" — o motivo real
+por trás era que a análise da IA "ainda não sabe o que tem pra
+outubro". Resposta: eixo secundário não se justifica (entrada e
+despesa já são a mesma unidade, R$, das barras — eixo separado é pra
+quando duas séries têm escalas diferentes), mas mostrar o que vem pela
+frente, não só o que já aconteceu, resolve o problema de verdade — e o
+app já calcula tudo que é preciso pra isso (`calcularMargemLivre`, já
+parte de `carregarEstadoAtual`), sem inventar nenhuma previsão nova.
+
+- `src/lib/ofensores.ts`: `PontoEvolucaoMensal` ganhou `projetado:
+  boolean`; `calcularEvolucaoMensal(desde, margemLivre?)` — quando
+  `margemLivre` é passado, acrescenta um último ponto (mês seguinte ao
+  último real, ou o mês corrente se não há histórico ainda) com
+  entradas/despesas vindas dos componentes que `calcularMargemLivre`
+  já expõe (confirmada + estimada / recorrente + parcela mínima dos
+  passivos + aporte), `projetado: true`. Só 1 mês à frente: recorrência
+  é regime permanente, projetar mais adiante só repetiria o mesmo
+  número.
+- `src/components/EvolucaoMensalChart.tsx`: barra do mês projetado com
+  opacidade reduzida + contorno tracejado (mesma cor semântica das
+  demais), rótulo do eixo X quebrado em duas linhas ("out. de 26" /
+  "(proj.)", pra não sobrepor o mês vizinho) e linha da tabela em
+  itálico com "(projetado)" ao lado do mês.
+- `src/lib/promptAnaliseEvolucao.ts`: o ponto projetado entra na série
+  do prompt com marcação explícita ("PROJETADO — calculado a partir de
+  renda e despesa recorrente e parcela mínima de dívida já cadastradas
+  no sistema; ainda não é fato") + um parágrafo IMPORTANTE (mesmo
+  padrão defensivo já usado pra categoria PROTEGIDA) instruindo a IA a
+  nunca tratar esse mês como fato consumado.
+- `src/app/(mapa)/actions.ts` (`gerarAnaliseEvolucao`) e
+  `src/app/(mapa)/page.tsx`: passam a buscar `estado.margemLivre` (já
+  calculado em `carregarEstadoAtual`, nenhuma query nova) e repassar
+  pra `calcularEvolucaoMensal`.
+- Testado com dado real: script descartável comparou o ponto projetado
+  com a soma manual dos componentes de `margemLivre` — bateu exato
+  (mês projetado: outubro/26, entradas R$ 68.000,00, despesas
+  R$ 73.435,18). Chamada real à Claude confirmou que a análise cita
+  "outubro, projetado" corretamente como expectativa, sem misturar com
+  os meses fechados e sem sugerir cortar categoria protegida.
+  Conferido visualmente no dev server (Playwright + Chrome local) que
+  a barra tracejada e o rótulo aparecem certos, sem sobrepor o mês
+  anterior.
+- `npx tsc --noEmit` limpo.

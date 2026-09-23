@@ -41,16 +41,18 @@ const ESTILO_SINAL: Record<NivelSinal, string> = {
 };
 
 export default async function MapaPage() {
-  const [estado, qualidadeDados, movimentacaoDoMes, movimentacaoDoAno, ofensoresPorCredorDoAno, evolucaoMensal, ultimaAnaliseEvolucao] =
+  const [estado, qualidadeDados, movimentacaoDoMes, movimentacaoDoAno, ofensoresPorCredorDoAno, ultimaAnaliseEvolucao] =
     await Promise.all([
       carregarEstadoAtual(),
       calcularQualidadeDados(),
       calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
       calcularMovimentacaoDoMes(inicioDoPeriodo("ano")),
       calcularOfensoresPorCredor(inicioDoPeriodo("ano")),
-      calcularEvolucaoMensal(inicioDoPeriodo("tudo")),
       obterUltimaAnaliseEvolucao(),
     ]);
+  // Depende de estado.margemLivre (já calculado em carregarEstadoAtual), por isso roda
+  // fora do Promise.all acima em vez de em paralelo com ele.
+  const evolucaoMensal = await calcularEvolucaoMensal(inicioDoPeriodo("tudo"), estado.margemLivre);
   const {
     passivosQuitados,
     passivoTotal,
