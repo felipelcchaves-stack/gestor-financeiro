@@ -4,6 +4,7 @@ import { calcularMovimentacaoDoMes, calcularTrajetoriaRealPassivo, inicioDoPerio
 import { calcularStatusRateio } from "@/lib/rateio";
 import { gerarResumoMarkdown } from "@/lib/resumoIA";
 import { CopiarResumo } from "./CopiarResumo";
+import { SugestaoIA } from "./SugestaoIA";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,18 @@ export default async function ResumoIAPage() {
       </div>
 
       <CopiarResumo markdown={markdown} />
+
+      <div className="mt-4 border-t border-border pt-4">
+        <h2 className="text-base font-semibold text-foreground">Ou peça uma sugestão automática</h2>
+        <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
+          Isso envia os totais por categoria e o custo mensal de cada dívida (nunca suas transações individuais)
+          pra API do Gemini (Google) e pede sugestões de corte de gasto. Tem custo por chamada e os dados saem da
+          sua máquina — diferente do bloco acima, que só sai se você mesmo colar em algum lugar.
+        </p>
+        <div className="mt-3">
+          <SugestaoIA />
+        </div>
+      </div>
     </div>
   );
 }

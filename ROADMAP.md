@@ -2918,3 +2918,55 @@ ali, o campo ia em branco e batia direto na minha validação.
   Deixado pro Felipe configurar pela UI já corrigida, não fiz a
   escrita direto no banco de produção sem confirmação explícita.
 - `npx tsc --noEmit` limpo.
+
+## Integração real com Gemini: sugestão de corte de gastos
+
+Decisão revertida de propósito. Desde o início do projeto havia uma
+regra permanente de nunca integrar IA generativa paga (custo por uso +
+não mandar dado financeiro pra fora) — `/consultor` é "matemática
+pura, sem IA generativa" e `/resumo/ia` sempre foi só copiar-e-colar
+manual. Depois de eu entregar uma análise de corte de gastos sem
+nenhuma IA (usando só os números reais do relatório por categoria),
+Felipe pediu especificamente uma chamada de verdade ao Gemini pra
+sugerir cortes — perguntei duas vezes, deixando claro que isso reverte
+a decisão anterior, e ele confirmou de forma explícita as duas vezes
+("Quero mesmo um plano de integração com Gemini"). Essa é a primeira
+chamada de API externa deste projeto inteiro (confirmado: nenhum
+`fetch` a terceiros existia em lugar nenhum do código antes disso).
+
+- `.env`/`.env.example`: `GEMINI_API_KEY` novo (Felipe precisa pegar a
+  chave dele em https://aistudio.google.com/apikey e também adicionar
+  no `.env` da VPS — não fiz essa parte sozinho, é segredo de
+  produção).
+- `src/lib/gemini.ts` (novo): `chamarGemini(prompt)` — `fetch` nativo
+  pra API REST do Gemini (`gemini-3-flash-preview` por padrão,
+  configurável via `GEMINI_MODEL`), sem SDK novo. Timeout de 30s, erro
+  de chave ausente/API fora/resposta vazia sempre vira uma `Error` com
+  mensagem legível — nunca deixa vazar stack trace bruto.
+- `src/lib/promptCorteDeGastos.ts` (novo): monta o prompt só com
+  totais agregados (despesa por categoria do mês, custo mensal e taxa
+  de cada dívida ativa, margem livre, saldo do cofre) — reaproveita
+  `calcularMovimentacaoDoMes`/`estado.passivosAtivos`/`calcularStatusRateio`,
+  nenhum dado novo calculado. **Nunca envia transação individual** —
+  verificado com script descartável (apagado depois): o prompt gerado
+  com dado real local não tem nenhuma descrição/data de transação, só
+  os agregados por categoria.
+- `src/app/resumo/ia/actions.ts` (novo) + `SugestaoIA.tsx` (novo,
+  componente cliente): botão "Gerar sugestão com IA (Gemini)" chamando
+  a action dentro de `try/catch` — igual ao padrão do `TransacaoSheet`,
+  nunca um `<form action>` puro que pode derrubar a página (a mesma
+  categoria de bug que acabamos de corrigir no formulário do rateio).
+  Testado com script descartável: sem `GEMINI_API_KEY` configurada, o
+  erro chega como mensagem clara ("GEMINI_API_KEY não configurada...
+  https://aistudio.google.com/apikey"), nunca uma página quebrada.
+- `src/app/resumo/ia/page.tsx`: nova seção abaixo do bloco de
+  copiar-e-colar já existente, com aviso explícito do que sai da
+  máquina e que tem custo por chamada — os dois caminhos continuam
+  existindo lado a lado, um não substitui o outro.
+- Decisão consciente de **não** tocar na descrição do `/consultor`
+  ("sem IA generativa") — essa página continua só matemática local; a
+  chamada de IA vive isolada em `/resumo/ia`.
+- `npx tsc --noEmit` limpo.
+- **Pendência do Felipe**: adicionar `GEMINI_API_KEY` no `.env` da VPS
+  pra funcionar em produção — sem isso o botão aparece mas falha com a
+  mensagem clara de chave ausente (comportamento esperado, não bug).
