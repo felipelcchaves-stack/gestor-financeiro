@@ -137,6 +137,12 @@ export default async function CofrePage() {
         description={`${statusRateio.percentual}% da receita de ${statusRateio.categoriaNome} separado pra ${statusRateio.contaDestinoNome}, pra quitar dívida.`}
       />
 
+      <p className="text-xs text-muted-foreground">
+        As sugestões abaixo são recalculadas toda vez que o saldo do cofre ou um extrato muda — vão continuar
+        aparecendo aqui, uma atrás da outra, até todo passivo elegível ter uma meta. O menu ao lado mostra quantas
+        estão pendentes agora, então não precisa lembrar de voltar aqui pra conferir.
+      </p>
+
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">
           <PiggyBank className="size-4" />

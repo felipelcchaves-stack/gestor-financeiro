@@ -3460,3 +3460,35 @@ que o motor de otimização já entende.
   bateu exatamente com o índice real delas em `ordemIds`. Tudo
   revertido ao final.
 - `npx tsc --noEmit` limpo.
+
+## Selo de sugestões pendentes no menu — sem precisar lembrar de checar o Cofre
+
+Felipe perguntou se, à medida que ele importa extratos mensais, novas
+sugestões de meta poderiam nascer sozinhas — o motor que decide "o que
+sugerir" já era assim (recalcula do zero a cada carregamento de
+`/cofre`), mas ele só descobria uma sugestão nova se lembrasse de
+visitar a página depois de cada extrato. Em vez de caçar todo lugar
+que muda saldo (extrato, fatura, edição manual de conta, edição de
+passivo) pra colocar um aviso em cada um, a solução foi um sinal
+ambiente, visível em qualquer página.
+
+- `src/lib/sugestoesPendentes.ts` (novo): `contarSugestoesPendentes()`
+  — de propósito NÃO chama `carregarEstadoAtual()` (roda a simulação
+  de otimização inteira, cara demais pra rodar em toda navegação). Só
+  3 leituras leves e paralelas (config do rateio, passivos ativos com
+  saldo documentado, metas do cofre) pra contar quantos passivos sem
+  meta o saldo atual já cobre — mesmo critério `jaQuitavel` de
+  `alvosOportunistas.ts`, sem ordenação nem aceleração.
+- `src/app/layout.tsx` (raiz, antes sem nenhuma busca de dado) chama
+  esse contador e passa pro `AppSidebar`; o item "Cofre" do menu ganha
+  um selo numérico quando há sugestão pendente — visível em qualquer
+  página do app, sempre atual.
+- `src/app/cofre/page.tsx`: linha curta explicando o comportamento
+  dentro do próprio produto, respondendo à pergunta que o Felipe fez
+  em texto.
+- Testado com dado real local: contagem da função bateu exatamente com
+  uma contagem manual em 3 cenários de saldo diferentes (0, 1 e 6
+  sugestões pendentes). Timing de uma página sem nada a ver com dívida
+  (`/transacoes`) não mudou de forma perceptível — o banco é SQLite
+  local, a query extra é praticamente grátis.
+- `npx tsc --noEmit` limpo.

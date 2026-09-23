@@ -6,6 +6,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { HelpSheet } from "@/components/HelpSheet";
+import { contarSugestoesPendentes } from "@/lib/sugestoesPendentes";
 
 const SCRIPT_TEMA_INICIAL = `
 (function () {
@@ -41,7 +42,9 @@ export const metadata: Metadata = {
   description: "Sistema de gestão financeira e quitação de passivos",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const sugestoesPendentes = await contarSugestoesPendentes();
+
   return (
     <html
       lang="pt-BR"
@@ -58,7 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full bg-background text-foreground">
         <SidebarProvider>
-          <AppSidebar />
+          <AppSidebar sugestoesPendentes={sugestoesPendentes} />
           <SidebarInset>
             <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-surface px-4">
               <SidebarTrigger />

@@ -81,7 +81,7 @@ const NAV_GROUPS = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ sugestoesPendentes = 0 }: { sugestoesPendentes?: number }) {
   const pathname = usePathname();
 
   return (
@@ -126,6 +126,11 @@ export function AppSidebar() {
                     >
                       <item.icon />
                       <span>{item.label}</span>
+                      {item.href === "/cofre" && sugestoesPendentes > 0 && (
+                        <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-background">
+                          {sugestoesPendentes}
+                        </span>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
