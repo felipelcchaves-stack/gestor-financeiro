@@ -2892,3 +2892,29 @@ mesmo quando já preenchido.
   "Conta destino" nos chunks de `transacoes` e `consultor`) — não era
   problema de deploy, só de descoberta na UI.
 - `npx tsc --noEmit` limpo.
+
+## Correção: formulário do rateio derrubava a página inteira
+
+Felipe tentou configurar a regra do rateio na VPS duas vezes (mesmo
+depois de recarregar a página) e a tela crashava com erro genérico do
+Next.js. Confirmei via `pm2 logs` na VPS (leitura): era o próprio erro
+de validação que eu escrevi (`"Preencha categoria, percentual (1-100) e
+conta destino."`), sem tratamento nenhum no formulário — qualquer erro
+lançado por uma server action num `<form action={...}>` simples vira
+crash de página inteira no Next.js, não um aviso amigável.
+
+Causa raiz: o campo "% a separar" (`src/app/consultor/page.tsx`) não
+tinha `required`, e usava `placeholder="50"` — visualmente idêntico a
+já estar preenchido com 50, mas na verdade vazio. Sem clicar e digitar
+ali, o campo ia em branco e batia direto na minha validação.
+
+- Trocado `placeholder="50"` por `defaultValue={... ?? 50}` (valor real
+  já preenchido, não sugestão visual) e adicionado `required` — o
+  navegador agora bloqueia o envio com aviso nativo em vez de deixar
+  chegar vazio no servidor.
+- Confirmei também, nessa investigação, que o banco da VPS nunca teve a
+  regra salva (só o meu banco local, de um passo anterior — decisão
+  sem efeito nenhum na VPS, que é a fonte real que o Felipe usa).
+  Deixado pro Felipe configurar pela UI já corrigida, não fiz a
+  escrita direto no banco de produção sem confirmação explícita.
+- `npx tsc --noEmit` limpo.

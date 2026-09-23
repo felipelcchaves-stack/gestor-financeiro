@@ -349,8 +349,8 @@ export default async function ConsultorPage() {
                 type="number"
                 min={1}
                 max={100}
-                defaultValue={estado.configuracao?.percentualRateio ?? undefined}
-                placeholder="50"
+                required
+                defaultValue={estado.configuracao?.percentualRateio ?? 50}
                 className="w-20 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
               />
             </div>
