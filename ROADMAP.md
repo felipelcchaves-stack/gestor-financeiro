@@ -3527,3 +3527,42 @@ quitar/amortizar em `/passivos/[id]`
   também colocando uma parcela vencida ontem de propósito e confirmando
   que vira alerta; revertido ao final.
 - `npx tsc --noEmit` limpo.
+
+## Corrigir notificação errada de meta + mostrar % pago e prioridade
+
+Felipe notou no sino uma notificação falsa: "A meta 'Zerar Agiota'
+ainda não tem nenhum lançamento vinculado", quando na verdade há 6
+transações reais ligadas ao passivo. Causa raiz confirmada com dado
+real: `calcularProximasAcoes` só olhava `Meta.alocacoes` (a tabela
+`AlocacaoMeta`, um vínculo direto transação→meta) — mas esse mecanismo
+nunca é usado pra meta de dívida, cujo progresso real é rastreado via
+transação ligada ao passivo-alvo (a mesma reconciliação de
+`/passivos/[id]`). O aviso estava condenado a disparar sempre pra
+qualquer meta de dívida, progresso real ou não.
+
+- `src/lib/proximaAcao.ts`: a checagem agora considera "tem transação
+  real vinculada via passivo-alvo" além de `AlocacaoMeta` — uma meta de
+  dívida com progresso real não dispara mais o aviso.
+- `src/lib/estadoAtual.ts`: a query de metas ganhou
+  `_count: { transacoes: true }` dentro do passivo incluído (só um
+  campo a mais, nenhuma query nova); `MetaAtiva` atualizado.
+- `src/lib/rotaLeve.ts` (novo): `carregarRotaLeve()` — versão enxuta de
+  `carregarEstadoAtual()` só com o necessário pra saber a rota de
+  ataque (passivos + configuração + `escolherEstrategia`), sem ativos,
+  patrimônio, sinal ou margem livre — mesmo princípio de
+  `sugestoesPendentes.ts`, pra não pagar o custo da simulação inteira
+  em todo carregamento do sino.
+- `src/lib/notificacoes.ts`: além de corrigir o falso positivo, toda
+  meta de dívida com posição na rota (`calcularPrioridadeMeta`, já
+  existia) ganha uma notificação nova — "1ª prioridade — Zerar Agiota:
+  N% pago" (`% pago = 1 − saldo atual dos passivos-alvo ÷ valorAlvo da
+  meta`, matemática pura, sem tabela nova) — mostrando só as duas
+  primeiras.
+- Testado com dado real: o falso positivo sumiu; "Zerar Agiota" apareceu
+  como 1ª prioridade (0% pago, saldo nunca reduzido desde a criação da
+  meta — real, não um bug); criada uma segunda meta de teste pro Leka 1
+  com saldo reduzido em 30% na mão — apareceu corretamente como 2ª
+  prioridade, 30% pago, batendo com o cálculo manual; uma meta de
+  poupança sem passivo-alvo continuou usando a checagem antiga de
+  `AlocacaoMeta` sem quebrar. Tudo revertido ao final.
+- `npx tsc --noEmit` limpo.

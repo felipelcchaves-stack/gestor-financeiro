@@ -17,7 +17,10 @@ import { calcularMargemLivre, type MargemLivre } from "@/lib/margemLivre";
 import { StatusMeta } from "@/generated/prisma";
 import type { AlocacaoMeta, Configuracao, Meta, Passivo, PatrimonioSnapshot } from "@/generated/prisma";
 
-export type MetaAtiva = Meta & { passivosAlvo: { passivo: Passivo }[]; alocacoes: AlocacaoMeta[] };
+export type MetaAtiva = Meta & {
+  passivosAlvo: { passivo: Passivo & { _count: { transacoes: number } } }[];
+  alocacoes: AlocacaoMeta[];
+};
 
 export type EstadoAtual = {
   hoje: Date;
@@ -57,7 +60,10 @@ export async function carregarEstadoAtual(hoje: Date = new Date()): Promise<Esta
     prisma.conta.findMany(),
     prisma.meta.findMany({
       where: { status: StatusMeta.ATIVA },
-      include: { passivosAlvo: { include: { passivo: true } }, alocacoes: true },
+      include: {
+        passivosAlvo: { include: { passivo: { include: { _count: { select: { transacoes: true } } } } } },
+        alocacoes: true,
+      },
     }),
     prisma.configuracao.findUnique({ where: { id: "singleton" } }),
     prisma.patrimonioSnapshot.findMany({ orderBy: { mesReferencia: "asc" } }),

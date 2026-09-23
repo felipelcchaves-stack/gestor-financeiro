@@ -23,7 +23,7 @@ function mesesEntreReferencias(mesReferencia: string, hoje: Date): number {
 
 export function calcularProximasAcoes(input: {
   passivos: Passivo[];
-  metas: (Meta & { alocacoes: unknown[] })[];
+  metas: (Meta & { alocacoes: unknown[]; passivosAlvo: { passivo: { _count: { transacoes: number } } }[] })[];
   contas: { saldoAtualizadoEm: Date | null }[];
   configuracao: Configuracao | null;
   snapshots?: { mesReferencia: string }[];
@@ -90,7 +90,16 @@ export function calcularProximasAcoes(input: {
     });
   }
 
-  const metaSemAlocacao = metasAtivas.find((m) => m.alocacoes.length === 0);
+  // "Tem lançamento vinculado" pra uma meta de dívida não passa por
+  // AlocacaoMeta (esse vínculo nunca é usado nesse caso) — o real é
+  // transação ligada ao passivo-alvo, a mesma reconciliação usada em
+  // /passivos/[id]. Sem checar isso, esse aviso nunca para de disparar
+  // pra meta de dívida, mesmo com progresso real (visto com dado real:
+  // "Zerar Agiota" tinha 6 transações no passivo e 0 AlocacaoMeta).
+  const temProgressoReal = (m: (typeof metasAtivas)[number]) =>
+    m.alocacoes.length > 0 || m.passivosAlvo.some((pa) => pa.passivo._count.transacoes > 0);
+
+  const metaSemAlocacao = metasAtivas.find((m) => !temProgressoReal(m));
   if (metaSemAlocacao) {
     acoes.push({
       titulo: `A meta "${metaSemAlocacao.nome}" ainda não tem nenhum lançamento vinculado`,
