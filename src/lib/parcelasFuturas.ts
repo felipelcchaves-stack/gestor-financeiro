@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { normalizarDescricao } from "@/lib/classificacao";
+import { StatusPassivo } from "@/generated/prisma";
 
 export type ParcelaAberta = {
   transacaoId: string;
@@ -69,4 +70,24 @@ export async function calcularParcelasAbertas(passivoId: string): Promise<Parcel
   }
 
   return abertas.sort((a, b) => b.valorRestanteCentavos - a.valorRestanteCentavos);
+}
+
+// Soma, entre todos os cartões ativos, quanto de parcela JÁ SABIDA
+// (compra parcelada já lançada em fatura importada) vai cobrar num mês
+// específico — usado pelo ponto projetado de calcularEvolucaoMensal
+// (src/lib/ofensores.ts) como despesa de cartão documentada, nunca
+// estimada (gasto novo ainda não feito no cartão fica de fora de
+// propósito — decisão do Felipe, ver ROADMAP.md).
+export async function calcularParcelasCartaoNoMes(mesAlvo: string): Promise<number> {
+  const cartoesAtivos = await prisma.passivo.findMany({
+    where: { tipo: "cartao", status: StatusPassivo.ATIVO },
+    select: { id: true },
+  });
+
+  const todasAsAbertas = await Promise.all(cartoesAtivos.map((c) => calcularParcelasAbertas(c.id)));
+
+  return todasAsAbertas
+    .flat()
+    .filter((p) => p.proximosMeses.includes(mesAlvo))
+    .reduce((acc, p) => acc + p.valorCentavos, 0);
 }

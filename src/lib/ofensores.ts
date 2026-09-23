@@ -7,6 +7,7 @@
 import { prisma } from "@/lib/prisma";
 import { TipoTransacao } from "@/generated/prisma";
 import type { MargemLivre } from "@/lib/margemLivre";
+import { calcularParcelasCartaoNoMes } from "@/lib/parcelasFuturas";
 
 // `protegida` reflete `Categoria.protegidaDeCorte` — só populado por
 // `calcularMaioresOfensores` (a única fonte com categoria de verdade),
@@ -171,10 +172,20 @@ export async function calcularEvolucaoMensal(desde: Date, margemLivre?: MargemLi
     select: { data: true, tipo: true, valorCentavos: true },
   });
 
+  // Teto no mês corrente: um extrato pode trazer um agendamento com
+  // data futura (ex: transferência já programada) sem que isso
+  // signifique que aquele mês já fechou. Sem esse teto, 1-2
+  // lançamentos futuros isolados virariam sozinhos um "mês real"
+  // incompleto, e o ponto projetado abaixo pularia pro mês seguinte a
+  // ESSE (dois meses à frente), em vez do próximo mês de verdade.
+  const hoje = new Date();
+  const mesAtualStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+
   const porMes = new Map<string, PontoEvolucaoMensal>();
   for (const t of transacoes) {
     if (t.tipo !== "ENTRADA" && t.tipo !== "DESPESA") continue;
     const mes = `${t.data.getFullYear()}-${String(t.data.getMonth() + 1).padStart(2, "0")}`;
+    if (mes > mesAtualStr) continue;
     const ponto = porMes.get(mes) ?? { mes, entradasCentavos: 0, despesasCentavos: 0, projetado: false };
     if (t.tipo === "ENTRADA") ponto.entradasCentavos += t.valorCentavos;
     else ponto.despesasCentavos += t.valorCentavos;
@@ -185,13 +196,18 @@ export async function calcularEvolucaoMensal(desde: Date, margemLivre?: MargemLi
 
   if (margemLivre) {
     const ultimoMesReal = pontos.length > 0 ? pontos[pontos.length - 1].mes : null;
-    const [ano, mesNum] = ultimoMesReal ? ultimoMesReal.split("-").map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+    const [ano, mesNum] = ultimoMesReal ? ultimoMesReal.split("-").map(Number) : [hoje.getFullYear(), hoje.getMonth() + 1];
     const proximoMes = somarMesesData(new Date(ano, mesNum - 1, 1), 1);
+    const mesProjetado = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}`;
+    const parcelasCartaoCentavos = await calcularParcelasCartaoNoMes(mesProjetado);
     pontos.push({
-      mes: `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, "0")}`,
+      mes: mesProjetado,
       entradasCentavos: margemLivre.entradasConfirmadasCentavos + margemLivre.entradasEstimadasCentavos,
       despesasCentavos:
-        margemLivre.despesasRecorrentesCentavos + margemLivre.custoMensalPassivosCentavos + margemLivre.aporteMensalExtraCentavos,
+        margemLivre.despesasRecorrentesCentavos +
+        margemLivre.custoMensalPassivosCentavos +
+        margemLivre.aporteMensalExtraCentavos +
+        parcelasCartaoCentavos,
       projetado: true,
     });
   }

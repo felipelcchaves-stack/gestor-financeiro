@@ -3750,3 +3750,48 @@ espécie de balão, em destaque".
   aparecem separadas, a dica aparece no balão destacado dentro do
   card de cada ponto de atenção.
 - `npx tsc --noEmit` limpo.
+
+## Fatura de cartão conhecida entra no mês projetado + correção de data futura
+
+Felipe perguntou se importar extrato com lançamento futuro (agendamento)
+já ajudaria a projeção, e se fatura de cartão deveria virar campo de
+texto manual ou importação. Investigação achou que o sistema já sabe,
+por compra parcelada em aberto, quanto vai cobrar em cada mês futuro
+(`calcularParcelasAbertas`, `/cartões`) — só nunca foi ligado à
+projeção do Mapa/IA. Perguntado, Felipe escolheu o caminho mais
+rigoroso: só parcelas já conhecidas (fato documentado), sem estimar
+gasto novo no cartão nem campo manual — mantém o padrão de nunca
+inventar número que o resto da margem livre já segue.
+
+- `src/lib/ofensores.ts` (`calcularEvolucaoMensal`): corrigido um gap
+  real — a função não tinha teto de data ao agrupar transação real por
+  mês, então um agendamento futuro isolado (2+ meses à frente,
+  importável hoje via extrato sem nenhuma validação bloqueando)
+  viraria sozinho um "mês real" incompleto, empurrando o ponto
+  projetado pra dois meses à frente em vez do próximo mês de verdade.
+  Agora qualquer transação com mês posterior ao mês corrente é
+  ignorada ao montar os pontos reais — resolve isso e responde a
+  pergunta do Felipe: sim, dá pra importar extrato com data futura
+  sem quebrar nada.
+- `src/lib/parcelasFuturas.ts`: nova `calcularParcelasCartaoNoMes(mesAlvo)`
+  — soma, entre todos os cartões ativos, `valorCentavos` de toda
+  `ParcelaAberta` cujo `proximosMeses` inclui o mês alvo (reaproveita
+  `calcularParcelasAbertas`, sem duplicar a lógica de dedupe por
+  compra).
+- `calcularEvolucaoMensal` passa a chamar essa soma pro mês projetado
+  e somá-la à despesa, junto de recorrência/parcela mínima/aporte —
+  mesma assinatura pública, nenhum call site (`(mapa)/page.tsx`,
+  `gerarAnaliseEvolucao`) precisou mudar. Confirmado nos dados reais
+  que `Passivo.custoMensalCentavos` não representa fatura de cartão
+  hoje (5 de 6 cartões nulo, 1 com R$66,70 de anuidade) — somar por
+  cima não gera dupla contagem.
+- `src/lib/promptAnaliseEvolucao.ts`: marcação do mês PROJETADO
+  atualizada pra citar que o valor já inclui parcelas de cartão já
+  sabidas, sem mudar o schema.
+- Testado: script comparando a soma real (0, já que não há nenhuma
+  compra parcelada em aberto nos dados atuais) e um caso fabricado
+  (compra "3/10" criada e removida ao final) — bateu exato. Outro
+  script fabricou uma transação futura isolada e confirmou que ela não
+  vira mês real nem desloca o mês projetado — revertido ao final.
+  `npm run dev`: `/` e `/cartões` carregam sem erro no log.
+- `npx tsc --noEmit` limpo.

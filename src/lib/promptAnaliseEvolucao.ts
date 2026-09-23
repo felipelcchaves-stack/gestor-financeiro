@@ -83,7 +83,7 @@ export function gerarPromptAnaliseEvolucao(pontos: PontoEvolucaoMensal[], movime
   for (const p of pontos) {
     const saldo = p.entradasCentavos - p.despesasCentavos;
     const marcadorProjetado = p.projetado
-      ? " (PROJETADO — calculado a partir de renda e despesa recorrente e parcela mínima de dívida já cadastradas no sistema; ainda não é fato, ninguém fechou esse mês)"
+      ? " (PROJETADO — calculado a partir de renda e despesa recorrente, parcela mínima de dívida e parcelas de compras já parceladas no cartão com cobrança sabida pra esse mês, todas já cadastradas/documentadas no sistema; ainda não é fato, ninguém fechou esse mês)"
       : "";
     linhas.push(
       `- ${nomeMes(p.mes)}: entradas ${formatarBRL(p.entradasCentavos)}, despesas ${formatarBRL(p.despesasCentavos)}, saldo ${formatarBRL(saldo)}${marcadorProjetado}`
