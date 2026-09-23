@@ -96,8 +96,19 @@ export default async function RelatorioCategoriasPage({
     contagensCategoriaTipo.map((c) => ({ categoriaId: c.categoriaId!, tipo: c.tipo, quantidade: c._count._all }))
   );
 
-  const categoriasDespesa = categorias.filter((c) => tipoPorCategoria[c.id] === TipoTransacao.DESPESA);
-  const categoriasReceita = categorias.filter((c) => tipoPorCategoria[c.id] === TipoTransacao.ENTRADA);
+  // Categoria raiz com subcategorias (ex: Empréstimo por credor, Cartão de
+  // Crédito por cartão) quase nunca recebe transação diretamente nela — só
+  // nas subcategorias. Filtrar só pelo tipo da própria categoria faz a raiz
+  // sumir do filtro (nenhuma transação com categoriaId = raiz) e, com ela,
+  // as subcategorias somem também: ordenarCategoriasHierarquicamente só
+  // emite uma filha se a raiz dela também estiver na lista. Por isso a raiz
+  // conta como "do tipo" se ela mesma tiver transação OU se qualquer
+  // subcategoria dela tiver.
+  const ehDoTipo = (c: { id: string; parentId: string | null }, tipo: TipoTransacao) =>
+    tipoPorCategoria[c.id] === tipo || (c.parentId === null && categorias.some((f) => f.parentId === c.id && tipoPorCategoria[f.id] === tipo));
+
+  const categoriasDespesa = categorias.filter((c) => ehDoTipo(c, TipoTransacao.DESPESA));
+  const categoriasReceita = categorias.filter((c) => ehDoTipo(c, TipoTransacao.ENTRADA));
 
   const despesas = filtrarRanking(despesasBrutas, selecionados);
   const receitas = filtrarRanking(receitasBrutas, selecionados);

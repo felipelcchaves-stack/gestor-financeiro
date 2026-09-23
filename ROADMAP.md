@@ -3795,3 +3795,36 @@ inventar número que o resto da margem livre já segue.
   vira mês real nem desloca o mês projetado — revertido ao final.
   `npm run dev`: `/` e `/cartões` carregam sem erro no log.
 - `npx tsc --noEmit` limpo.
+
+## Fix: Empréstimo/Cartão de Crédito/Renda sumidos do filtro de /relatorio/categorias
+
+Felipe reparou que o filtro de categorias em "Relatório por categoria"
+não mostrava "Empréstimo", "Cartão de Crédito" nem "Renda" — nem essas
+categorias-raiz, nem nenhuma das subcategorias delas (Agiota, Leka 1,
+cada cartão, Salário/Pró-labore).
+
+Causa raiz: `RelatorioCategoriasPage` decide se uma categoria "é de
+despesa/receita" olhando só transações lançadas DIRETAMENTE nela
+(`tipoPorCategoria[c.id]`). Categorias-raiz com subcategorias (credor
+específico dentro de "Empréstimo", cartão específico dentro de "Cartão
+de Crédito") nunca recebem transação direta — só as subcategorias
+recebem — então a raiz nunca tinha um tipo predominante e sumia do
+filtro. E como `ordenarCategoriasHierarquicamente`
+(`src/lib/categorias.ts`) só emite uma subcategoria se a raiz dela
+também estiver na lista de entrada, a subcategoria (mesmo com
+transação de verdade) ficava órfã e sumia junto.
+
+- `src/app/relatorio/categorias/page.tsx`: uma categoria-raiz agora
+  conta como "do tipo X" se ela mesma tiver transação direta OU se
+  qualquer subcategoria dela tiver — sem mudar
+  `calcularTipoPredominantePorCategoria`/`ordenarCategoriasHierarquicamente`
+  (genéricas, reaproveitadas por `/transacoes`, que não tinha esse bug
+  por não pré-filtrar a lista por tipo antes de ordenar).
+- Testado: HTML renderizado antes/depois confirma que "Empréstimo",
+  "Cartão de Crédito", "Renda" e todas as subcategorias reais (Agiota,
+  Leka 1, Empréstimo Pessoal Itaú, cada cartão, Salário/Pró-labore,
+  Cursos Online, Consignado Itaú) agora aparecem — "Empréstimo"
+  corretamente aparece nos dois lados (despesa e receita), já que tem
+  subcategoria de ambos os tipos nos dados reais. Conferido
+  visualmente no dev server.
+- `npx tsc --noEmit` limpo.
