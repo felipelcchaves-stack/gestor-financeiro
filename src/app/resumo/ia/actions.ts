@@ -15,7 +15,7 @@ import {
   type ComparacaoAnalise,
 } from "@/lib/promptCorteDeGastos";
 import type { Projecao } from "@/lib/projecaoMeta";
-import { chamarGemini } from "@/lib/gemini";
+import { chamarClaude } from "@/lib/claude";
 
 export type { CorteSugerido, Projecao, ComparacaoAnalise };
 
@@ -61,7 +61,7 @@ export async function gerarSugestaoCorteIA(): Promise<ResultadoSugestaoIA> {
     );
 
     const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, undefined, comparacao);
-    const textoJson = await chamarGemini(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
+    const textoJson = await chamarClaude(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
     const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
 
     const geradoEm = new Date();

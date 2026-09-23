@@ -107,7 +107,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
       }
     } catch {
       // Só sobra aqui uma falha de rede real entre o navegador e o
-      // próprio servidor (não da API do Gemini, essa já vem tratada
+      // próprio servidor (não da API do Claude, essa já vem tratada
       // acima) — a action nunca lança exceção de propósito.
       setErro("Não consegui falar com o servidor. Recarregue a página e tente de novo.");
     } finally {
@@ -124,7 +124,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
           </Button>
         )}
         <Button type="button" size="sm" onClick={gerar} disabled={carregando}>
-          {carregando ? "Gerando…" : sugestao ? "Gerar novo corte agressivo (IA)" : "Gerar sugestão com IA (Gemini)"}
+          {carregando ? "Gerando…" : sugestao ? "Gerar novo corte agressivo (IA)" : "Gerar sugestão com IA (Claude)"}
         </Button>
       </div>
 
@@ -153,7 +153,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
           <SheetFooter>
             <p className="text-[11px] text-muted-foreground/70">
               Envia os totais por categoria e o custo mensal de cada dívida (nunca suas transações individuais) pra
-              API do Gemini (Google). Tem custo por chamada e os dados saem da sua máquina.
+              API do Claude (Anthropic). Tem custo por chamada e os dados saem da sua máquina.
             </p>
           </SheetFooter>
         </SheetContent>

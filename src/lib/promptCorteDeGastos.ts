@@ -1,4 +1,4 @@
-// Monta o prompt pra sugestão de corte de gastos (Gemini) — só números
+// Monta o prompt pra sugestão de corte de gastos (Claude) — só números
 // agregados por categoria (raiz + subcategoria), nunca a lista de
 // transações individuais. Reaproveita exatamente os mesmos cálculos
 // que já alimentam /relatorio/categorias e /consultor, não inventa
@@ -28,9 +28,9 @@ export type CorteSugerido = { categoria: string; valorLiberadoReais: number; jus
 
 export type SugestaoCorteEstruturada = { resumo: string; cortes: CorteSugerido[] };
 
-// Formato aceito pelo `generationConfig.responseSchema` do Gemini
-// (subconjunto de OpenAPI) — força a resposta a vir só em JSON, nesse
-// formato exato, em vez de confiar em regex sobre texto livre.
+// JSON Schema padrão — usado como `input_schema` de uma tool forçada
+// na API do Claude (src/lib/claude.ts), pra vir estruturado em vez de
+// texto livre parseado na unha.
 export const SUGESTAO_CORTE_SCHEMA = {
   type: "object",
   properties: {
@@ -75,7 +75,7 @@ export function achatarDespesasPorCategoria(despesasPorCategoria: CategoriaComDe
 export type ComparacaoCategoria = { categoria: string; antesCentavos: number; agoraCentavos: number; variacaoCentavos: number };
 export type ComparacaoAnalise = { analisadaEmAnterior: string; categorias: ComparacaoCategoria[] };
 
-// Diferença real, calculada por nós — nunca pedida pro Gemini fazer de
+// Diferença real, calculada por nós — nunca pedida pro Claude fazer de
 // conta (mesmo motivo de calcularProjecaoMeta em src/lib/projecaoMeta.ts:
 // LLM erra matemática de várias etapas). Sem retrato anterior gravado
 // (primeira geração pra esse escopo, ou linha de cache de antes desse
@@ -218,7 +218,7 @@ export function gerarPromptCorteDeGastos(
   return linhas.join("\n");
 }
 
-// JSON.parse + validação de formato da resposta do Gemini, e filtro
+// JSON.parse + validação de formato da resposta do Claude, e filtro
 // defensivo: remove qualquer corte cujo nome bata (case-insensitive)
 // com uma categoria protegida, caso o modelo ignore a instrução do
 // prompt — decisão financeira não pode depender só de "o modelo
@@ -228,7 +228,7 @@ export function parseSugestaoCorte(textoJson: string, protegidos: Set<string>): 
   try {
     dados = JSON.parse(textoJson);
   } catch {
-    throw new Error("Resposta do Gemini veio num formato inesperado (não é JSON válido) — tente de novo.");
+    throw new Error("Resposta do Claude veio num formato inesperado (não é JSON válido) — tente de novo.");
   }
 
   if (
@@ -237,7 +237,7 @@ export function parseSugestaoCorte(textoJson: string, protegidos: Set<string>): 
     typeof (dados as Record<string, unknown>).resumo !== "string" ||
     !Array.isArray((dados as Record<string, unknown>).cortes)
   ) {
-    throw new Error("Resposta do Gemini veio sem o formato esperado (resumo/cortes) — tente de novo.");
+    throw new Error("Resposta do Claude veio sem o formato esperado (resumo/cortes) — tente de novo.");
   }
 
   const bruto = dados as { resumo: string; cortes: unknown[] };

@@ -5,7 +5,7 @@
 // esse conflito e deixa o cálculo reaproveitável tanto de dentro de
 // uma Server Action (src/app/cofre/actions.ts) quanto direto num
 // Server Component (src/app/cofre/page.tsx, pra recalcular a projeção
-// de uma sugestão já cacheada sem outra chamada ao Gemini).
+// de uma sugestão já cacheada sem outra chamada ao Claude).
 
 import type { Passivo } from "@/generated/prisma";
 import type { CorteSugerido } from "@/lib/promptCorteDeGastos";
@@ -38,7 +38,7 @@ export function resolverAlvoDaMeta(
 }
 
 // "Se os cortes sugeridos forem feitos, em quanto tempo a meta fecha" —
-// nunca confiado ao Gemini (LLM erra matemática de várias etapas).
+// nunca confiado ao Claude (LLM erra matemática de várias etapas).
 // totalLiberadoMensalCentavos vem da soma real dos cortes;
 // saldoJaSeparadoCentavos deve ser sempre o saldo ATUAL do cofre no
 // momento do cálculo — o "double-check na conta do Bradesco" pedido,

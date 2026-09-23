@@ -297,7 +297,7 @@ model Meta {
   updatedAt DateTime @updatedAt
 }
 
-// Última sugestão de corte gerada pela IA (Gemini), guardada pra
+// Última sugestão de corte gerada pela IA (Claude), guardada pra
 // reabrir sem gastar outra chamada. A geral (src/app/resumo/ia) usa um
 // id fixo ("geral-resumo-ia", mesmo padrão do singleton de
 // Configuracao); as por meta usam metaId único. cortesJson é a lista

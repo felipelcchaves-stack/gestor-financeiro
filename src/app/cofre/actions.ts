@@ -18,7 +18,7 @@ import {
   type MetaAlvoPrompt,
 } from "@/lib/promptCorteDeGastos";
 import { resolverAlvoDaMeta, calcularProjecaoMeta } from "@/lib/projecaoMeta";
-import { chamarGemini } from "@/lib/gemini";
+import { chamarClaude } from "@/lib/claude";
 import type { ResultadoSugestaoIA, SugestaoGerada } from "@/app/resumo/ia/actions";
 
 function passivosDoForm(formData: FormData): string[] {
@@ -96,7 +96,7 @@ export async function gerarSugestaoParaMeta(metaId: string): Promise<ResultadoSu
     );
 
     const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, metaAlvo, comparacao);
-    const textoJson = await chamarGemini(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
+    const textoJson = await chamarClaude(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
     const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
 
     const geradoEm = new Date();

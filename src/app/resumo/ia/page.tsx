@@ -40,7 +40,7 @@ export default async function ResumoIAPage() {
         <h2 className="text-base font-semibold text-foreground">Ou peça uma sugestão automática</h2>
         <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
           Diferente do bloco acima (que só sai se você mesmo colar em algum lugar), isso manda os totais por
-          categoria pra API do Gemini e abre a análise numa aba lateral.
+          categoria pra API do Claude e abre a análise numa aba lateral.
         </p>
         <div className="mt-3">
           <SugestaoIA sugestaoInicial={sugestaoSalva} acaoGerar={gerarSugestaoCorteIA} titulo="Sugestão de corte de gastos" />

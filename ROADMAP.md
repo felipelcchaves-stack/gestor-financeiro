@@ -3291,3 +3291,49 @@ prontos e narra/julga em cima deles.
   ponta a ponta hoje por causa da cota — vale reverificar depois que
   ela resetar, ou considerar uma chave paga se o uso for frequente.
 - `npx tsc --noEmit` limpo.
+
+## Trocado o Gemini pelo Claude (a cota gratuita quebrou o uso real)
+
+O Felipe tentou usar o botão de corte agressivo em produção e caiu no
+mesmo erro 429 encontrado durante o teste acima — só que dessa vez foi
+ele, não um script descartável, que ficou bloqueado. Investigando a
+fundo: local e VPS usavam a **mesma** `GEMINI_API_KEY`, e o free tier
+do Gemini tem um limite de só 20 requisições/dia por projeto — um
+único pool de cota compartilhado entre os testes daqui e o uso real
+dele. Foi oferecida a opção mais simples (habilitar faturamento na
+mesma chave, sem tocar em código) e a alternativa de trocar de
+provedor; o Felipe escolheu trocar pro Claude.
+
+- `src/lib/claude.ts` (novo, substitui `src/lib/gemini.ts`, removido):
+  chama a API do Claude (`console.anthropic.com` — **não** é o mesmo
+  que uma assinatura Pro/Max do claude.ai, precisou ser explicado).
+  Saída estruturada via "tool use" forçado (`tool_choice: {type:
+  "tool", ...}`) em vez do `responseSchema` do Gemini — mesmo JSON
+  Schema (`SUGESTAO_CORTE_SCHEMA`) funciona pros dois formatos sem
+  mudar `src/lib/promptCorteDeGastos.ts`. Erros tratados com mensagem
+  legível: 401 (chave inválida/sem crédito), 429 (limite de taxa —
+  aqui é sobrecarga momentânea, não falta de cota gratuita, já que a
+  API do Claude não tem free tier), timeout de rede.
+- `src/app/resumo/ia/actions.ts` e `src/app/cofre/actions.ts`: trocado
+  `chamarGemini` por `chamarClaude`, mesma assinatura de chamada.
+- Textos de UI (`SugestaoIA.tsx`, `resumo/ia/page.tsx`) e comentários
+  em `promptCorteDeGastos.ts`/`projecaoMeta.ts`/`schema.prisma`
+  atualizados de "Gemini" pra "Claude".
+- **Lição aplicada**: `ANTHROPIC_API_KEY` agora é uma chave por
+  ambiente — local e VPS usam chaves diferentes de propósito, pra
+  teste daqui nunca mais competir com o uso real dele (era exatamente
+  isso que quebrou com o Gemini). `.env`/`.env.example` documentam
+  isso explicitamente.
+- Testado com a chave real (1 chamada só, de propósito — API paga
+  desde a primeira, sem free tier pra gastar à toa): meta de teste
+  pro Agiota, saldo do Bradesco setado pra R$5.000 temporariamente.
+  Resposta estruturada veio certa (`resumo` + `cortes`), Potiguara e
+  Esmeraldino continuaram fora dos cortes (o próprio resumo do Claude
+  citou explicitamente "Potiguara e Esmeraldino são protegidas"), e a
+  projeção bateu: R$31.435/mês liberados, R$167.500 faltando, 6 meses
+  — conta nossa, não da IA. Meta, saldo e cache de teste revertidos ao
+  final.
+- Memória do projeto (`no-paid-ai-financas-pessoais.md`) atualizada:
+  o provedor de IA desse app agora é Claude, não Gemini; nunca mais
+  compartilhar uma chave paga entre dev e produção.
+- `npx tsc --noEmit` limpo.
