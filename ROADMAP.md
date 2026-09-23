@@ -3089,3 +3089,26 @@ reaproveitá-lo.
   descartável, apagado depois) — meta criada com passivo, nome, data e
   valor corretos, removida ao final.
 - `npx tsc --noEmit` limpo.
+
+## Correção: "Separado" ficava zerado mesmo com saldo real no cofre
+
+Felipe atualizou o saldo do Bradesco pra R$125,00 (botão em `/contas`)
+e o card do cofre continuou mostrando "Separado desde 22/09: R$0,00" —
+confuso, já que o dinheiro estava visivelmente lá. Causa: `totalDepositadoCentavos`
+só somava transações marcadas manualmente como "Conta destino:
+Bradesco" (a decisão que fixamos antes) — e ele tinha atualizado o
+saldo pelo botão sem passar pela aba Transações marcando o PIX
+específico. Perguntei antes de mudar de novo (já foi essa peça
+específica que mudou de ideia mais de uma vez nesta conversa): Felipe
+escolheu usar o maior dos dois sinais, pra nunca ficar por baixo da
+realidade.
+
+- `src/lib/rateio.ts`: `totalDepositadoCentavos` agora é
+  `max(soma das transações marcadas, saldo atual da conta)` — nunca
+  mais subestima o que já foi separado de verdade, mesmo se uma
+  transação específica não tiver sido marcada ainda.
+- Testado com dado real local (saldo setado pra R$125,00 temporariamente,
+  script descartável apagado depois, saldo revertido pra `null` ao
+  final): confirmado que "Separado" passou a refletir o saldo real
+  mesmo sem transação marcada.
+- `npx tsc --noEmit` limpo.

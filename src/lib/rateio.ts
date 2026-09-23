@@ -82,11 +82,18 @@ export async function calcularStatusRateio(estado: EstadoAtual): Promise<StatusR
   if (!categoria || !contaDestino) return null;
 
   const totalRecebidoCentavos = recebido._sum.valorCentavos ?? 0;
-  const totalDepositadoCentavos = depositado._sum.valorCentavos ?? 0;
+  const saldoCentavos = contaDestino.saldoAtualCentavos ?? 0;
+  // "Separado" nunca fica abaixo do saldo real da conta — marcar cada
+  // transferência manualmente (aba Transações) é o caminho fino, mas
+  // exige lembrar de fazer isso toda vez; o saldo atualizado pelo
+  // botão em /contas é uma prova mais direta de que o dinheiro já
+  // chegou lá, mesmo sem a transação específica marcada ainda. Usa o
+  // maior dos dois pra nunca subestimar o que já foi separado de
+  // verdade.
+  const totalDepositadoViaTransacoes = depositado._sum.valorCentavos ?? 0;
+  const totalDepositadoCentavos = Math.max(totalDepositadoViaTransacoes, saldoCentavos);
   const metaSepararCentavos = Math.round((totalRecebidoCentavos * config.percentualRateio) / 100);
   const faltaSepararCentavos = Math.max(0, metaSepararCentavos - totalDepositadoCentavos);
-
-  const saldoCentavos = contaDestino.saldoAtualCentavos ?? 0;
   const ordem = ordemDeAtaque(estado);
   const porId = new Map(estado.elegiveis.map((p) => [p.id, p]));
 
