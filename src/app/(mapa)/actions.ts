@@ -5,11 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { centavosDoForm, textoDoForm } from "@/lib/form-helpers";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularEvolucaoMensal, calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
-import { gerarPromptAnaliseEvolucao } from "@/lib/promptAnaliseEvolucao";
+import { gerarPromptAnaliseEvolucao, parseAnaliseEvolucao, ANALISE_EVOLUCAO_SCHEMA, type AnaliseEvolucaoEstruturada } from "@/lib/promptAnaliseEvolucao";
+import { nomesProtegidos } from "@/lib/promptCorteDeGastos";
 import { chamarClaude } from "@/lib/claude";
 import { Confiabilidade } from "@/generated/prisma";
 
-export type AnaliseEvolucao = { resumo: string; geradoEm: string };
+export type AnaliseEvolucao = AnaliseEvolucaoEstruturada & { geradoEm: string };
 export type ResultadoAnaliseEvolucao = ({ ok: true } & AnaliseEvolucao) | { ok: false; erro: string };
 
 // Id fixo na mesma tabela de cache usada pelas outras sugestões de IA
@@ -33,16 +34,18 @@ export async function gerarAnaliseEvolucao(): Promise<ResultadoAnaliseEvolucao> 
     }
 
     const prompt = gerarPromptAnaliseEvolucao(pontos, movimentacaoDoMesAtual);
-    const resumo = await chamarClaude(prompt);
+    const textoJson = await chamarClaude(prompt, { schema: ANALISE_EVOLUCAO_SCHEMA });
+    const analise = parseAnaliseEvolucao(textoJson, nomesProtegidos(movimentacaoDoMesAtual));
 
     const geradoEm = new Date();
+    const resumo = JSON.stringify(analise);
     await prisma.sugestaoIACache.upsert({
       where: { id: ID_CACHE_ANALISE_EVOLUCAO },
       create: { id: ID_CACHE_ANALISE_EVOLUCAO, resumo, cortesJson: "[]", geradoEm },
       update: { resumo, cortesJson: "[]", geradoEm },
     });
 
-    return { ok: true, resumo, geradoEm: geradoEm.toISOString() };
+    return { ok: true, ...analise, geradoEm: geradoEm.toISOString() };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha desconhecida ao gerar a análise." };
   }
@@ -51,7 +54,16 @@ export async function gerarAnaliseEvolucao(): Promise<ResultadoAnaliseEvolucao> 
 export async function obterUltimaAnaliseEvolucao(): Promise<AnaliseEvolucao | null> {
   const row = await prisma.sugestaoIACache.findUnique({ where: { id: ID_CACHE_ANALISE_EVOLUCAO } });
   if (!row) return null;
-  return { resumo: row.resumo, geradoEm: row.geradoEm.toISOString() };
+  const geradoEm = row.geradoEm.toISOString();
+  try {
+    const analise = JSON.parse(row.resumo) as AnaliseEvolucaoEstruturada;
+    return { ...analise, geradoEm };
+  } catch {
+    // Cache gravado antes dessa análise virar saída estruturada —
+    // `resumo` ainda é texto livre puro. Cai num formato compatível
+    // até o usuário gerar uma análise nova.
+    return { tendencia: row.resumo, acoesPrioritarias: [], pontosAtencao: [], pontosPositivos: [], geradoEm };
+  }
 }
 
 export async function definirAporteMensal(formData: FormData) {

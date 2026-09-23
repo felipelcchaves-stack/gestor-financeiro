@@ -3702,3 +3702,51 @@ parte de `carregarEstadoAtual`), sem inventar nenhuma previsão nova.
   a barra tracejada e o rótulo aparecem certos, sem sobrepor o mês
   anterior.
 - `npx tsc --noEmit` limpo.
+
+## Análise da IA (evolução mensal) em bullets, com dica em destaque por ponto de atenção
+
+Felipe achou o texto corrido da análise da IA confuso e cansativo de
+ler ("texto muito consolidado, muito compacto") e pediu ações
+prioritárias, pontos de atenção e pontos positivos em bullets
+separados — mais uma dica de como melhorar cada ponto de atenção, "em
+espécie de balão, em destaque".
+
+- `src/lib/promptAnaliseEvolucao.ts`: saiu do texto livre, migrou pra
+  saída estruturada — mesmo mecanismo já maduro do corte de gastos
+  (`chamarClaude(prompt, {schema})`, tool-use forçado). Novo
+  `ANALISE_EVOLUCAO_SCHEMA` (mesmo estilo de `SUGESTAO_CORTE_SCHEMA`)
+  com 4 campos: `tendencia` (parágrafo), `acoesPrioritarias` (até 4,
+  em ordem), `pontosAtencao` (array de `{item, dica}`) e
+  `pontosPositivos` (pode vir vazio — nunca inventado). Novo
+  `parseAnaliseEvolucao` (mesmo espírito de `parseSugestaoCorte`):
+  valida o shape e remove qualquer `acoesPrioritarias`/`pontosAtencao`
+  cujo texto mencione uma categoria protegida — fecha em código o
+  mesmo furo que antes só dava pra mitigar reforçando o prompt (a
+  análise já tinha citado "Esmeraldino" numa resposta em texto livre).
+- `src/app/(mapa)/actions.ts` (`gerarAnaliseEvolucao`): usa o schema +
+  parser novos; `AnaliseEvolucao` (tipo usado pela UI) passou a ser a
+  estrutura de 4 campos + `geradoEm`. Sem migração no Prisma:
+  `SugestaoIACache.resumo` (já `String` livre) guarda
+  `JSON.stringify` da estrutura; `cortesJson` continua `"[]"`,
+  intocado (já tem semântica própria no fluxo de corte de gastos).
+  `obterUltimaAnaliseEvolucao` faz `JSON.parse` com fallback: se a
+  linha em cache ainda for texto livre puro (gravada antes dessa
+  mudança), cai num formato compatível (`tendencia` = o texto antigo,
+  arrays vazios) em vez de quebrar a tela.
+- `src/components/AnaliseEvolucaoSheet.tsx`: renderiza as 4 seções —
+  tendência (parágrafo), ações prioritárias (lista numerada), pontos
+  de atenção (card `border-debt` por item, com a dica num balão
+  interno separado `bg-gold/10` + ícone `Lightbulb`, destacado e
+  reconhecível como dica, não misturado no texto do problema) e
+  pontos positivos (lista com marcador verde, só aparece se houver
+  algum de verdade).
+- Testado com chamada real à Claude: os 4 campos vieram coerentes;
+  testado também o filtro defensivo com um caso fabricado (categoria
+  protegida injetada em `acoesPrioritarias`/`pontosAtencao`) —
+  removeu só o item marcado, manteve o resto. Testado o fallback do
+  cache legado (linha real sobrescrita temporariamente com texto
+  livre e restaurada ao final) — não lançou erro. Conferido
+  visualmente no dev server (Playwright + Chrome local): as 4 seções
+  aparecem separadas, a dica aparece no balão destacado dentro do
+  card de cada ponto de atenção.
+- `npx tsc --noEmit` limpo.
