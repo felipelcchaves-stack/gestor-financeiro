@@ -1,0 +1,208 @@
+import Link from "next/link";
+import { PiggyBank, Target } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { formatarBRL } from "@/lib/money";
+import { calcularProgressoMeta } from "@/lib/metrics";
+import { calcularStatusRateio } from "@/lib/rateio";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { criarMetaCofre } from "./actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function CofrePage() {
+  const statusRateio = await calcularStatusRateio();
+
+  const [metas, passivosDisponiveis] = await Promise.all([
+    statusRateio
+      ? prisma.meta.findMany({
+          where: { contaOrigemId: statusRateio.contaDestinoId },
+          include: { passivosAlvo: { include: { passivo: true } }, alocacoes: true },
+          orderBy: { dataAlvo: "asc" },
+        })
+      : Promise.resolve([]),
+    prisma.passivo.findMany({ where: { status: "ATIVO" }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
+  ]);
+
+  if (!statusRateio) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          eyebrow="Ferramentas"
+          title="Cofre"
+          description="Reserva de receita separada especificamente pra quitar dívida."
+        />
+        <p className="text-sm text-muted-foreground">
+          O rateio automático ainda não está configurado.{" "}
+          <Link href="/consultor" className="text-gold underline underline-offset-4">
+            Configure em Consultor
+          </Link>{" "}
+          (categoria de receita, % a separar e conta destino) pra começar a ver os indicadores aqui.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow="Ferramentas"
+        title="Cofre"
+        description={`${statusRateio.percentual}% da receita de ${statusRateio.categoriaNome} separado pra ${statusRateio.contaDestinoNome}, pra quitar dívida.`}
+      />
+
+      <section className="glass-card rounded-2xl p-5">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <PiggyBank className="size-4" />
+          <p className="text-xs font-semibold uppercase tracking-wider">Indicadores</p>
+        </div>
+        <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo atual</p>
+            <p className="num text-2xl font-semibold text-liquidity">
+              {statusRateio.contaDestinoSaldoCentavos != null
+                ? formatarBRL(statusRateio.contaDestinoSaldoCentavos)
+                : "não informado"}
+            </p>
+            {statusRateio.contaDestinoSaldoAtualizadoEm && (
+              <p className="text-[11px] text-muted-foreground/70">
+                atualizado em {new Date(statusRateio.contaDestinoSaldoAtualizadoEm).toLocaleDateString("pt-BR")}{" "}
+                — <Link href="/contas" className="underline underline-offset-4">atualizar</Link>
+              </p>
+            )}
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Separado desde {new Date(statusRateio.ativoDesde).toLocaleDateString("pt-BR")}
+            </p>
+            <p className="num text-2xl font-semibold text-foreground">{formatarBRL(statusRateio.totalDepositadoCentavos)}</p>
+          </div>
+          <div className="border-l border-dashed border-border pl-8">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Meta ({statusRateio.percentual}%)</p>
+            <p className="num text-2xl font-semibold text-foreground">{formatarBRL(statusRateio.metaSepararCentavos)}</p>
+            <p className="text-[11px] text-muted-foreground/70">
+              de {formatarBRL(statusRateio.totalRecebidoCentavos)} recebidos de {statusRateio.categoriaNome}
+            </p>
+          </div>
+          {statusRateio.faltaSepararCentavos > 0 && (
+            <div className="border-l border-dashed border-border pl-8">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Falta separar</p>
+              <p className="num text-2xl font-semibold text-gold">{formatarBRL(statusRateio.faltaSepararCentavos)}</p>
+            </div>
+          )}
+        </div>
+
+        {statusRateio.dividaQuitavel && (
+          <p className="mt-4 rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">
+            Esse saldo já cobre{" "}
+            <Link href={`/passivos/${statusRateio.dividaQuitavel.passivoId}`} className="font-medium underline underline-offset-4">
+              {statusRateio.dividaQuitavel.nome}
+            </Link>{" "}
+            ({formatarBRL(statusRateio.dividaQuitavel.valorQuitacaoCentavos)}) inteira — a que mais custou de verdade
+            nos últimos 6 meses entre as que cabem no saldo.
+          </p>
+        )}
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Target className="size-4 text-gold" /> Metas financiadas por este cofre
+          </h2>
+        </div>
+
+        {metas.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">Nenhuma meta cadastrada pra esse cofre ainda.</p>
+        ) : (
+          <div className="mt-3 flex flex-col gap-4">
+            {metas.map((meta) => {
+              const progresso = calcularProgressoMeta(
+                meta,
+                meta.passivosAlvo.map((mp) => mp.passivo),
+                meta.alocacoes
+              );
+              return (
+                <div key={meta.id} className="glass-card rounded-2xl p-5">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-base font-medium text-foreground">{meta.nome}</h3>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        meta.status === "ATIVA" ? "bg-liquidity/[0.06] text-liquidity" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {meta.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Data-alvo: {new Date(meta.dataAlvo).toLocaleDateString("pt-BR")}
+                  </p>
+                  <p className="mt-2 text-sm text-foreground">
+                    Falta {formatarBRL(progresso.valorFaltanteCentavos)}
+                    {progresso.ritmoNecessarioCentavos != null && `, ritmo necessário ${formatarBRL(progresso.ritmoNecessarioCentavos)}/mês`}
+                  </p>
+                  <Link href="/metas" className="mt-2 inline-block text-xs text-gold underline underline-offset-4">
+                    editar em Metas
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <details className="mt-4">
+          <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+            Nova meta financiada por este cofre
+          </summary>
+          <form
+            action={criarMetaCofre.bind(null, statusRateio.contaDestinoId)}
+            className="mt-3 flex flex-col gap-4 glass-card rounded-2xl p-5"
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">Nome</label>
+                <input
+                  name="nome"
+                  required
+                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">Valor-alvo (R$)</label>
+                <input
+                  name="valorAlvo"
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground">Data-alvo</label>
+                <input
+                  name="dataAlvo"
+                  type="date"
+                  required
+                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Passivos-alvo</label>
+              <div className="mt-1 flex flex-col gap-1 rounded border border-border p-2">
+                {passivosDisponiveis.map((p) => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm text-foreground">
+                    <input type="checkbox" name="passivosAlvo" value={p.id} />
+                    {p.nome}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Button type="submit">Criar meta</Button>
+            </div>
+          </form>
+        </details>
+      </section>
+    </div>
+  );
+}

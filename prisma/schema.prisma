@@ -98,7 +98,9 @@ model Conta {
   taxaJurosChequeEspecialPct   Float?
   carenciaDiasChequeEspecial   Int?
 
-  transacoes Transacao[]
+  transacoes              Transacao[]
+  transferenciasRecebidas Transacao[] @relation("TransacaoContaDestino")
+  metasFinanciadas        Meta[]
 
   createdAt DateTime @default(now())
 }
@@ -273,6 +275,12 @@ model Meta {
   dataAlvo          DateTime
   status            StatusMeta @default(ATIVA)
 
+  // Declara "essa meta é financiada por essa conta específica" (ex: o
+  // cofre de dívida no Bradesco, src/app/cofre/page.tsx) — opcional,
+  // uma meta comum não precisa disso.
+  contaOrigemId String?
+  contaOrigem   Conta?  @relation(fields: [contaOrigemId], references: [id])
+
   passivosAlvo MetaPassivo[]
   alocacoes    AlocacaoMeta[]
   regras       RegraClassificacao[]
@@ -389,6 +397,13 @@ model Transacao {
   // existem — esse campo só some ela do lado de "gasto"/"receita".
   ehTransferencia Boolean @default(false)
 
+  // Pra qual conta essa transferência foi (marcado manualmente, nunca
+  // adivinhado pela descrição) — ex: um PIX de saída pro "cofre" do
+  // rateio de dívida (src/lib/rateio.ts) fica marcado com o id da
+  // conta destino. Só faz sentido junto de ehTransferencia = true.
+  contaDestinoId String?
+  contaDestino   Conta?  @relation("TransacaoContaDestino", fields: [contaDestinoId], references: [id])
+
   createdAt DateTime @default(now())
 }
 
@@ -442,7 +457,20 @@ model Configuracao {
   // % do aporte extra que vai pro primeiro alvo quando estrategiaEscolhida
   // é "hibrida" (o resto vai pro segundo) — só usado nesse caso.
   splitHibridoPct           Int?
-  updatedAt                 DateTime @updatedAt
+
+  // Rateio automático: "separe X% de toda receita dessa categoria pra
+  // essa conta" (ex: 50% da receita de Religião pro cofre de dívida no
+  // Bradesco) — ver src/lib/rateio.ts. Os quatro juntos formam a regra;
+  // incompleta (algum null) = recurso desligado, nunca "zerado".
+  categoriaRateioId    String?
+  percentualRateio     Int?
+  contaRateioDestinoId String?
+  // Gravado automaticamente na primeira vez que a regra é salva —
+  // nunca reescrito depois. É o "zero" da contagem: nunca cobra
+  // retroativamente receita recebida (e já gasta) antes dessa data.
+  rateioAtivoDesde     DateTime?
+
+  updatedAt DateTime @updatedAt
 }
 
 // Uma "foto" do patrimônio líquido no fim de um mês, registrada manualmente

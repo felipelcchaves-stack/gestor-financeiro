@@ -8,12 +8,14 @@ import { calcularProgressoMeta } from "@/lib/metrics";
 import type { EstadoAtual } from "@/lib/estadoAtual";
 import type { QualidadeDados } from "@/lib/qualidadeDados";
 import type { MovimentacaoDoMes, PontoSaldo } from "@/lib/ofensores";
+import type { StatusRateio } from "@/lib/rateio";
 
 export function gerarResumoMarkdown(
   estado: EstadoAtual,
   qualidadeDados: QualidadeDados,
   movimentacaoDoMes: MovimentacaoDoMes,
-  trajetoriasPorPassivo: Map<string, PontoSaldo[]>
+  trajetoriasPorPassivo: Map<string, PontoSaldo[]>,
+  statusRateio: StatusRateio | null
 ): string {
   const linhas: string[] = [];
 
@@ -58,6 +60,25 @@ export function gerarResumoMarkdown(
     }
   }
   linhas.push("");
+
+  if (statusRateio) {
+    linhas.push("## Reserva pra dívida (rateio de receita)");
+    linhas.push(
+      `- Separando ${statusRateio.percentual}% de toda receita de "${statusRateio.categoriaNome}" pra ${statusRateio.contaDestinoNome}, desde ${new Date(statusRateio.ativoDesde).toLocaleDateString("pt-BR")}.`
+    );
+    linhas.push(
+      `- Recebido no período: ${formatarBRL(statusRateio.totalRecebidoCentavos)} · meta a separar: ${formatarBRL(statusRateio.metaSepararCentavos)} · já separado: ${formatarBRL(statusRateio.totalDepositadoCentavos)}${statusRateio.faltaSepararCentavos > 0 ? ` · falta separar: ${formatarBRL(statusRateio.faltaSepararCentavos)}` : " (meta cumprida)"}.`
+    );
+    linhas.push(
+      `- Saldo atual em ${statusRateio.contaDestinoNome}: ${statusRateio.contaDestinoSaldoCentavos != null ? formatarBRL(statusRateio.contaDestinoSaldoCentavos) : "não informado"}.`
+    );
+    if (statusRateio.dividaQuitavel) {
+      linhas.push(
+        `- Esse saldo já cobre ${statusRateio.dividaQuitavel.nome} (${formatarBRL(statusRateio.dividaQuitavel.valorQuitacaoCentavos)}) inteira — a dívida que mais custou de verdade nos últimos 6 meses entre as que cabem no saldo.`
+      );
+    }
+    linhas.push("");
+  }
 
   linhas.push("## O que estou pagando por dívida agora");
   if (estado.passivosAtivos.length === 0) {

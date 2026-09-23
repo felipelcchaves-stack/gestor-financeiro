@@ -2801,3 +2801,74 @@ categorias específicas.
   (rodapé do Mapa, topo de `/ofensores`) são fáceis de não notar.
   Adicionado item "Relatório por categoria" no grupo "Ferramentas",
   logo depois de "Maiores ofensores".
+
+## Cofre de dívida: rateio automático de 50% da receita de Religião
+
+Insight do Felipe: ao ver no relatório por categoria que recebeu
+~R$600 mil de Religião em 6 meses, quis separar 50% de toda receita
+dessa categoria numa conta à parte (Bradesco), tratando essa
+transferência como reserva já comprometida com quitar dívida — nunca
+como despesa. Pediu que Consultor, Score, resumo pra IA e uma página
+dedicada entendessem essa dinâmica.
+
+O mecanismo exato levou algumas idas e vindas na conversa (saldo vs.
+extrato) até fechar: **você marca manualmente** cada transação de
+transferência com a conta destino (mesma tela que já marca
+"transferência", campo novo) — o sistema nunca adivinha pela
+descrição. Isso significa nenhuma mudança em como o extrato é
+importado, só um campo a mais pra classificar depois.
+
+- `prisma/schema.prisma`: `Transacao.contaDestinoId` (pra qual conta
+  foi uma transferência), `Configuracao` ganha 4 campos da regra
+  (`categoriaRateioId`, `percentualRateio`, `contaRateioDestinoId`,
+  `rateioAtivoDesde` — gravado uma vez só, nunca retroativo), e
+  `Meta.contaOrigemId` (uma meta pode declarar de qual conta o
+  dinheiro dela vem). Migração `cofre_rateio_dividas`.
+- Conta "Bradesco" criada de verdade (tipo `POUPANCA`, saldo em
+  branco) — dado real que o Felipe descreveu, não fabricado.
+- `src/app/transacoes/TransacaoSheet.tsx` + `TransacoesTable.tsx` +
+  `page.tsx`: campo "Conta destino" na edição de uma transação,
+  salvo por `atualizarTransacao`.
+- `src/app/contas/actions.ts` + `page.tsx`: nova action
+  `atualizarSaldoConta` — pedido separado do Felipe, `/contas` nunca
+  teve nenhum jeito de editar saldo, só mostrar.
+- `src/lib/rateio.ts` (novo): `calcularStatusRateio()` — recebido na
+  categoria, meta (%), depositado (soma das transações marcadas),
+  falta separar, saldo atual da conta, e `dividaQuitavel`: quando o
+  saldo do cofre já cobre algum passivo ativo inteiro, escolhe **o de
+  maior ofensor real nos últimos 6 meses** entre os que cabem no saldo
+  (reaproveita `calcularOfensoresPorCredor`, não inventa ranking novo)
+  — não necessariamente o de menor saldo.
+- `src/app/consultor/page.tsx`: nova seção "Reserva pra dívida" com os
+  indicadores + `dividaQuitavel` em destaque quando existe, e um
+  formulário recolhível pra configurar/editar a regra.
+- `src/lib/score.ts`: rebalanceado (Reserva de emergência 25, Margem
+  livre 25, Cheque especial 20, Fatura de cartão 20, **Reserva pra
+  dívida 10** — mantendo 100 no total). `rateioOk` é sempre `true`
+  quando a regra não está configurada, nunca penalizando quem não usa
+  o recurso.
+- `src/lib/resumoIA.ts`: nova seção "Reserva pra dívida" no resumo pra
+  IA, só aparece com a regra configurada.
+- `src/app/cofre/page.tsx` (nova página): os mesmos indicadores +
+  metas financiadas por essa conta (reaproveita
+  `Meta`/`calcularProgressoMeta`/estilo visual de `/metas`, sem
+  duplicar nada) + formulário pra criar uma meta nova já com
+  `contaOrigemId` preenchido. Link adicionado direto no
+  `AppSidebar.tsx` e no rodapé do Mapa desta vez, sem esquecer o menu
+  (lição da entrada anterior).
+- Testado com script descartável (`scratch-test-rateio.ts`, apagado
+  depois) contra dados sintéticos isolados: sem regra → `null`; regra
+  sem depósito → falta = meta inteira; depósito marcado → soma
+  corretamente; saldo cobrindo um passivo de teste → `dividaQuitavel`
+  aponta pro de maior gasto real recente, não o de menor saldo;
+  reconfigurar a regra não reescreve `rateioAtivoDesde`. Todos os
+  dados de teste (passivo, transações, saldo, config) removidos e
+  confirmados ausentes ao final.
+- Regra real configurada com os valores que o Felipe pediu (Religião -
+  Receita, 50%, Bradesco) — `rateioAtivoDesde` = agora, então não
+  cobra retroativo dos ~R$600k já recebidos e gastos antes disso.
+- Verificado visualmente: `/consultor`, `/cofre`, `/contas`,
+  `/transacoes` e `/resumo/ia` respondendo 200 com os números
+  corretos (meta R$0,00 porque ainda não passou nenhuma receita desde
+  a ativação, como esperado).
+- `npx tsc --noEmit` limpo.

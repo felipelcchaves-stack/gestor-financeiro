@@ -150,6 +150,7 @@ export default async function TransacoesPage({
     passivos,
     ativos,
     metas,
+    contas,
     contagensCategoriaTipo,
   ] = await Promise.all([
     prisma.transacao.findMany({
@@ -171,6 +172,7 @@ export default async function TransacoesPage({
     prisma.passivo.findMany({ where: { status: "ATIVO" }, orderBy: { nome: "asc" } }),
     prisma.ativo.findMany({ orderBy: { nome: "asc" } }),
     prisma.meta.findMany({ where: { status: "ATIVA" }, orderBy: { nome: "asc" } }),
+    prisma.conta.findMany({ orderBy: { nome: "asc" } }),
     prisma.transacao.groupBy({
       by: ["categoriaId", "tipo"],
       _count: { _all: true },
@@ -226,6 +228,7 @@ export default async function TransacoesPage({
     // receita — o dinheiro entrou de verdade, mas é dívida nova.
     ehDesembolsoDeEmprestimo: t.tipo === "ENTRADA" && t.passivoId != null,
     ehTransferencia: t.ehTransferencia,
+    contaDestinoId: t.contaDestinoId,
     semelhancaPct: semelhanca != null ? Math.round(semelhanca * 100) : null,
     documento: t.documento
       ? {
@@ -462,6 +465,7 @@ export default async function TransacoesPage({
           passivos={passivos.map((p) => ({ id: p.id, nome: p.nome }))}
           ativos={ativos.map((a) => ({ id: a.id, nome: a.nome }))}
           metas={metas.map((m) => ({ id: m.id, nome: m.nome }))}
+          contas={contas.map((c) => ({ id: c.id, nome: c.nome }))}
         />
       )}
     </div>

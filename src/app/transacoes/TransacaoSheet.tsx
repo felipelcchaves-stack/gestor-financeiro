@@ -29,6 +29,7 @@ type TransacaoDetalhe = {
   categoria: string | null;
   vinculo: string | null;
   ehTransferencia: boolean;
+  contaDestinoId: string | null;
   documento: { id: string; nomeArquivo: string; tipoLabel: string; extensao: string } | null;
 };
 
@@ -37,9 +38,11 @@ const EXTENSOES_IMAGEM = [".png", ".jpg", ".jpeg", ".webp"];
 export function TransacaoSheet({
   transacao,
   categorias,
+  contas,
 }: {
   transacao: TransacaoDetalhe;
   categorias: CategoriaOpcao[];
+  contas: { id: string; nome: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -161,6 +164,20 @@ export function TransacaoSheet({
                 Transferência entre minhas contas (TED/DOC/PIX pra pagar dívida, aporte em investimento etc. — não
                 é gasto nem receita de verdade)
               </label>
+              <Campo label="Conta destino (se for transferência)">
+                <select
+                  name="contaDestinoId"
+                  defaultValue={transacao.contaDestinoId ?? ""}
+                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                >
+                  <option value="">nenhuma</option>
+                  {contas.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
               <div className="flex gap-2">
                 <Button type="submit" disabled={salvando}>
                   {salvando ? "Salvando…" : "Salvar"}

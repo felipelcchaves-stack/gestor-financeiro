@@ -26,6 +26,7 @@ export type TransacaoLinha = {
   vinculo: string | null;
   ehDesembolsoDeEmprestimo: boolean;
   ehTransferencia: boolean;
+  contaDestinoId: string | null;
   semelhancaPct: number | null;
   documento: { id: string; nomeArquivo: string; tipoLabel: string; extensao: string } | null;
 };
@@ -36,12 +37,14 @@ export function TransacoesTable({
   passivos,
   ativos,
   metas,
+  contas,
 }: {
   transacoes: TransacaoLinha[];
   categorias: CategoriaOpcao[];
   passivos: Opcao[];
   ativos: Opcao[];
   metas: Opcao[];
+  contas: Opcao[];
 }) {
   const router = useRouter();
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
@@ -391,7 +394,7 @@ export function TransacoesTable({
                   )}
                 </td>
                 <td className="px-3 py-2 text-right">
-                  <TransacaoSheet transacao={t} categorias={categoriasState} />
+                  <TransacaoSheet transacao={t} categorias={categoriasState} contas={contas} />
                 </td>
               </tr>
             ))}

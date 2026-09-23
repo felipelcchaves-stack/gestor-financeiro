@@ -521,6 +521,9 @@ export default async function MapaPage() {
         <Link href="/relatorio/categorias" className="underline underline-offset-4">
           Relatório por categoria (despesa e receita)
         </Link>
+        <Link href="/cofre" className="underline underline-offset-4">
+          Cofre (reserva pra dívida)
+        </Link>
       </div>
 
       <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">

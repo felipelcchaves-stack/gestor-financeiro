@@ -48,6 +48,20 @@ export async function criarContaSemRedirecionar(formData: FormData) {
   return conta;
 }
 
+export async function atualizarSaldoConta(id: string, formData: FormData) {
+  const saldoAtualCentavos = centavosDoForm(formData, "saldo");
+  if (saldoAtualCentavos == null) throw new Error("Informe o saldo atual.");
+
+  await prisma.conta.update({
+    where: { id },
+    data: { saldoAtualCentavos, saldoAtualizadoEm: new Date() },
+  });
+
+  revalidatePath("/contas");
+  revalidatePath("/consultor");
+  revalidatePath("/cofre");
+}
+
 export async function excluirConta(id: string) {
   const transacoesVinculadas = await prisma.transacao.count({ where: { contaId: id } });
   if (transacoesVinculadas > 0) {

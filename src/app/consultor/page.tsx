@@ -7,9 +7,10 @@ import { calcularScoreSaude } from "@/lib/score";
 import { calcularOportunidadesRenegociacao } from "@/lib/renegociacao";
 import { calcularQualidadeDados } from "@/lib/qualidadeDados";
 import { calcularArbitragemGarantia } from "@/lib/arbitragemGarantia";
+import { calcularStatusRateio } from "@/lib/rateio";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { definirTaxaReferencia } from "./actions";
+import { definirTaxaReferencia, definirRateio } from "./actions";
 import { AlocacaoEntradaPontual } from "./AlocacaoEntradaPontual";
 import { SimuladorQuitacaoAVista } from "./SimuladorQuitacaoAVista";
 import { ScoreGauge } from "@/components/ScoreGauge";
@@ -35,11 +36,13 @@ const FAIXA_CLASSES: Record<string, string> = {
 };
 
 export default async function ConsultorPage() {
-  const [estado, contas, qualidadeDados, ativosComVinculos] = await Promise.all([
+  const [estado, contas, qualidadeDados, ativosComVinculos, statusRateio, categorias] = await Promise.all([
     carregarEstadoAtual(),
     prisma.conta.findMany(),
     calcularQualidadeDados(),
     prisma.ativo.findMany({ include: { vinculos: { include: { passivo: true } } } }),
+    calcularStatusRateio(),
+    prisma.categoria.findMany({ orderBy: { nome: "asc" } }),
   ]);
   const arbitragemGarantia = calcularArbitragemGarantia(ativosComVinculos);
   const idsPassivosAtivos = new Set(estado.passivosAtivos.map((p) => p.id));
@@ -67,6 +70,7 @@ export default async function ConsultorPage() {
     chequeEspecialEmUso: alertaChequeEspecial.length > 0,
     faturaCrescendo: alertaFatura != null,
     faturaCrescendoPassivoId: alertaFatura?.passivoId,
+    rateioOk: statusRateio == null || statusRateio.faltaSepararCentavos === 0,
   });
 
   const oportunidadesRenegociacao = calcularOportunidadesRenegociacao(estado.passivosAtivos);
@@ -256,6 +260,121 @@ export default async function ConsultorPage() {
             de quitação).
           </p>
         )}
+      </div>
+
+      <div className="glass-card rounded-2xl p-5">
+        <p className="text-sm font-medium text-foreground">Reserva pra dívida (rateio automático)</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Separe um % de toda receita de uma categoria pra uma conta à parte — um cofre já reservado pra quitar
+          dívida, nunca tratado como despesa. Você marca manualmente cada transferência (aba Transações, campo
+          "Conta destino") pra contar aqui.
+        </p>
+
+        {statusRateio && (
+          <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3 border-b border-border pb-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Saldo em {statusRateio.contaDestinoNome}
+              </p>
+              <p className="num text-2xl font-semibold text-liquidity">
+                {statusRateio.contaDestinoSaldoCentavos != null
+                  ? formatarBRL(statusRateio.contaDestinoSaldoCentavos)
+                  : "não informado"}
+              </p>
+              {statusRateio.contaDestinoSaldoAtualizadoEm && (
+                <p className="text-[11px] text-muted-foreground/70">
+                  atualizado em {new Date(statusRateio.contaDestinoSaldoAtualizadoEm).toLocaleDateString("pt-BR")}
+                </p>
+              )}
+            </div>
+            <div className="border-l border-dashed border-border pl-8">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Separado desde {new Date(statusRateio.ativoDesde).toLocaleDateString("pt-BR")}
+              </p>
+              <p className="num text-2xl font-semibold text-foreground">
+                {formatarBRL(statusRateio.totalDepositadoCentavos)}
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">
+                meta: {statusRateio.percentual}% de {formatarBRL(statusRateio.totalRecebidoCentavos)} recebidos de{" "}
+                {statusRateio.categoriaNome} = {formatarBRL(statusRateio.metaSepararCentavos)}
+              </p>
+            </div>
+            {statusRateio.faltaSepararCentavos > 0 && (
+              <div className="border-l border-dashed border-border pl-8">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Falta separar</p>
+                <p className="num text-2xl font-semibold text-gold">{formatarBRL(statusRateio.faltaSepararCentavos)}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {statusRateio?.dividaQuitavel && (
+          <p className="mt-3 rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">
+            Seu cofre já tem {formatarBRL(statusRateio.contaDestinoSaldoCentavos ?? 0)} — dá pra quitar{" "}
+            <Link href={`/passivos/${statusRateio.dividaQuitavel.passivoId}`} className="font-medium underline underline-offset-4">
+              {statusRateio.dividaQuitavel.nome}
+            </Link>{" "}
+            ({formatarBRL(statusRateio.dividaQuitavel.valorQuitacaoCentavos)}) inteira agora — é a que mais te custou
+            de verdade nos últimos 6 meses entre as que cabem no saldo.
+          </p>
+        )}
+
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+            {statusRateio ? "Editar regra do rateio" : "Configurar rateio"}
+          </summary>
+          <form action={definirRateio} className="mt-3 flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Categoria de receita</label>
+              <select
+                name="categoriaRateioId"
+                required
+                defaultValue={estado.configuracao?.categoriaRateioId ?? ""}
+                className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="">selecione…</option>
+                {categorias
+                  .filter((c) => c.parentId === null)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">% a separar</label>
+              <input
+                name="percentualRateio"
+                type="number"
+                min={1}
+                max={100}
+                defaultValue={estado.configuracao?.percentualRateio ?? undefined}
+                placeholder="50"
+                className="w-20 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted-foreground">Conta destino (cofre)</label>
+              <select
+                name="contaRateioDestinoId"
+                required
+                defaultValue={estado.configuracao?.contaRateioDestinoId ?? ""}
+                className="w-48 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="">selecione…</option>
+                {contas.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button type="submit" size="sm">
+              Salvar
+            </Button>
+          </form>
+        </details>
       </div>
 
       <AlocacaoEntradaPontual resultado={resultado} />

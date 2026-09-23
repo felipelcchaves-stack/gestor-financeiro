@@ -7,6 +7,7 @@ import { calcularScoreSaude } from "@/lib/score";
 import { calcularMaioresOfensores, calcularTendenciaMensal, calcularMaioresVariacoes, inicioDoPeriodo } from "@/lib/ofensores";
 import { calcularProgressoMeta } from "@/lib/metrics";
 import { calcularQualidadeDados } from "@/lib/qualidadeDados";
+import { calcularStatusRateio } from "@/lib/rateio";
 import { PageHeader } from "@/components/PageHeader";
 import { ScoreGauge } from "@/components/ScoreGauge";
 
@@ -35,13 +36,14 @@ function gerarAcaoPrioritaria(
 }
 
 export default async function RelatorioPage() {
-  const [estado, contas, entradasPontuais, ofensores, qualidadeDados, tendenciaCategoria] = await Promise.all([
+  const [estado, contas, entradasPontuais, ofensores, qualidadeDados, tendenciaCategoria, statusRateio] = await Promise.all([
     carregarEstadoAtual(),
     prisma.conta.findMany(),
     prisma.recorrenciaFinanceira.findMany({ where: { tipo: "ENTRADA", frequencia: "UNICA", ativa: true } }),
     calcularMaioresOfensores(inicioDoPeriodo("mes")),
     calcularQualidadeDados(),
     calcularTendenciaMensal(inicioDoPeriodo("trimestre"), "categoria"),
+    calcularStatusRateio(),
   ]);
 
   const maioresVariacoes = calcularMaioresVariacoes(tendenciaCategoria).slice(0, 5);
@@ -68,6 +70,7 @@ export default async function RelatorioPage() {
     chequeEspecialEmUso: alertaChequeEspecial.length > 0,
     faturaCrescendo: alertaFatura != null,
     faturaCrescendoPassivoId: alertaFatura?.passivoId,
+    rateioOk: statusRateio == null || statusRateio.faltaSepararCentavos === 0,
   });
 
   const totalEntradasPontuaisCentavos = entradasPontuais.reduce((acc, r) => acc + r.valorCentavos, 0);

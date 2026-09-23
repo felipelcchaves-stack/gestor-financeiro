@@ -15,6 +15,7 @@ export async function atualizarTransacao(id: string, formData: FormData) {
   const tipo = formData.get("tipo") as TipoTransacao;
   const categoriaId = textoDoForm(formData, "categoriaId");
   const ehTransferencia = formData.get("ehTransferencia") === "on";
+  const contaDestinoId = ehTransferencia ? textoDoForm(formData, "contaDestinoId") : null;
 
   if (!descricao || !dataRaw || valorCentavos == null || !tipo) {
     throw new Error("Preencha descrição, data, valor e tipo.");
@@ -27,7 +28,7 @@ export async function atualizarTransacao(id: string, formData: FormData) {
 
   await prisma.transacao.update({
     where: { id },
-    data: { descricao, data: new Date(dataRaw), valorCentavos, tipo, categoriaId, ehTransferencia },
+    data: { descricao, data: new Date(dataRaw), valorCentavos, tipo, categoriaId, ehTransferencia, contaDestinoId },
   });
 
   // Reclassificar manualmente também ensina o sistema — a próxima
