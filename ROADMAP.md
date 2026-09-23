@@ -3828,3 +3828,59 @@ transação de verdade) ficava órfã e sumia junto.
   subcategoria de ambos os tipos nos dados reais. Conferido
   visualmente no dev server.
 - `npx tsc --noEmit` limpo.
+
+## Ajuda por página, em linguagem simples
+
+O botão de ajuda (`?` no header) mostrava as 18 páginas do sistema de
+uma vez só, tipo manual completo, num tom intermediário (jargão
+financeiro sem explicar — CDI, margem livre, cheque especial). Felipe
+pediu que a ajuda mostrasse só a página onde ele está, escrita bem
+simples (nível de explicação pra alguém de uns 18 anos).
+
+- `src/lib/ajudaConteudo.ts`: as 18 entradas existentes foram
+  reescritas num nível bem mais simples — frases curtas, termo técnico
+  sempre explicado na hora (ex: "margem livre" virou "quanto sobra
+  todo mês depois de pagar suas contas"). Acrescentadas as 3 páginas
+  do menu que não tinham entrada nenhuma: `/cartoes`, `/cofre`,
+  `/relatorio/categorias`.
+- `src/components/HelpSheet.tsx`: agora usa `usePathname()` (mesmo
+  padrão já usado em `AppSidebar.tsx`) pra achar a página de ajuda da
+  rota atual — match exato pra `/`, e prefixo mais específico pra
+  rotas com detalhe (`/passivos/algumId` cai em "Passivos"). Mostra só
+  essa página por padrão, com um link "ver ajuda de todas as páginas"
+  que alterna pra lista completa de antes — não removeu a visão geral,
+  só deixou de ser a padrão.
+- Testado visualmente no dev server (Playwright + Chrome local) em 3
+  rotas diferentes (`/`, `/cartoes`, `/passivos/[id]` real) — cada uma
+  mostrou só o conteúdo certo; o toggle "ver todas" também testado.
+- `npx tsc --noEmit` limpo.
+
+## Transferência entre contas direto na importação de extrato
+
+Ao importar um extrato com uma linha de transferência entre contas
+próprias (ex: PIX pro Bradesco), Felipe precisava importar normal e
+DEPOIS abrir a transação salva pra marcar "é transferência" e escolher
+a conta de destino — dois passos, duas telas. O schema já tinha tudo
+pronto (`Transacao.ehTransferencia`/`contaDestinoId`, já usados na
+edição), só a importação nunca usava.
+
+- `src/app/importar/extrato/ImportarExtratoForm.tsx`: `LinhaRevisao`
+  ganhou `ehTransferencia`/`contaDestinoId`; nova coluna na tabela de
+  revisão com um checkbox "transferência" + `<select>` de conta
+  destino que só aparece quando marcado (mesmo padrão já usado pro
+  seletor de vínculo Passivo/Ativo/Meta na mesma tabela).
+- `src/app/importar/extrato/actions.ts` e `src/lib/confirmarLancamento.ts`:
+  os dois campos passam por `LancamentoParaConfirmar` até o
+  `prisma.transacao.create`, como parâmetros opcionais (default
+  `false`/`null`) — não quebra o outro call site (`importar/fatura`,
+  que não passa esses campos; `importar/imagem` nem usa esse helper
+  compartilhado).
+- Bônus real: o motor de rateio automático (`src/lib/rateio.ts`) já
+  soma por `contaDestinoId` — essas transações agora entram na conta
+  do rateio assim que importadas, sem esperar o Felipe lembrar de
+  editar depois.
+- Testado: `confirmarLancamentoClassificado` chamado diretamente com
+  `ehTransferencia: true` + `contaDestinoId` real — a transação nasceu
+  já correta no banco, sem precisar editar depois; transação de teste
+  removida ao final.
+- `npx tsc --noEmit` limpo.

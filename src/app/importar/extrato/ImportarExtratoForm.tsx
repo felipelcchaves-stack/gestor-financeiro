@@ -29,6 +29,8 @@ type LinhaRevisao = {
   vinculoId: string;
   sugestaoOrigem: "exata" | "aproximada" | "valor" | null;
   essencial: boolean;
+  ehTransferencia: boolean;
+  contaDestinoId: string;
 };
 
 function contarSemCategoria(linhas: LinhaRevisao[]) {
@@ -161,6 +163,8 @@ export function ImportarExtratoForm({
           vinculoId: c.sugestao?.vinculoId ?? "",
           sugestaoOrigem: c.sugestao?.origem ?? null,
           essencial: c.sugestao?.essencial ?? false,
+          ehTransferencia: false,
+          contaDestinoId: "",
         }))
       );
     } catch (err) {
@@ -241,6 +245,8 @@ export function ImportarExtratoForm({
         vinculoTipo: l.vinculoTipo,
         vinculoId: l.vinculoTipo === "NENHUM" ? null : l.vinculoId || null,
         essencial: l.essencial,
+        ehTransferencia: l.ehTransferencia,
+        contaDestinoId: l.contaDestinoId || null,
       }));
 
       const res = await confirmarImportacaoExtrato({
@@ -380,6 +386,7 @@ export function ImportarExtratoForm({
                     <th className="px-3 py-2 font-medium">Tipo</th>
                     <th className="px-3 py-2 font-medium">Categoria</th>
                     <th className="px-3 py-2 font-medium">Vínculo</th>
+                    <th className="px-3 py-2 font-medium">Transferência</th>
                     <th className="px-3 py-2 font-medium">Essencial</th>
                     <th className="px-3 py-2 font-medium"></th>
                   </tr>
@@ -578,6 +585,35 @@ export function ImportarExtratoForm({
                             </optgroup>
                           )}
                         </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={l.ehTransferencia}
+                            onChange={(e) =>
+                              atualizarLinha(l.key, { ehTransferencia: e.target.checked })
+                            }
+                            title="Transferência entre minhas contas (PIX/TED pra pagar dívida, aporte etc. — não é gasto nem receita de verdade)"
+                          />
+                          transferência
+                        </label>
+                        {l.ehTransferencia && (
+                          <select
+                            value={l.contaDestinoId}
+                            onChange={(e) =>
+                              atualizarLinha(l.key, { contaDestinoId: e.target.value })
+                            }
+                            className="mt-1 w-40 rounded border border-input px-1.5 py-1 text-xs"
+                          >
+                            <option value="">conta destino…</option>
+                            {contas.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.nome}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-center">
                         <input

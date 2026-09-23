@@ -30,6 +30,8 @@ export type LancamentoClassificado = {
   essencial?: boolean;
   parcelaAtual?: number | null;
   totalParcelas?: number | null;
+  ehTransferencia?: boolean;
+  contaDestinoId?: string | null;
 };
 
 export type ResultadoConfirmarLancamento =
@@ -62,6 +64,8 @@ export async function confirmarLancamentoClassificado(
         ativoId: l.ativoId ?? null,
         parcelaAtual: l.parcelaAtual ?? null,
         totalParcelas: l.totalParcelas ?? null,
+        ehTransferencia: l.ehTransferencia ?? false,
+        contaDestinoId: l.contaDestinoId ?? null,
       },
     });
   } catch (err) {

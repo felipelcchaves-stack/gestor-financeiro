@@ -142,6 +142,8 @@ export type LancamentoParaConfirmar = {
   vinculoTipo: "NENHUM" | "PASSIVO" | "ATIVO" | "META";
   vinculoId: string | null;
   essencial: boolean;
+  ehTransferencia: boolean;
+  contaDestinoId: string | null;
 };
 
 export async function confirmarImportacaoExtrato(params: {
@@ -181,6 +183,8 @@ export async function confirmarImportacaoExtrato(params: {
       metaId: l.vinculoTipo === "META" ? l.vinculoId : null,
       saldoAposCentavos: l.saldoAposCentavos,
       essencial: l.essencial,
+      ehTransferencia: l.ehTransferencia,
+      contaDestinoId: l.contaDestinoId || null,
     });
 
     // Duas linhas do mesmo extrato com conta+dia+descrição+valor idênticos batem na
