@@ -15,14 +15,22 @@ import {
 import { formatarBRL, mesAnoDaquiA } from "@/lib/money";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularQualidadeDados } from "@/lib/qualidadeDados";
-import { calcularMovimentacaoDoMes, calcularOfensoresPorCredor, inicioDoPeriodo } from "@/lib/ofensores";
+import { calcularMovimentacaoDoMes, calcularOfensoresPorCredor, calcularEvolucaoMensal, inicioDoPeriodo } from "@/lib/ofensores";
 import type { NivelSinal } from "@/lib/sinal";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { GraficoLinhaTemporal, type SerieLinhaTemporal } from "@/components/GraficoLinhaTemporal";
+import { EvolucaoMensalChart } from "@/components/EvolucaoMensalChart";
+import { AnaliseEvolucaoSheet } from "@/components/AnaliseEvolucaoSheet";
 import { TrilhaDeSaida, type Estacao } from "./TrilhaDeSaida";
 import { Termometro, formatarMesLabel } from "./Termometro";
-import { definirAporteMensal, registrarSnapshotMensal, registrarSnapshotHistorico } from "./actions";
+import {
+  definirAporteMensal,
+  registrarSnapshotMensal,
+  registrarSnapshotHistorico,
+  obterUltimaAnaliseEvolucao,
+  gerarAnaliseEvolucao,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,13 +41,16 @@ const ESTILO_SINAL: Record<NivelSinal, string> = {
 };
 
 export default async function MapaPage() {
-  const [estado, qualidadeDados, movimentacaoDoMes, movimentacaoDoAno, ofensoresPorCredorDoAno] = await Promise.all([
-    carregarEstadoAtual(),
-    calcularQualidadeDados(),
-    calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
-    calcularMovimentacaoDoMes(inicioDoPeriodo("ano")),
-    calcularOfensoresPorCredor(inicioDoPeriodo("ano")),
-  ]);
+  const [estado, qualidadeDados, movimentacaoDoMes, movimentacaoDoAno, ofensoresPorCredorDoAno, evolucaoMensal, ultimaAnaliseEvolucao] =
+    await Promise.all([
+      carregarEstadoAtual(),
+      calcularQualidadeDados(),
+      calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
+      calcularMovimentacaoDoMes(inicioDoPeriodo("ano")),
+      calcularOfensoresPorCredor(inicioDoPeriodo("ano")),
+      calcularEvolucaoMensal(inicioDoPeriodo("tudo")),
+      obterUltimaAnaliseEvolucao(),
+    ]);
   const {
     passivosQuitados,
     passivoTotal,
@@ -115,6 +126,21 @@ export default async function MapaPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader eyebrow="Rota de Saída" title="Meu Mapa" />
+
+      <section>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <TrendingUp className="size-4 text-gold" /> Evolução mensal — entradas x despesas
+          </h2>
+          <AnaliseEvolucaoSheet sugestaoInicial={ultimaAnaliseEvolucao} pontos={evolucaoMensal} acaoGerar={gerarAnaliseEvolucao} />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Todo o histórico real importado, mês a mês — assim que um extrato novo entra, esse gráfico já reflete.
+        </p>
+        <div className="mt-3">
+          <EvolucaoMensalChart pontos={evolucaoMensal} />
+        </div>
+      </section>
 
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">

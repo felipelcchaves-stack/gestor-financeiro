@@ -4,7 +4,54 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { centavosDoForm, textoDoForm } from "@/lib/form-helpers";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
+import { calcularEvolucaoMensal, calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
+import { gerarPromptAnaliseEvolucao } from "@/lib/promptAnaliseEvolucao";
+import { chamarClaude } from "@/lib/claude";
 import { Confiabilidade } from "@/generated/prisma";
+
+export type AnaliseEvolucao = { resumo: string; geradoEm: string };
+export type ResultadoAnaliseEvolucao = ({ ok: true } & AnaliseEvolucao) | { ok: false; erro: string };
+
+// Id fixo na mesma tabela de cache usada pelas outras sugestões de IA
+// (SugestaoIACache, ver src/app/resumo/ia/actions.ts) — nenhuma
+// migração nova, `cortesJson` fica um array vazio porque essa análise
+// não tem lista de corte, só narrativa.
+const ID_CACHE_ANALISE_EVOLUCAO = "analise-evolucao-mapa";
+
+// Botão "Pedir análise da IA" no gráfico de evolução do Mapa — mesmo
+// formato nunca-lança-exceção de sempre (Server Actions apagam a
+// mensagem de erro lançado em produção).
+export async function gerarAnaliseEvolucao(): Promise<ResultadoAnaliseEvolucao> {
+  try {
+    const [pontos, movimentacaoDoMesAtual] = await Promise.all([
+      calcularEvolucaoMensal(inicioDoPeriodo("tudo")),
+      calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
+    ]);
+    if (pontos.length === 0) {
+      return { ok: false, erro: "Sem transação importada ainda pra analisar — importe um extrato primeiro." };
+    }
+
+    const prompt = gerarPromptAnaliseEvolucao(pontos, movimentacaoDoMesAtual);
+    const resumo = await chamarClaude(prompt);
+
+    const geradoEm = new Date();
+    await prisma.sugestaoIACache.upsert({
+      where: { id: ID_CACHE_ANALISE_EVOLUCAO },
+      create: { id: ID_CACHE_ANALISE_EVOLUCAO, resumo, cortesJson: "[]", geradoEm },
+      update: { resumo, cortesJson: "[]", geradoEm },
+    });
+
+    return { ok: true, resumo, geradoEm: geradoEm.toISOString() };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha desconhecida ao gerar a análise." };
+  }
+}
+
+export async function obterUltimaAnaliseEvolucao(): Promise<AnaliseEvolucao | null> {
+  const row = await prisma.sugestaoIACache.findUnique({ where: { id: ID_CACHE_ANALISE_EVOLUCAO } });
+  if (!row) return null;
+  return { resumo: row.resumo, geradoEm: row.geradoEm.toISOString() };
+}
 
 export async function definirAporteMensal(formData: FormData) {
   const aporteMensalExtraCentavos = centavosDoForm(formData, "aporte");

@@ -3566,3 +3566,42 @@ qualquer meta de dívida, progresso real ou não.
   poupança sem passivo-alvo continuou usando a checagem antiga de
   `AlocacaoMeta` sem quebrar. Tudo revertido ao final.
 - `npx tsc --noEmit` limpo.
+
+## Gráfico de entradas x despesas por mês no Mapa + análise da IA em sheet
+
+Felipe viu a IA do banco dele comparando mês atual com o anterior e
+quis uma versão melhor: gráfico de barra logo no topo do Mapa com
+**todo o histórico** real, entrada x despesa por mês, pra ver a
+evolução de cara assim que importa um extrato — mais um botão pra IA
+resumir isso com sugestões numa sheet que também tem gráfico.
+
+- `src/lib/ofensores.ts`: nova `calcularEvolucaoMensal(desde)` — agrupa
+  transação real por mês (só entra mês com dado de verdade, sem
+  precisar de query extra pra achar o mês mais antigo).
+- `src/components/EvolucaoMensalChart.tsx` (novo): barra agrupada por
+  mês, cor fixa e semântica (entrada = liquidez, despesa = dívida, não
+  a paleta categórica genérica), mesmo padrão visual de
+  `GraficoComparativoMensal.tsx` + tabela exata (com saldo do mês).
+- `src/app/(mapa)/page.tsx`: gráfico logo após o cabeçalho, antes dos
+  cards de "Balanço deste mês"/"Resumo de {ano}" que já existiam.
+- `src/lib/promptAnaliseEvolucao.ts`, `src/app/(mapa)/actions.ts`
+  (`gerarAnaliseEvolucao`/`obterUltimaAnaliseEvolucao`),
+  `src/components/AnaliseEvolucaoSheet.tsx`: botão "Pedir análise da
+  IA" reaproveitando `chamarClaude` (sem schema, resposta em texto
+  puro) e a mesma tabela `SugestaoIACache` das outras sugestões (id
+  fixo novo, nenhuma migração) — sheet com o resumo da IA e o mesmo
+  gráfico embutido.
+- Achado real testando com a chave de verdade: a primeira resposta
+  sugeriu "renegociar" a categoria Esmeraldino — protegida (é um
+  passivo, tratado pela rota, não corte de categoria). Diferente do
+  corte de gastos (que tem filtro defensivo em cima de um JSON
+  estruturado), essa análise é só texto livre, sem como filtrar
+  programaticamente — a correção foi reforçar a instrução do prompt
+  ("NUNCA sugira cortar/renegociar/reduzir uma categoria PROTEGIDA,
+  mesmo genericamente") e reconfirmar com uma segunda chamada real: a
+  resposta nova não citou nem Esmeraldino nem Potiguara em nenhum
+  momento.
+- Testado com dado real: `calcularEvolucaoMensal` bateu com soma manual
+  em 3 meses reais; 9 meses de histórico real detectados sozinhos, sem
+  configuração; cache de teste removido ao final.
+- `npx tsc --noEmit` limpo.
