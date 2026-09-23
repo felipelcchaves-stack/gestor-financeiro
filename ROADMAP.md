@@ -3371,3 +3371,54 @@ dívida", é "o Agiota fecha mais rápido por tabela".
   mão fora da função, confirmando que a "aceleração" é conta real, não
   estimativa. Saldo revertido ao final.
 - `npx tsc --noEmit` limpo.
+
+## IA no Comparar Estratégias: fechar o loop entre "qual rota" e "de onde tira o dinheiro"
+
+Felipe pediu explicitamente mais ferramentas no mesmo espírito do corte
+de gastos ("diminui o cartão de 13.570 pra 8.000") — deixando claro que
+amortizar parcialmente uma dívida grande também é um resultado bom, não
+só quitar integralmente. `/otimizacao` ("Comparar estratégias") já
+simulava 4 critérios de ataque com números 100% reais
+(`src/lib/otimizacao.ts`, motor em produção) mas só mostrava 4 cartões
+lado a lado, sem julgamento — exatamente o padrão "dado real, falta
+julgamento" que o corte de gastos já resolveu em outro contexto.
+
+- `src/lib/promptCorteDeGastos.ts`: `listarDespesasPorCategoria`
+  exportada (antes privada) pra ser reaproveitada em outros prompts.
+- `src/lib/promptRecomendacaoEstrategia.ts` (novo): monta o prompt
+  combinando as 4 estratégias já simuladas (só números — nunca a
+  trajetória mês a mês) com os gastos reais por categoria (mesma
+  marcação de PROTEGIDA de sempre), pedindo em JSON estruturado
+  (`RECOMENDACAO_ESTRATEGIA_SCHEMA`, tool-use forçado) qual estratégia
+  seguir + o motivo (citando os números reais) + cortes de categoria
+  que viabilizariam um aporte maior, se fizer sentido.
+- `src/app/otimizacao/actions.ts`: nova `gerarRecomendacaoEstrategia` —
+  recebe só o resumo numérico já calculado no cliente
+  (`OtimizacaoForm.tsx`, que já simula tudo com `useMemo`), busca o
+  gasto real por categoria fresco no servidor (nunca confia em dado
+  vindo do cliente pra isso), chama `chamarClaude` e valida que a
+  estratégia recomendada é uma das que foram realmente oferecidas
+  (nunca uma inventada). Mesmo formato nunca-lança-exceção de sempre.
+- `OtimizacaoForm.tsx`: botão "Pedir recomendação da IA (Claude)",
+  cartão recomendado destacado com selo, motivo em texto e os cortes
+  sugeridos no mesmo `CorteSugeridoChart` já usado em `/cofre` e
+  `/resumo/ia`. Sem cache — diferente das outras sugestões, aqui o
+  cenário (aporte, split, passivos) é ajustável ao vivo pelo Felipe, e
+  a recomendação some automaticamente se ele mexer nos controles
+  (`useEffect` limpando o estado quando `resultados` muda), pra nunca
+  mostrar um veredito que não corresponde mais aos cartões na tela.
+- Testado com a chave real: cenário com todos os passivos elegíveis e
+  R$5.000/mês de aporte — a resposta recomendou a híbrida citando os
+  números exatos passados (35 meses, R$877.944,04 de juro, alívio no
+  mês 1 vs. mês 13 nas outras), explicou a troca psicológica/financeira
+  corretamente, e decidiu não sugerir corte nenhum por já achar o
+  aporte atual adequado (mostra que está julgando de verdade, não só
+  sempre sugerindo cortar algo). Nenhuma categoria protegida apareceu
+  nos cortes. Vale notar: o texto livre do `motivo` mencionou um valor
+  de "aporte disponível" que não foi passado explicitamente no prompt
+  (parece inferido/aproximado pelo próprio modelo) — mesmo risco já
+  aceito nas outras narrativas em texto livre desse app: só os campos
+  estruturados (`estrategiaRecomendada`, `cortes`) são validados e
+  confiáveis, a prosa é sempre "o que saiu da máquina", nunca fonte de
+  verdade.
+- `npx tsc --noEmit` limpo.

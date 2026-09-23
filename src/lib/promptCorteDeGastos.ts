@@ -116,7 +116,11 @@ export function compararComAnalise(
   return { analisadaEmAnterior: geradoEmAnterior.toISOString(), categorias };
 }
 
-function listarDespesasPorCategoria(movimentacaoDoMes: MovimentacaoDoMes): string[] {
+// Exportada pra ser reaproveitada por outros prompts que também
+// precisem listar despesa real por categoria/subcategoria com a
+// marcação de protegida (ex: src/lib/promptRecomendacaoEstrategia.ts)
+// — evita duplicar essa formatação.
+export function listarDespesasPorCategoria(movimentacaoDoMes: MovimentacaoDoMes): string[] {
   const linhas: string[] = [];
   for (const c of movimentacaoDoMes.despesasPorCategoria) {
     const marcaRaiz = c.protegida ? " (PROTEGIDA — não sugerir corte aqui)" : "";

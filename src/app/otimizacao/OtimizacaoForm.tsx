@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   simularOrdem,
   simularOrdemComSplit,
@@ -14,7 +14,9 @@ import {
 } from "@/lib/otimizacao";
 import { formatarBRL, reaisParaCentavos, centavosParaReais, parseNumeroBR } from "@/lib/money";
 import { TrajetoriaChart } from "./TrajetoriaChart";
-import { definirEstrategiaEscolhida } from "./actions";
+import { CorteSugeridoChart } from "@/components/CorteSugeridoChart";
+import { definirEstrategiaEscolhida, gerarRecomendacaoEstrategia, type ResultadoRecomendacaoIA } from "./actions";
+import type { ResumoEstrategiaParaIA } from "@/lib/promptRecomendacaoEstrategia";
 
 export function OtimizacaoForm({
   passivos,
@@ -33,6 +35,8 @@ export function OtimizacaoForm({
   );
   const [aportePontualReais, setAportePontualReais] = useState("");
   const [splitPct, setSplitPct] = useState(splitHibridoPctAtivo ?? 50);
+  const [recomendacao, setRecomendacao] = useState<ResultadoRecomendacaoIA | null>(null);
+  const [carregandoRecomendacao, setCarregandoRecomendacao] = useState(false);
 
   const passivosSelecionados = passivos.filter((p) => selecionados.has(p.id));
   const aporteCentavos = reaisParaCentavos(parseNumeroBR(aporteReais) ?? 0);
@@ -62,6 +66,13 @@ export function OtimizacaoForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selecionados, aporteCentavos, aportePontualCentavos, splitPct]);
 
+  // Cenário mudou (aporte, split, passivos selecionados) — a
+  // recomendação anterior não corresponde mais aos cartões mostrados,
+  // então some até o Felipe pedir de novo pro cenário atual.
+  useEffect(() => {
+    setRecomendacao(null);
+  }, [resultados]);
+
   function alternar(id: string) {
     setSelecionados((prev) => {
       const novo = new Set(prev);
@@ -72,6 +83,45 @@ export function OtimizacaoForm({
   }
 
   const nomePorId = new Map(passivos.map((p) => [p.id, p.nome]));
+
+  const tituloPorEstrategia: Record<string, string> = {
+    menorTempo: "Critério 1 — menor tempo até zerar",
+    menorJuros: "Critério 2 — menor juro total pago",
+    maiorAlivio: "Critério 3 — maior alívio de caixa mais rápido",
+    hibrida: "Critério 4 — híbrida (juro + alívio ao mesmo tempo)",
+  };
+
+  async function pedirRecomendacao() {
+    if (!resultados) return;
+    setCarregandoRecomendacao(true);
+    setRecomendacao(null);
+    try {
+      const resumo: ResumoEstrategiaParaIA[] = (
+        [
+          ["menorTempo", resultados.menorTempo],
+          ["menorJuros", resultados.menorJuros],
+          ["maiorAlivio", resultados.maiorAlivio],
+          ["hibrida", resultados.hibrida],
+        ] as const
+      )
+        .filter((par): par is [typeof par[0], NonNullable<(typeof par)[1]>] => par[1] != null)
+        .map(([id, r]) => ({
+          id,
+          titulo: tituloPorEstrategia[id],
+          mesesTotais: r.mesesTotais,
+          jurosTotalCentavos: r.jurosTotalCentavos,
+          mesesAteAlivioVisivel: r.mesesAteAlivioVisivel,
+          mesesNoEscuroTotal: r.mesesNoEscuro.reduce((acc, m) => acc + m.meses, 0),
+        }));
+
+      const resposta = await gerarRecomendacaoEstrategia(resumo);
+      setRecomendacao(resposta);
+    } catch {
+      setRecomendacao({ ok: false, erro: "Não consegui falar com o servidor. Recarregue a página e tente de novo." });
+    } finally {
+      setCarregandoRecomendacao(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -162,6 +212,7 @@ export function OtimizacaoForm({
             resultado={resultados.menorTempo}
             nomePorId={nomePorId}
             estrategiaAtiva={estrategiaAtiva}
+            recomendadaPelaIA={recomendacao?.ok === true && recomendacao.estrategiaRecomendada === "menorTempo"}
           />
           <CartaoEstrategia
             id="menorJuros"
@@ -174,6 +225,7 @@ export function OtimizacaoForm({
             resultado={resultados.menorJuros}
             nomePorId={nomePorId}
             estrategiaAtiva={estrategiaAtiva}
+            recomendadaPelaIA={recomendacao?.ok === true && recomendacao.estrategiaRecomendada === "menorJuros"}
             destaque
           />
           <CartaoEstrategia
@@ -183,6 +235,7 @@ export function OtimizacaoForm({
             resultado={resultados.maiorAlivio}
             nomePorId={nomePorId}
             estrategiaAtiva={estrategiaAtiva}
+            recomendadaPelaIA={recomendacao?.ok === true && recomendacao.estrategiaRecomendada === "maiorAlivio"}
           />
           {resultados.hibrida ? (
             <CartaoEstrategia
@@ -193,11 +246,50 @@ export function OtimizacaoForm({
               nomePorId={nomePorId}
               estrategiaAtiva={estrategiaAtiva}
               splitHibridoPct={splitPct}
+              recomendadaPelaIA={recomendacao?.ok === true && recomendacao.estrategiaRecomendada === "hibrida"}
             />
           ) : (
             <div className="flex flex-col items-start justify-center gap-2 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
               A híbrida precisa de pelo menos 1 passivo binário (juro sem amortização, tipo Agiota) e 1 que amortiza
               normalmente pra fazer sentido dividir entre &ldquo;mais difícil&rdquo; e &ldquo;mais fácil&rdquo;.
+            </div>
+          )}
+        </div>
+      )}
+
+      {resultados && (
+        <div className="flex flex-col gap-3">
+          <div>
+            <button
+              type="button"
+              onClick={pedirRecomendacao}
+              disabled={carregandoRecomendacao}
+              className="w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+            >
+              {carregandoRecomendacao ? "Pedindo recomendação…" : "Pedir recomendação da IA (Claude)"}
+            </button>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Manda os números já calculados acima (nunca a lista de transações) + seus gastos reais por categoria
+              pra API do Claude, e pede uma recomendação de qual critério seguir e onde cortar pra bancar um aporte
+              maior. Tem custo por chamada.
+            </p>
+          </div>
+
+          {recomendacao && !recomendacao.ok && (
+            <p className="rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">{recomendacao.erro}</p>
+          )}
+
+          {recomendacao?.ok && (
+            <div className="glass-card rounded-2xl p-4">
+              <p className="text-sm text-foreground">
+                <strong>Recomendação:</strong> {tituloPorEstrategia[recomendacao.estrategiaRecomendada]}
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{recomendacao.motivo}</p>
+              {recomendacao.cortes.length > 0 && (
+                <div className="mt-4">
+                  <CorteSugeridoChart cortes={recomendacao.cortes} />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -234,6 +326,7 @@ function CartaoEstrategia({
   estrategiaAtiva,
   splitHibridoPct,
   destaque = false,
+  recomendadaPelaIA = false,
 }: {
   id: EstrategiaId;
   titulo: string;
@@ -243,6 +336,7 @@ function CartaoEstrategia({
   estrategiaAtiva: string | null;
   splitHibridoPct?: number;
   destaque?: boolean;
+  recomendadaPelaIA?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const ativa = estrategiaAtiva === id;
@@ -259,11 +353,24 @@ function CartaoEstrategia({
   return (
     <div
       className={`flex flex-col gap-3 rounded-lg border p-4 ${
-        ativa ? "border-liquidity/50 bg-liquidity/[0.05]" : destaque ? "border-gold/40 bg-surface" : "glass-card"
+        recomendadaPelaIA
+          ? "border-2 border-primary bg-primary/[0.05]"
+          : ativa
+            ? "border-liquidity/50 bg-liquidity/[0.05]"
+            : destaque
+              ? "border-gold/40 bg-surface"
+              : "glass-card"
       }`}
     >
       <div>
-        <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
+          {recomendadaPelaIA && (
+            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+              recomendado pela IA
+            </span>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">{descricao}</p>
       </div>
 
