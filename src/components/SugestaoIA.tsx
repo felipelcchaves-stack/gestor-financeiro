@@ -1,27 +1,66 @@
 "use client";
 
 import { useState } from "react";
-import type { ResultadoSugestaoIA } from "@/app/resumo/ia/actions";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { formatarBRL } from "@/lib/money";
+import { CorteSugeridoChart } from "@/components/CorteSugeridoChart";
+import type { ResultadoSugestaoIA, SugestaoGerada } from "@/app/resumo/ia/actions";
+
+function formatarDataHora(iso: string): string {
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function ProjecaoBanner({ projecao }: { projecao: NonNullable<SugestaoGerada["projecao"]> }) {
+  if (projecao.faltaParaQuitarCentavos === 0) {
+    return (
+      <div className="rounded-lg border border-liquidity/30 bg-liquidity/[0.06] p-3 text-sm text-liquidity">
+        O saldo já separado no cofre ({formatarBRL(projecao.saldoJaSeparadoCentavos)}) já cobre essa meta inteira —
+        já dá pra quitar agora, mesmo sem nenhum corte novo.
+      </div>
+    );
+  }
+
+  if (projecao.mesesEstimados == null) {
+    return (
+      <div className="rounded-lg border border-border bg-surface-2 p-3 text-sm text-muted-foreground">
+        Faltam {formatarBRL(projecao.faltaParaQuitarCentavos)} pra fechar essa meta (saldo já separado:{" "}
+        {formatarBRL(projecao.saldoJaSeparadoCentavos)}). A IA não sugeriu nenhum corte com valor dessa vez, então
+        não dá pra projetar um prazo.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-gold/30 bg-gold/[0.06] p-3 text-sm text-gold">
+      Se todos os cortes abaixo forem feitos ({formatarBRL(projecao.totalLiberadoMensalCentavos)}/mês) — considerando
+      o saldo real já separado no cofre agora ({formatarBRL(projecao.saldoJaSeparadoCentavos)}) — faltam{" "}
+      {formatarBRL(projecao.faltaParaQuitarCentavos)}, o que fecha em <strong>~{projecao.mesesEstimados}{" "}
+      {projecao.mesesEstimados === 1 ? "mês" : "meses"}</strong>.
+    </div>
+  );
+}
 
 type Props = {
-  acao: () => Promise<ResultadoSugestaoIA>;
-  label: string;
-  labelCarregando?: string;
+  sugestaoInicial: SugestaoGerada | null;
+  acaoGerar: () => Promise<ResultadoSugestaoIA>;
+  titulo: string;
 };
 
-export function SugestaoIA({ acao, label, labelCarregando = "Gerando…" }: Props) {
+export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
+  const [sugestao, setSugestao] = useState<SugestaoGerada | null>(sugestaoInicial);
+  const [aberto, setAberto] = useState(false);
   const [carregando, setCarregando] = useState(false);
-  const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   async function gerar() {
     setCarregando(true);
     setErro(null);
-    setResultado(null);
     try {
-      const resposta = await acao();
+      const resposta = await acaoGerar();
       if (resposta.ok) {
-        setResultado(resposta.texto);
+        setSugestao(resposta);
+        setAberto(true);
       } else {
         setErro(resposta.erro);
       }
@@ -36,23 +75,47 @@ export function SugestaoIA({ acao, label, labelCarregando = "Gerando…" }: Prop
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={gerar}
-        disabled={carregando}
-        className="w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
-      >
-        {carregando ? labelCarregando : label}
-      </button>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        {sugestao && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setAberto(true)}>
+            Ver última análise (gerada em {formatarDataHora(sugestao.geradoEm)})
+          </Button>
+        )}
+        <Button type="button" size="sm" onClick={gerar} disabled={carregando}>
+          {carregando ? "Gerando…" : sugestao ? "Gerar novo corte agressivo (IA)" : "Gerar sugestão com IA (Gemini)"}
+        </Button>
+      </div>
 
-      {erro && (
-        <p className="rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">{erro}</p>
-      )}
+      {erro && <p className="rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-xs text-debt">{erro}</p>}
 
-      {resultado && (
-        <div className="glass-card whitespace-pre-wrap rounded-2xl p-4 text-sm text-foreground">{resultado}</div>
-      )}
+      <Sheet open={aberto} onOpenChange={setAberto}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{titulo}</SheetTitle>
+            {sugestao && <SheetDescription>Gerado em {formatarDataHora(sugestao.geradoEm)}</SheetDescription>}
+          </SheetHeader>
+
+          <div className="flex flex-col gap-4 px-4">
+            {sugestao ? (
+              <>
+                {sugestao.projecao && <ProjecaoBanner projecao={sugestao.projecao} />}
+                <p className="whitespace-pre-wrap text-sm text-foreground">{sugestao.resumo}</p>
+                <CorteSugeridoChart cortes={sugestao.cortes} />
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nada gerado ainda.</p>
+            )}
+          </div>
+
+          <SheetFooter>
+            <p className="text-[11px] text-muted-foreground/70">
+              Envia os totais por categoria e o custo mensal de cada dívida (nunca suas transações individuais) pra
+              API do Gemini (Google). Tem custo por chamada e os dados saem da sua máquina.
+            </p>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

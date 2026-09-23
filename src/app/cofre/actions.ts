@@ -7,10 +7,11 @@ import { centavosDoForm, textoDoForm } from "@/lib/form-helpers";
 import { somaValorPassivosCentavos } from "@/app/metas/actions";
 import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
-import { calcularStatusRateio } from "@/lib/rateio";
-import { gerarPromptCorteDeGastos, type MetaAlvoPrompt } from "@/lib/promptCorteDeGastos";
+import { calcularStatusRateio, type StatusRateio } from "@/lib/rateio";
+import { gerarPromptCorteDeGastos, parseSugestaoCorte, nomesProtegidos, SUGESTAO_CORTE_SCHEMA, type MetaAlvoPrompt } from "@/lib/promptCorteDeGastos";
+import { resolverAlvoDaMeta, calcularProjecaoMeta } from "@/lib/projecaoMeta";
 import { chamarGemini } from "@/lib/gemini";
-import type { ResultadoSugestaoIA } from "@/app/resumo/ia/actions";
+import type { ResultadoSugestaoIA, SugestaoGerada } from "@/app/resumo/ia/actions";
 
 function passivosDoForm(formData: FormData): string[] {
   return formData.getAll("passivosAlvo").map(String).filter(Boolean);
@@ -46,13 +47,19 @@ export async function criarMetaCofre(contaOrigemId: string, formData: FormData) 
   redirect("/cofre");
 }
 
+function saldoDoCofre(statusRateio: StatusRateio | null, contaOrigemSaldoCentavos: number | null | undefined): number {
+  return statusRateio?.contaDestinoSaldoCentavos ?? contaOrigemSaldoCentavos ?? 0;
+}
+
 // Sugestão de corte AGRESSIVA (nunca de "ritmo confortável") pra fechar
 // uma meta do cofre o mais rápido possível — pedido explícito do
 // Felipe depois de rejeitar a versão anterior baseada em data-alvo/
 // ritmo necessário: "não posso conviver com esse passivo por muito
-// tempo". Mesmo formato {ok, texto|erro} de gerarSugestaoCorteIA — não
-// lança exceção pro cliente pelo mesmo motivo (Server Actions apagam a
-// mensagem de erro lançado em produção).
+// tempo". Mesmo formato {ok, ...} | {ok:false, erro} de
+// gerarSugestaoCorteIA — não lança exceção pro cliente pelo mesmo
+// motivo (Server Actions apagam a mensagem de erro lançado em
+// produção). Funciona pra qualquer meta do cofre, não só a do Agiota —
+// pega o(s) passivo(s)-alvo de QUALQUER metaId recebido.
 export async function gerarSugestaoParaMeta(metaId: string): Promise<ResultadoSugestaoIA> {
   try {
     const meta = await prisma.meta.findUnique({
@@ -68,23 +75,36 @@ export async function gerarSugestaoParaMeta(metaId: string): Promise<ResultadoSu
     ]);
 
     const passivosAlvo = meta.passivosAlvo.map((mp) => mp.passivo);
-    const custosDocumentados = passivosAlvo.every((p) => p.custoMensalCentavos != null);
-    const metaAlvo: MetaAlvoPrompt = {
-      nome: passivosAlvo.length === 1 ? passivosAlvo[0].nome : meta.nome,
-      saldoCentavos:
-        passivosAlvo.length === 1 && passivosAlvo[0].valorQuitacaoCentavos != null
-          ? passivosAlvo[0].valorQuitacaoCentavos
-          : meta.valorAlvoCentavos,
-      custoMensalCentavos: custosDocumentados
-        ? passivosAlvo.reduce((soma, p) => soma + (p.custoMensalCentavos ?? 0), 0)
-        : null,
-      saldoJaSeparadoCentavos: statusRateio?.contaDestinoSaldoCentavos ?? meta.contaOrigem?.saldoAtualCentavos ?? 0,
-    };
+    const alvo = resolverAlvoDaMeta(meta, passivosAlvo);
+    const saldoJaSeparadoCentavos = saldoDoCofre(statusRateio, meta.contaOrigem?.saldoAtualCentavos);
+    const metaAlvo: MetaAlvoPrompt = { ...alvo, saldoJaSeparadoCentavos };
 
     const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, metaAlvo);
-    const texto = await chamarGemini(prompt);
-    return { ok: true, texto };
+    const textoJson = await chamarGemini(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
+    const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
+
+    const geradoEm = new Date();
+    await prisma.sugestaoIACache.upsert({
+      where: { metaId },
+      create: { metaId, resumo, cortesJson: JSON.stringify(cortes), geradoEm },
+      update: { resumo, cortesJson: JSON.stringify(cortes), geradoEm },
+    });
+
+    const projecao = calcularProjecaoMeta(alvo.saldoCentavos, saldoJaSeparadoCentavos, cortes);
+    return { ok: true, resumo, cortes, geradoEm: geradoEm.toISOString(), projecao };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha desconhecida ao gerar a sugestão." };
   }
+}
+
+// Só a parte salva (resumo/cortes) — a projeção não é cacheada de
+// propósito, ela é recalculada em src/app/cofre/page.tsx com o saldo
+// ATUAL do cofre (já carregado ali pra outros fins), pra "Ver última
+// análise" nunca mostrar uma previsão desatualizada.
+export async function obterUltimaSugestaoMeta(
+  metaId: string
+): Promise<Omit<SugestaoGerada, "projecao"> | null> {
+  const row = await prisma.sugestaoIACache.findUnique({ where: { metaId } });
+  if (!row) return null;
+  return { resumo: row.resumo, cortes: JSON.parse(row.cortesJson), geradoEm: row.geradoEm.toISOString() };
 }

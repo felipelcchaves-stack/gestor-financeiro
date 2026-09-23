@@ -5,16 +5,17 @@ import { calcularStatusRateio } from "@/lib/rateio";
 import { gerarResumoMarkdown } from "@/lib/resumoIA";
 import { CopiarResumo } from "./CopiarResumo";
 import { SugestaoIA } from "@/components/SugestaoIA";
-import { gerarSugestaoCorteIA } from "./actions";
+import { gerarSugestaoCorteIA, obterUltimaSugestaoGeral } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResumoIAPage() {
   const estado = await carregarEstadoAtual();
-  const [qualidadeDados, movimentacaoDoMes, statusRateio] = await Promise.all([
+  const [qualidadeDados, movimentacaoDoMes, statusRateio, sugestaoSalva] = await Promise.all([
     calcularQualidadeDados(),
     calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
     calcularStatusRateio(estado),
+    obterUltimaSugestaoGeral(),
   ]);
 
   const trajetorias = await Promise.all(estado.passivosAtivos.map((p) => calcularTrajetoriaRealPassivo(p.id)));
@@ -38,12 +39,11 @@ export default async function ResumoIAPage() {
       <div className="mt-4 border-t border-border pt-4">
         <h2 className="text-base font-semibold text-foreground">Ou peça uma sugestão automática</h2>
         <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-          Isso envia os totais por categoria e o custo mensal de cada dívida (nunca suas transações individuais)
-          pra API do Gemini (Google) e pede sugestões de corte de gasto. Tem custo por chamada e os dados saem da
-          sua máquina — diferente do bloco acima, que só sai se você mesmo colar em algum lugar.
+          Diferente do bloco acima (que só sai se você mesmo colar em algum lugar), isso manda os totais por
+          categoria pra API do Gemini e abre a análise numa aba lateral.
         </p>
         <div className="mt-3">
-          <SugestaoIA acao={gerarSugestaoCorteIA} label="Gerar sugestão com IA (Gemini)" />
+          <SugestaoIA sugestaoInicial={sugestaoSalva} acaoGerar={gerarSugestaoCorteIA} titulo="Sugestão de corte de gastos" />
         </div>
       </div>
     </div>

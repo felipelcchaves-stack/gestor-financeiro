@@ -40,6 +40,22 @@ export function CategoriaForm({
         </Campo>
       </div>
 
+      <label className="flex items-start gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="protegidaDeCorte"
+          defaultChecked={categoria?.protegidaDeCorte ?? false}
+          className="mt-0.5"
+        />
+        <span>
+          Não sugerir corte aqui (IA)
+          <span className="block text-xs text-muted-foreground">
+            Ex.: aluguel de onde mora, ou algo que já é o custo de uma dívida otimizada pela rota de quitação, não
+            por corte de gasto.
+          </span>
+        </span>
+      </label>
+
       <div>
         <Button type="submit">{modoEdicao ? "Salvar alterações" : "Criar categoria"}</Button>
       </div>

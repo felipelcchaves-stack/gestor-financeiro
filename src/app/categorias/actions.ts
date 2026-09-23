@@ -22,9 +22,10 @@ export async function criarCategoriaAction(nome: string, parentId: string | null
 export async function criarCategoria(formData: FormData) {
   const nome = textoDoForm(formData, "nome");
   const parentId = textoDoForm(formData, "parentId");
+  const protegidaDeCorte = formData.get("protegidaDeCorte") === "on";
   if (!nome) throw new Error("Preencha o nome da categoria.");
 
-  await prisma.categoria.create({ data: { nome, parentId } });
+  await prisma.categoria.create({ data: { nome, parentId, protegidaDeCorte } });
   revalidatePath("/categorias");
   redirect("/categorias");
 }
@@ -32,10 +33,11 @@ export async function criarCategoria(formData: FormData) {
 export async function atualizarCategoria(id: string, formData: FormData) {
   const nome = textoDoForm(formData, "nome");
   const parentId = textoDoForm(formData, "parentId");
+  const protegidaDeCorte = formData.get("protegidaDeCorte") === "on";
   if (!nome) throw new Error("Preencha o nome da categoria.");
   if (parentId === id) throw new Error("Uma categoria não pode ser mãe dela mesma.");
 
-  await prisma.categoria.update({ where: { id }, data: { nome, parentId } });
+  await prisma.categoria.update({ where: { id }, data: { nome, parentId, protegidaDeCorte } });
   revalidatePath("/categorias");
   redirect("/categorias");
 }

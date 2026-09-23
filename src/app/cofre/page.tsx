@@ -8,7 +8,9 @@ import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { SugestaoIA } from "@/components/SugestaoIA";
-import { criarMetaCofre, gerarSugestaoParaMeta } from "./actions";
+import { criarMetaCofre, gerarSugestaoParaMeta, obterUltimaSugestaoMeta } from "./actions";
+import { resolverAlvoDaMeta, calcularProjecaoMeta } from "@/lib/projecaoMeta";
+import type { SugestaoGerada } from "@/app/resumo/ia/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,26 @@ export default async function CofrePage() {
       select: { id: true, nome: true, valorQuitacaoCentavos: true },
     }),
   ]);
+
+  // Sugestão salva de cada meta (se já foi gerada alguma vez) — a
+  // projeção ("fecha em X meses") é recalculada aqui, não guardada no
+  // cache, pra sempre refletir o saldo ATUAL do cofre (já carregado
+  // acima em statusRateio), nunca um número congelado de quando a
+  // sugestão foi gerada.
+  const sugestoesSalvas = await Promise.all(metas.map((m) => obterUltimaSugestaoMeta(m.id)));
+  const sugestaoInicialPorMeta = new Map<string, SugestaoGerada | null>(
+    metas.map((meta, i) => {
+      const salva = sugestoesSalvas[i];
+      if (!salva || !statusRateio) return [meta.id, null];
+      const alvo = resolverAlvoDaMeta(
+        meta,
+        meta.passivosAlvo.map((mp) => mp.passivo)
+      );
+      const saldoCofreCentavos = statusRateio.contaDestinoSaldoCentavos ?? 0;
+      const projecao = calcularProjecaoMeta(alvo.saldoCentavos, saldoCofreCentavos, salva.cortes);
+      return [meta.id, { ...salva, projecao }];
+    })
+  );
 
   // Data-alvo real pra criar a meta sugerida com um clique — só existe
   // quando a rota de menor juro já foi simulada (aporte mensal extra
@@ -242,22 +264,13 @@ export default async function CofrePage() {
                     editar em Metas
                   </Link>
 
-                  <details className="mt-3 border-t border-border pt-3">
-                    <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
-                      Corte agressivo pra fechar essa meta mais rápido (IA)
-                    </summary>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Envia os totais por categoria e o custo mensal das dívidas (nunca transações individuais) pra
-                      API do Gemini (Google), pedindo o corte mais agressivo plausível pra quitar essa dívida o
-                      quanto antes — sem se prender a um ritmo lento. Tem custo por chamada.
-                    </p>
-                    <div className="mt-2">
-                      <SugestaoIA
-                        acao={gerarSugestaoParaMeta.bind(null, meta.id)}
-                        label="Gerar corte agressivo com IA (Gemini)"
-                      />
-                    </div>
-                  </details>
+                  <div className="mt-3 border-t border-border pt-3">
+                    <SugestaoIA
+                      sugestaoInicial={sugestaoInicialPorMeta.get(meta.id) ?? null}
+                      acaoGerar={gerarSugestaoParaMeta.bind(null, meta.id)}
+                      titulo={`Corte agressivo pra fechar ${meta.nome}`}
+                    />
+                  </div>
                 </div>
               );
             })}

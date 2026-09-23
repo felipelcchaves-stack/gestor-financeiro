@@ -70,6 +70,7 @@ export default async function CategoriasPage() {
 type CategoriaComContagem = {
   id: string;
   nome: string;
+  protegidaDeCorte: boolean;
   _count: { transacoes: number; regras: number; recorrencias: number; subcategorias: number };
 };
 
@@ -86,6 +87,11 @@ function CategoriaRow({ categoria, filha = false }: { categoria: CategoriaComCon
       <td className={`px-4 py-3 text-foreground ${filha ? "pl-8 text-muted-foreground" : "font-medium"}`}>
         {filha ? "— " : ""}
         {categoria.nome}
+        {categoria.protegidaDeCorte && (
+          <span className="ml-2 rounded-full bg-gold/[0.08] px-2 py-0.5 text-[10px] font-medium text-gold">
+            protegida
+          </span>
+        )}
       </td>
       <td className="px-4 py-3 text-muted-foreground">{vinculos.length > 0 ? vinculos.join(" · ") : "—"}</td>
       <td className="px-4 py-3">

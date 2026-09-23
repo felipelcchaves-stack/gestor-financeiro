@@ -11,7 +11,15 @@
 
 const MODELO_PADRAO = "gemini-3-flash-preview";
 
-export async function chamarGemini(prompt: string): Promise<string> {
+type OpcoesChamarGemini = {
+  // Quando informado, força a resposta a vir como JSON nesse formato
+  // (subconjunto de OpenAPI aceito pelo Gemini) em vez de texto livre —
+  // usado pela sugestão de corte (src/lib/promptCorteDeGastos.ts) pra
+  // conseguir montar um gráfico sem depender de regex sobre markdown.
+  schema?: object;
+};
+
+export async function chamarGemini(prompt: string, opcoes?: OpcoesChamarGemini): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -27,8 +35,16 @@ export async function chamarGemini(prompt: string): Promise<string> {
     resposta = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-      signal: AbortSignal.timeout(30_000),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        ...(opcoes?.schema
+          ? { generationConfig: { responseMimeType: "application/json", responseSchema: opcoes.schema } }
+          : {}),
+      }),
+      // 60s, não 30 — prompts maiores (várias dívidas + subcategoria,
+      // saída estruturada) medem ~30-45s às vezes; visto de verdade
+      // num teste real que estourava exatamente em 30s.
+      signal: AbortSignal.timeout(60_000),
     });
   } catch {
     throw new Error("Não consegui contactar a API do Gemini (rede fora ou timeout). Tente de novo em alguns instantes.");

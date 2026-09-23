@@ -7,7 +7,13 @@
 import { prisma } from "@/lib/prisma";
 import { TipoTransacao } from "@/generated/prisma";
 
-export type ItemRanking = { id: string; nome: string; totalCentavos: number };
+// `protegida` reflete `Categoria.protegidaDeCorte` — só populado por
+// `calcularMaioresOfensores` (a única fonte com categoria de verdade),
+// usado pela sugestão de corte da IA (src/lib/promptCorteDeGastos.ts)
+// pra nunca sugerir cortar algo marcado como fixo/já otimizado por
+// outro caminho. `calcularOfensoresPorCredor` (ranking por credor, sem
+// categoria) deixa o campo de fora — ausente equivale a "não protegida".
+export type ItemRanking = { id: string; nome: string; totalCentavos: number; protegida?: boolean };
 export type CategoriaComDetalhe = ItemRanking & { subcategorias: ItemRanking[] };
 
 export type Periodo = "mes" | "trimestre" | "semestre" | "ano" | "tudo";
@@ -32,21 +38,35 @@ export async function calcularMaioresOfensores(
     where: { tipo, ehTransferencia: false, data: { gte: desde } },
     select: {
       valorCentavos: true,
-      categoria: { select: { id: true, nome: true, parentId: true, parent: { select: { id: true, nome: true } } } },
+      categoria: {
+        select: {
+          id: true,
+          nome: true,
+          parentId: true,
+          protegidaDeCorte: true,
+          parent: { select: { id: true, nome: true, protegidaDeCorte: true } },
+        },
+      },
     },
   });
 
-  const porRaiz = new Map<string, { nome: string; totalCentavos: number; subcategorias: Map<string, ItemRanking> }>();
+  const porRaiz = new Map<
+    string,
+    { nome: string; totalCentavos: number; protegida: boolean; subcategorias: Map<string, ItemRanking> }
+  >();
 
   for (const t of transacoes) {
     if (!t.categoria) continue;
-    const raiz = t.categoria.parent ?? { id: t.categoria.id, nome: t.categoria.nome };
+    const raiz = t.categoria.parent ?? { id: t.categoria.id, nome: t.categoria.nome, protegidaDeCorte: t.categoria.protegidaDeCorte };
 
-    const entradaRaiz = porRaiz.get(raiz.id) ?? { nome: raiz.nome, totalCentavos: 0, subcategorias: new Map() };
+    const entradaRaiz =
+      porRaiz.get(raiz.id) ?? { nome: raiz.nome, totalCentavos: 0, protegida: raiz.protegidaDeCorte, subcategorias: new Map() };
     entradaRaiz.totalCentavos += t.valorCentavos;
 
     if (t.categoria.parentId) {
-      const sub = entradaRaiz.subcategorias.get(t.categoria.id) ?? { id: t.categoria.id, nome: t.categoria.nome, totalCentavos: 0 };
+      const sub =
+        entradaRaiz.subcategorias.get(t.categoria.id) ??
+        { id: t.categoria.id, nome: t.categoria.nome, totalCentavos: 0, protegida: t.categoria.protegidaDeCorte };
       sub.totalCentavos += t.valorCentavos;
       entradaRaiz.subcategorias.set(t.categoria.id, sub);
     }
@@ -59,6 +79,7 @@ export async function calcularMaioresOfensores(
       id,
       nome: v.nome,
       totalCentavos: v.totalCentavos,
+      protegida: v.protegida,
       subcategorias: Array.from(v.subcategorias.values()).sort((a, b) => b.totalCentavos - a.totalCentavos),
     }))
     .sort((a, b) => b.totalCentavos - a.totalCentavos);
@@ -88,48 +109,40 @@ export async function calcularOfensoresPorCredor(desde: Date): Promise<ItemRanki
 export type MovimentacaoDoMes = {
   entradasCentavos: number;
   despesasTotalCentavos: number;
-  despesasPorCategoria: ItemRanking[];
+  despesasPorCategoria: CategoriaComDetalhe[];
 };
 
 // Movimentação real do período (extrato de verdade, não configuração
 // manual de recorrência) — entradas e despesas de fato lançadas, com as
-// despesas detalhadas por categoria raiz. Usado no resumo pra IA
-// (src/lib/resumoIA.ts) pra garantir que o texto reflita o que
-// aconteceu de verdade, não só o que foi cadastrado como recorrência.
+// despesas detalhadas por categoria raiz E subcategoria (reaproveita
+// calcularMaioresOfensores, que já faz esse agrupamento, em vez de
+// duplicar o loop). Usado no resumo pra IA (src/lib/resumoIA.ts) e na
+// sugestão de corte (src/lib/promptCorteDeGastos.ts) — essa última
+// precisa da subcategoria pra não sugerir cortar uma raiz inteira (ex:
+// "Moradia") quando ela mistura aluguel fixo com gasto revisável.
+//
+// entradasCentavos/despesasTotalCentavos vêm de agregados diretos, não
+// de somar despesasPorCategoria — transação sem categoria entra no
+// total mas não aparece na quebra por categoria, e não pode sumir do
+// total por isso (mesma classe do bug do `take: 40` já corrigido antes).
 export async function calcularMovimentacaoDoMes(desde: Date): Promise<MovimentacaoDoMes> {
-  const transacoes = await prisma.transacao.findMany({
-    where: { ehTransferencia: false, data: { gte: desde } },
-    select: {
-      tipo: true,
-      valorCentavos: true,
-      categoria: { select: { id: true, nome: true, parentId: true, parent: { select: { id: true, nome: true } } } },
-    },
-  });
+  const [entradas, despesasTotal, despesasPorCategoria] = await Promise.all([
+    prisma.transacao.aggregate({
+      where: { tipo: "ENTRADA", ehTransferencia: false, data: { gte: desde } },
+      _sum: { valorCentavos: true },
+    }),
+    prisma.transacao.aggregate({
+      where: { tipo: "DESPESA", ehTransferencia: false, data: { gte: desde } },
+      _sum: { valorCentavos: true },
+    }),
+    calcularMaioresOfensores(desde, TipoTransacao.DESPESA),
+  ]);
 
-  let entradasCentavos = 0;
-  let despesasTotalCentavos = 0;
-  const porRaiz = new Map<string, { nome: string; totalCentavos: number }>();
-
-  for (const t of transacoes) {
-    if (t.tipo === "ENTRADA") {
-      entradasCentavos += t.valorCentavos;
-      continue;
-    }
-    if (t.tipo !== "DESPESA") continue;
-
-    despesasTotalCentavos += t.valorCentavos;
-    if (!t.categoria) continue;
-    const raiz = t.categoria.parent ?? { id: t.categoria.id, nome: t.categoria.nome };
-    const entradaRaiz = porRaiz.get(raiz.id) ?? { nome: raiz.nome, totalCentavos: 0 };
-    entradaRaiz.totalCentavos += t.valorCentavos;
-    porRaiz.set(raiz.id, entradaRaiz);
-  }
-
-  const despesasPorCategoria = Array.from(porRaiz.entries())
-    .map(([id, v]) => ({ id, nome: v.nome, totalCentavos: v.totalCentavos }))
-    .sort((a, b) => b.totalCentavos - a.totalCentavos);
-
-  return { entradasCentavos, despesasTotalCentavos, despesasPorCategoria };
+  return {
+    entradasCentavos: entradas._sum.valorCentavos ?? 0,
+    despesasTotalCentavos: despesasTotal._sum.valorCentavos ?? 0,
+    despesasPorCategoria,
+  };
 }
 
 export type PontoMensal = { mes: string; totalCentavos: number; projetado: boolean };

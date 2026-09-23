@@ -3178,3 +3178,70 @@ rápido".
   de mover o componente (`curl` retornou 200, sugestão genérica
   intacta).
 - `npx tsc --noEmit` limpo.
+
+## Refinar a sugestão de corte: subcategoria, gráfico, sheet e histórico
+
+Testando o recurso acima com dado real, a IA sugeriu cortar 40% da
+categoria "Moradia" inteira — inclusive o aluguel de onde o Felipe mora
+(Potiguara) e o financiamento de outro imóvel (Esmeraldino, que é ele
+mesmo um passivo, não gasto discricionário). Causa raiz: a sugestão só
+enxergava o total da categoria-raiz, nunca a subcategoria — sem isso,
+não tem como separar o que é fixo do que é gordura. Felipe também
+pediu três melhorias de experiência (resultado numa sheet lateral,
+virar gráfico de barra, ficar salvo entre visitas) e uma "double-check"
+real: se os cortes forem feitos, em quantos meses a meta fecha,
+considerando o saldo de verdade do cofre.
+
+- `prisma/schema.prisma`: `Categoria.protegidaDeCorte` (bool, por
+  linha, não herda de categoria-mãe pra subcategoria) e novo modelo
+  `SugestaoIACache` (geral com id fixo `"geral-resumo-ia"`, por meta
+  com `metaId` único) pra guardar a última sugestão gerada.
+- `src/lib/ofensores.ts`: `calcularMaioresOfensores` agora propaga
+  `protegida` (raiz e subcategoria); `calcularMovimentacaoDoMes` foi
+  reescrita pra reaproveitar essa função em vez de duplicar o loop de
+  agregação — `despesasPorCategoria` ganhou subcategoria + a flag.
+  `entradasCentavos`/`despesasTotalCentavos` continuam vindo de
+  agregados diretos, não de somar categorias, pra não repetir o bug do
+  `take: 40` (transação sem categoria sumindo do total).
+- `src/lib/promptCorteDeGastos.ts`: lista subcategoria por subcategoria
+  (não só o total da raiz), marca `(PROTEGIDA)` quando aplicável, e
+  instrui explicitamente a nunca cortar uma raiz inteira nem uma
+  categoria protegida. Saída do Gemini passou de texto livre pra JSON
+  estruturado (`resumo` + `cortes[]`), usando `responseSchema` do
+  Gemini (`src/lib/gemini.ts` ganhou um segundo parâmetro opcional
+  `{schema}`). `parseSugestaoCorte` valida o formato e **filtra
+  defensivamente** qualquer corte cujo nome bata com uma categoria
+  protegida, caso o modelo ignore a instrução.
+- `src/lib/projecaoMeta.ts` (novo, fora de um arquivo `"use server"` de
+  propósito — todo export de lá precisa ser async, e essas são funções
+  puras): `calcularProjecaoMeta` soma os cortes reais e compara com o
+  saldo ATUAL do cofre pra estimar "fecha em X meses" — nunca confiado
+  ao Gemini (LLM erra conta de várias etapas). Recalculada toda vez que
+  a sugestão é exibida (gerada ou vinda do cache), nunca guardada como
+  número congelado, pra sempre refletir o saldo de verdade.
+- `src/components/CorteSugeridoChart.tsx` (novo) e `SugestaoIA.tsx`
+  (reescrito): sheet lateral (`src/components/ui/sheet.tsx`, mesmo
+  padrão de `GruposSugeridosSheet.tsx`) com gráfico de barra horizontal
+  por corte, banner da projeção e botão "Ver última análise" que reabre
+  o que já foi gerado sem chamar o Gemini de novo.
+- `src/app/categorias/`: checkbox "Não sugerir corte aqui (IA)" no
+  form, persistido nas actions, selo "protegida" na listagem.
+- Bug real encontrado testando com prompt maior (18 dívidas + detalhe
+  de subcategoria): o timeout de 30s do `chamarGemini` estourava às
+  vezes — um teste real mediu exatamente 30,009s. Aumentado pra 60s.
+- Testado com a chave real: (1) meta de teste pro Agiota confirmou que
+  Potiguara/Esmeraldino nunca aparecem em `cortes`, só Templo (não
+  protegida); (2) segunda meta de teste pra um passivo diferente (Leka
+  1) confirmou resumo e cortes focados nessa dívida, não no Agiota —
+  responde a pergunta "isso funciona pra qualquer meta nova?"; (3)
+  fluxo completo gerar → ler cache (simulando reload) → gerar de novo
+  → `geradoEm` mudou, confirmando que a sugestão salva atualiza. Toda
+  meta/saldo de teste revertido ao final, scripts descartáveis
+  apagados.
+- Tentativa de teste via browser real (Playwright) abortada — download
+  do binário do Chromium bloqueado neste ambiente; compensado com os
+  testes de servidor acima e checagem de HTML renderizado via `curl`.
+- Marcado `protegidaDeCorte = true` em "Potiguara" e "Esmeraldino"
+  (local); mesma configuração aplicada na VPS depois do deploy (fonte
+  real de dados).
+- `npx tsc --noEmit` limpo.

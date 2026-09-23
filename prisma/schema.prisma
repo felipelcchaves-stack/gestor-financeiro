@@ -78,6 +78,13 @@ model Categoria {
   parent        Categoria?  @relation("Subcategorias", fields: [parentId], references: [id], onDelete: Cascade)
   subcategorias Categoria[] @relation("Subcategorias")
 
+  // Marca essa categoria/subcategoria como fora do escopo da sugestão
+  // de corte da IA (src/lib/promptCorteDeGastos.ts) — ex: aluguel de
+  // onde mora, ou algo que já é custo de uma dívida otimizada pela
+  // rota de ataque, não por corte de gasto. É por linha, não herda de
+  // categoria-mãe pra subcategoria.
+  protegidaDeCorte Boolean @default(false)
+
   transacoes   Transacao[]
   regras       RegraClassificacao[]
   orcamentos   OrcamentoCategoria[]
@@ -284,9 +291,26 @@ model Meta {
   passivosAlvo MetaPassivo[]
   alocacoes    AlocacaoMeta[]
   regras       RegraClassificacao[]
+  sugestaoIA   SugestaoIACache?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Última sugestão de corte gerada pela IA (Gemini), guardada pra
+// reabrir sem gastar outra chamada. A geral (src/app/resumo/ia) usa um
+// id fixo ("geral-resumo-ia", mesmo padrão do singleton de
+// Configuracao); as por meta usam metaId único. cortesJson é a lista
+// estruturada (src/lib/promptCorteDeGastos.ts) serializada — SQLite
+// não tem um tipo Json nativo aqui, mesmo padrão já usado em
+// PassivoHistorico pra valores que não precisam ser consultáveis.
+model SugestaoIACache {
+  id       String   @id @default(cuid())
+  metaId   String?  @unique
+  meta     Meta?    @relation(fields: [metaId], references: [id], onDelete: Cascade)
+  resumo   String
+  cortesJson String
+  geradoEm DateTime @default(now())
 }
 
 model MetaPassivo {
