@@ -2872,3 +2872,23 @@ importado, só um campo a mais pra classificar depois.
   corretos (meta R$0,00 porque ainda não passou nenhuma receita desde
   a ativação, como esperado).
 - `npx tsc --noEmit` limpo.
+
+## Correção: "Conta destino" invisível na tela de visualização da transação
+
+Felipe importou o extrato, achou a transação do PIX pro Bradesco, mas
+não achou o campo "Conta destino" — mandou print confirmando. Causa:
+eu só tinha colocado o campo no modo de **edição** do `TransacaoSheet`
+(depois de clicar no lápis); a tela de visualização que abre ao clicar
+"ver" (o primeiro lugar que qualquer um olha) nunca mostrava esse dado,
+mesmo quando já preenchido.
+
+- `src/app/transacoes/TransacaoSheet.tsx`: a visualização agora mostra
+  "Conta destino" (nome da conta, resolvido a partir de `contas` que já
+  chegava como prop) sempre que a transação está marcada como
+  transferência — com um aviso "não marcada — clique em editar" quando
+  ainda não foi definida, apontando direto pra onde resolver.
+- Confirmado na VPS via SSH (leitura) que o build de produção já tinha
+  o campo certo compilado (`grep` em `.next/server/chunks/` achou
+  "Conta destino" nos chunks de `transacoes` e `consultor`) — não era
+  problema de deploy, só de descoberta na UI.
+- `npx tsc --noEmit` limpo.

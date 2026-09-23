@@ -215,6 +215,16 @@ export function TransacaoSheet({
                 <Campo label="Categoria" value={transacao.categoria ?? "—"} />
                 <Campo label="Vínculo" value={transacao.vinculo ?? "—"} />
                 <Campo label="Origem" value={transacao.origemLabel} />
+                {transacao.ehTransferencia && (
+                  <Campo
+                    label="Conta destino"
+                    value={
+                      transacao.contaDestinoId
+                        ? (contas.find((c) => c.id === transacao.contaDestinoId)?.nome ?? "—")
+                        : "não marcada — clique em editar"
+                    }
+                  />
+                )}
               </dl>
 
               {transacao.documento && (
