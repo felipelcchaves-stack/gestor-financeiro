@@ -187,10 +187,19 @@ export default async function CofrePage() {
               // do que já tenho guardado aqui cobre essa meta",
               // crescendo à medida que o saldo do Bradesco sobe.
               const saldoCofreCentavos = statusRateio.contaDestinoSaldoCentavos ?? 0;
-              const progressoCofrePct =
-                meta.valorAlvoCentavos > 0
-                  ? Math.min(100, Math.round((saldoCofreCentavos / meta.valorAlvoCentavos) * 100))
-                  : 0;
+              const progressoCofrePctExato =
+                meta.valorAlvoCentavos > 0 ? Math.min(100, (saldoCofreCentavos / meta.valorAlvoCentavos) * 100) : 0;
+              // Arredondar pra inteiro esconde um progresso real mas
+              // pequeno (ex: 0,07% vira "0%", parecendo que nada
+              // mudou) — mostra 1 casa decimal só nesse caso raro.
+              const progressoCofrePctLabel =
+                progressoCofrePctExato > 0 && progressoCofrePctExato < 1
+                  ? `${progressoCofrePctExato.toFixed(1).replace(".", ",")}%`
+                  : `${Math.round(progressoCofrePctExato)}%`;
+              // Largura da barra nunca fica visualmente zerada quando
+              // há saldo real, mesmo que o percentual arredonde pra 0.
+              const progressoCofreBarraPct =
+                progressoCofrePctExato > 0 ? Math.max(progressoCofrePctExato, 1) : 0;
               return (
                 <div key={meta.id} className="glass-card rounded-2xl p-5">
                   <div className="flex items-baseline justify-between">
@@ -214,12 +223,12 @@ export default async function CofrePage() {
                   <div className="mt-3">
                     <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
                       <span>Coberto pelo saldo do cofre</span>
-                      <span className="num">{progressoCofrePct}%</span>
+                      <span className="num">{progressoCofrePctLabel}</span>
                     </div>
                     <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
                       <div
-                        className={`h-full ${progressoCofrePct >= 100 ? "bg-liquidity" : "bg-gold"}`}
-                        style={{ width: `${progressoCofrePct}%` }}
+                        className={`h-full ${progressoCofrePctExato >= 100 ? "bg-liquidity" : "bg-gold"}`}
+                        style={{ width: `${progressoCofreBarraPct}%` }}
                       />
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground/70">

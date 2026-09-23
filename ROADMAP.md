@@ -3112,3 +3112,22 @@ realidade.
   final): confirmado que "Separado" passou a refletir o saldo real
   mesmo sem transação marcada.
 - `npx tsc --noEmit` limpo.
+
+## Correção: barra de progresso da meta escondia avanço real pequeno
+
+Depois do fix acima, Felipe perguntou por que a barra "Coberto pelo
+saldo do cofre" continuava em 0% com R$125,00 reais no saldo. Não era
+regressão do fix anterior (essa barra sempre usou o saldo real da
+conta, nunca o "Separado") — é matemática: R$125 / R$172.500 = 0,07%,
+que `Math.round` arredonda pra "0%", fazendo um progresso real parecer
+inexistente.
+
+- `src/app/cofre/page.tsx`: quando o percentual exato fica entre 0% e
+  1%, mostra uma casa decimal (`0,1%`) em vez de arredondar pra zero;
+  a barra visual também nunca fica com largura 0 quando há saldo real
+  (mínimo de 1% de largura, só visual — o número mostrado continua
+  exato).
+- Testado com dado real local (meta e saldo de teste, R$125 de
+  R$172.500 → "0,1%" e barra visível) — tudo removido/revertido ao
+  final.
+- `npx tsc --noEmit` limpo.
