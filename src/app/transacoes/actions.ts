@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, TipoTransacao } from "@/generated/prisma";
 import { centavosDoForm, textoDoForm } from "@/lib/form-helpers";
 import { aprenderRegraClassificacao, normalizarDescricao } from "@/lib/classificacao";
+import { ajustarSaldoConta } from "@/lib/confirmarLancamento";
 import { encontrarGruposSugeridos, type GrupoSugerido } from "@/lib/agrupamentoTransacoes";
 import { inicioDoPeriodo, type Periodo } from "@/lib/ofensores";
 
@@ -23,13 +24,30 @@ export async function atualizarTransacao(id: string, formData: FormData) {
 
   const transacaoAnterior = await prisma.transacao.findUnique({
     where: { id },
-    select: { passivoId: true, ativoId: true, alocacaoMeta: { select: { metaId: true } } },
+    select: {
+      passivoId: true,
+      ativoId: true,
+      alocacaoMeta: { select: { metaId: true } },
+      ehTransferencia: true,
+      contaDestinoId: true,
+      valorCentavos: true,
+    },
   });
 
   await prisma.transacao.update({
     where: { id },
     data: { descricao, data: new Date(dataRaw), valorCentavos, tipo, categoriaId, ehTransferencia, contaDestinoId },
   });
+
+  // Reverte o efeito antigo no saldo da conta destino (se era
+  // transferência antes) e aplica o novo (se é transferência agora) —
+  // cobre marcar, desmarcar, trocar de conta destino e mudar o valor.
+  if (transacaoAnterior?.ehTransferencia && transacaoAnterior.contaDestinoId) {
+    await ajustarSaldoConta(transacaoAnterior.contaDestinoId, -transacaoAnterior.valorCentavos);
+  }
+  if (ehTransferencia && contaDestinoId) {
+    await ajustarSaldoConta(contaDestinoId, valorCentavos);
+  }
 
   // Reclassificar manualmente também ensina o sistema — a próxima
   // importação de extrato/fatura já chega sugerindo essa categoria pra
@@ -49,10 +67,19 @@ export async function atualizarTransacao(id: string, formData: FormData) {
 }
 
 export async function excluirTransacao(id: string) {
+  const transacao = await prisma.transacao.findUnique({
+    where: { id },
+    select: { ehTransferencia: true, contaDestinoId: true, valorCentavos: true },
+  });
+
   await prisma.$transaction([
     prisma.alocacaoMeta.deleteMany({ where: { transacaoId: id } }),
     prisma.transacao.delete({ where: { id } }),
   ]);
+
+  if (transacao?.ehTransferencia && transacao.contaDestinoId) {
+    await ajustarSaldoConta(transacao.contaDestinoId, -transacao.valorCentavos);
+  }
 
   revalidatePath("/transacoes");
 }

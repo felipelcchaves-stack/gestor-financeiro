@@ -38,6 +38,22 @@ export type ResultadoConfirmarLancamento =
   | { criado: true; transacaoId: string }
   | { criado: false; duplicata: true };
 
+// Soma `deltaCentavos` (pode ser negativo, pra reverter) ao saldo de uma
+// conta — trata saldo nunca documentado (null) como zero antes de somar.
+// Sempre atualiza `saldoAtualizadoEm`: se um dia o extrato real dessa
+// conta for importado, a detecção de "saldo do dia" sobrescreve esse
+// valor calculado com o oficial do banco — isso aqui é só a melhor
+// estimativa até lá.
+export async function ajustarSaldoConta(contaId: string, deltaCentavos: number): Promise<void> {
+  if (deltaCentavos === 0) return;
+  const conta = await prisma.conta.findUnique({ where: { id: contaId }, select: { saldoAtualCentavos: true } });
+  if (!conta) return;
+  await prisma.conta.update({
+    where: { id: contaId },
+    data: { saldoAtualCentavos: (conta.saldoAtualCentavos ?? 0) + deltaCentavos, saldoAtualizadoEm: new Date() },
+  });
+}
+
 // Cria a transação (com toda a aprendizagem — regra de classificação,
 // alocação de meta, recorrência essencial). Se a "impressão digital" de
 // dedupe (hashDedupe, @unique no banco) já existir, trata como duplicata em
@@ -73,6 +89,10 @@ export async function confirmarLancamentoClassificado(
       return { criado: false, duplicata: true };
     }
     throw err;
+  }
+
+  if (l.ehTransferencia && l.contaDestinoId) {
+    await ajustarSaldoConta(l.contaDestinoId, l.valorCentavos);
   }
 
   if (l.metaId) {
