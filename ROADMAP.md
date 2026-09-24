@@ -3884,3 +3884,59 @@ edição), só a importação nunca usava.
   já correta no banco, sem precisar editar depois; transação de teste
   removida ao final.
 - `npx tsc --noEmit` limpo.
+
+## Saldo da conta destino atualiza sozinho na transferência
+
+Felipe marcou uma transferência (PIX pro Bradesco) na importação e
+reparou que nem o saldo do Bradesco nem o Cofre refletiram isso.
+Investigação achou uma causa raiz única: marcar `ehTransferencia`/
+`contaDestinoId` nunca atualizava `Conta.saldoAtualCentavos` — e o
+Cofre (`calcularStatusRateio`) já tem um fallback pra usar o saldo da
+conta destino quando a transação cai fora do período do rateio
+(`rateioAtivoDesde` nunca é retroativo, de propósito) — só que esse
+fallback nunca ajudava porque o saldo nunca vinha.
+
+- `src/lib/confirmarLancamento.ts`: nova `ajustarSaldoConta(contaId, deltaCentavos)`
+  — soma um delta ao saldo (trata `null` como zero), atualiza
+  `saldoAtualizadoEm`. Chamada com delta positivo sempre que uma
+  transação criada (via importação) já nasce com
+  `ehTransferencia && contaDestinoId`.
+- `src/app/transacoes/actions.ts`: `atualizarTransacao` busca o estado
+  anterior (`ehTransferencia`, `contaDestinoId`, `valorCentavos`) e
+  reverte o efeito antigo + aplica o novo — cobre marcar, desmarcar,
+  trocar de conta destino e mudar o valor. `excluirTransacao` reverte
+  o efeito antes de apagar.
+- Sem migração Prisma. Se um dia o extrato real dessa conta for
+  importado, a detecção de "saldo do dia" sobrescreve esse valor
+  calculado com o oficial do banco — o ajuste automático é só a melhor
+  estimativa até lá.
+- Testado via UI real (Playwright + Chrome local, dev server): criar
+  transferência (+valor certo), editar valor (delta certo), desmarcar
+  (reverte), trocar de conta destino (reverte da antiga, aplica na
+  nova — reproduziu o cenário exato do Felipe: conta com saldo `null`
+  virando um valor real), excluir (reverte). Ambiente restaurado ao
+  final.
+- `npx tsc --noEmit` limpo.
+
+## Ajuda por página: cada item explicado, não só o resumo geral
+
+Felipe pediu que a ajuda por página (entregue antes) fosse além do
+resumo geral — que cobrisse cada elemento/seção real da tela,
+explicando tudo, não só o contexto.
+
+- `src/lib/ajudaConteudo.ts`: `PaginaAjuda` ganhou `topicos: {titulo, explicacao}[]`
+  — as 21 páginas (18 + as 3 já adicionadas antes) ganharam entre 3 e
+  10 tópicos cada, um por card/número/gráfico/botão importante da tela
+  real (conferido lendo cada `page.tsx`, sem inventar elemento).
+  Trabalho de conteúdo feito por 3 agentes em paralelo (um por grupo
+  do menu), cada um escrevendo num JSON separado no scratchpad pra
+  evitar dois processos editando o mesmo arquivo ao mesmo tempo — a
+  integração final no arquivo real foi feita depois, revisando a
+  qualidade de cada JSON antes de juntar.
+- `src/components/HelpSheet.tsx`: renderiza os tópicos logo abaixo do
+  resumo/comoUsar, tanto na visão de página única quanto na lista
+  completa.
+- Testado visualmente no dev server (Playwright + Chrome local) em
+  duas páginas com bastante conteúdo (`/consultor`, 9 tópicos;
+  `/cofre`, 8 tópicos) — tudo legível, sem quebrar o layout da sheet.
+- `npx tsc --noEmit` limpo.
