@@ -117,7 +117,7 @@ export function PendenciasWizard({ pendencias }: { pendencias: PendenciaWizard[]
 
           {erro && <p className="text-xs text-debt">{erro}</p>}
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={salvando}>
               {salvando ? "Salvando…" : "Salvar e continuar"}
             </Button>

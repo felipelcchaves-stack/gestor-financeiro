@@ -23,7 +23,7 @@ export function PageHeader({
     >
       <div>
         <p className="text-[11px] uppercase tracking-[0.28em] text-gold">{eyebrow}</p>
-        <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">{title}</h1>
+        <h1 className="mt-2 text-2xl font-black sm:text-3xl">{title}</h1>
         {description && <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>}
       </div>
       {action}

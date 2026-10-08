@@ -366,7 +366,7 @@ function CartaoEstrategia({
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-foreground">{titulo}</h3>
           {recomendadaPelaIA && (
-            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-extrabold text-accent-foreground">
               recomendado pela IA
             </span>
           )}

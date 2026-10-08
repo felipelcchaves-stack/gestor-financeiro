@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora, Manrope, Geist_Mono } from "next/font/google";
+import { Nunito, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -24,16 +24,10 @@ const SCRIPT_TEMA_INICIAL = `
 })();
 `;
 
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -56,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
-      className={`${sora.variable} ${manrope.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
