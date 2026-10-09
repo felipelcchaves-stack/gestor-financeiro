@@ -25,6 +25,23 @@ npm run db:seed            # repopula com a posição consolidada da auditoria (
 npm run db:studio          # abre o Prisma Studio para inspecionar os dados
 ```
 
+## Acesso (login único pelo Hub)
+
+O sistema inteiro é privado. Não existe tela de senha aqui: você entra pelo
+Hub da Ifatokun (senha + código do app autenticador pedidos só lá) e o
+Gestor abre já logado. Detalhes, decisões e pendências: seção "Login único
+pelo Hub" no `ROADMAP.md`. Variáveis: `.env.example`.
+
+- Rotas: `/auth/hub/iniciar` (entrada, `initiate_login_uri` no Hub),
+  `/auth/callback`, `/auth/backchannel-logout`, `/auth/sair`, `/auth/saiu`,
+  `/auth/aviso`, `/auth/emergencia` (plano B, desligado por padrão).
+  `/api/saude` é público (status para o Hub).
+- Quem pode entrar: `npm run usuario:criar -- --email voce@ifatokun.com.br --nome "Nome"`
+  (o login nunca cria usuário sozinho; e-mail desconhecido é recusado).
+- Dev local de outras telas sem Hub: `GESTOR_AUTH_DESLIGADA=true` no `.env`
+  (ignorado em produção).
+- Testes: `npm test` (node:test + banco descartável `prisma/teste-automatizado.db`).
+
 ## Estrutura
 
 - `prisma/schema.prisma` — modelo de dados (seção 5 do PRD).

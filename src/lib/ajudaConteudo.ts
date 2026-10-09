@@ -360,6 +360,20 @@ export const AJUDA_CONTEUDO: GrupoAjuda[] = [
           { titulo: "Etapa: Pronto (resumo)", explicacao: "Mostra um resumo do que você cadastrou — contas, dívidas, bens, meta e aporte — e um botão pra ir direto pro seu Mapa." },
         ],
       },
+      {
+        titulo: "Entrar e sair (login único)",
+        href: "/auth/saiu",
+        resumo:
+          "Você entra no Gestor pelo Hub da Ifatokun. A senha e o código do app autenticador são pedidos só no Hub, uma vez. Depois disso, o Gestor abre direto, já com você dentro.",
+        comoUsar:
+          "Abra o Gestor pelo lançador do Hub. Para sair, use \"Sair\" no fim do menu lateral. O Hub pergunta se você quer sair de todos os sistemas.",
+        topicos: [
+          { titulo: "Seu nome no fim do menu", explicacao: "Mostra com qual conta do Hub você entrou (nome e e-mail)." },
+          { titulo: "Botão \"Sair\"", explicacao: "Fecha o Gestor neste navegador e leva ao Hub, que pergunta se você quer sair de todos os sistemas de uma vez." },
+          { titulo: "Sair pelo Hub", explicacao: "Se você sair no Hub, o Gestor também fecha sozinho. Na próxima vez, ele pede para entrar pelo Hub de novo." },
+          { titulo: "\"Seu usuário não está cadastrado aqui\"", explicacao: "Aparece quando o seu e-mail do Hub ainda não tem acesso ao Gestor. O Felipe precisa cadastrar você com o mesmo e-mail do Hub." },
+        ],
+      },
     ],
   },
 ];

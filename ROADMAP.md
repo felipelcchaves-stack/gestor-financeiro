@@ -3940,3 +3940,144 @@ explicando tudo, não só o contexto.
   duas páginas com bastante conteúdo (`/consultor`, 9 tópicos;
   `/cofre`, 8 tópicos) — tudo legível, sem quebrar o layout da sheet.
 - `npx tsc --noEmit` limpo.
+
+## Login único pelo Hub (SSO) — ✅ feito no branch `feat/hub-sso` (não publicado)
+
+Regra do Felipe: usuário, senha e código do app autenticador são pedidos
+**só no Hub**, uma vez. O Gestor nunca mostra tela de senha nem 2FA próprios
+no uso normal. Abrir o Gestor pelo lançador do Hub cai direto dentro do
+sistema (`/`, Meu Mapa), já logado. O sistema inteiro é privado.
+
+O que mudou:
+- Modelos novos `Usuario` e `Sessao` (migração `login_unico_hub`). O cookie
+  leva um token aleatório; o banco guarda só o SHA-256 dele. Cada sessão
+  aberta pelo Hub guarda o `sid` e o `sub` do SSO.
+- Todas as telas foram para o route group `src/app/(painel)/` (a URL não
+  muda). O layout dele exige sessão **antes** de ler qualquer dado.
+  `src/proxy.ts` (Node) confere a sessão no banco em toda requisição, menos
+  `/auth/*`, `/api/saude` e arquivos estáticos. Cada Server Action
+  (`exigirSessaoAcao()`) e `/api/documentos` conferem de novo.
+- Rotas (`src/app/auth/`):
+  - `GET /auth/hub/iniciar` — `initiate_login_uri` (OIDC third-party
+    initiated login). Aceita `iss` (tem que ser o emissor configurado) e
+    `target_link_uri` (só caminho do próprio sistema, mesma origem do
+    `APP_URL`; senão `/`). Funciona sem parâmetro. Começa Authorization
+    Code + PKCE S256 + state + nonce. É também para onde vai quem chega sem
+    sessão (a tela pedida vira o destino).
+  - `GET /auth/callback` — troca o código (state, PKCE, assinatura pelo
+    JWKS, iss, aud, exp, nonce), vincula o usuário e abre a sessão.
+  - `POST /auth/backchannel-logout` — valida o `logout_token` (assinatura
+    pelo JWKS da descoberta, iss, aud, iat ≤ 5 min, evento de logout, sem
+    nonce, `sid`/`sub`) e apaga as sessões daquele `sid` (sem `sid`: todas
+    as sessões do Hub daquele `sub`). 200 / 400.
+  - `POST /auth/sair` — "Sair" no fim do menu lateral: apaga a sessão local
+    e segue para o `end_session` do Hub (RP-initiated logout), que volta
+    para `/auth/saiu` (página parada de propósito: voltar para `/` faria
+    entrar de novo na hora, porque a sessão do Hub continua aberta).
+  - `/auth/aviso?motivo=…` — mensagens claras de recusa/erro.
+  - `/auth/emergencia` — plano B (ver abaixo); 404 quando desligado.
+  - `GET /api/saude` — público, só `{ok:true}` (status no Hub).
+- Configuração só por `.env` (o Gestor não tem tela de configurações):
+  `APP_URL`, `HUB_ISSUER`, `HUB_CLIENT_ID`, `HUB_CLIENT_SECRET`,
+  `HUB_SSO_ENABLED`, `HUB_SCOPES`, `HUB_TOKEN_AUTH_METHOD`,
+  `HUB_PAPEIS_PERMITIDOS` (padrão `admin`), `GESTOR_SESSAO_HORAS`
+  (padrão 12), `GESTOR_LOGIN_EMERGENCIA`, `GESTOR_EMERGENCIA_SENHA_HASH`,
+  `GESTOR_EMERGENCIA_TOTP`, `GESTOR_AUTH_DESLIGADA` (só dev). Lidos em
+  `src/lib/auth/config.ts`; documentados em `.env.example`.
+- Ajuda: nova entrada "Entrar e sair (login único)" em "Outros".
+- Testes automatizados (primeiros do projeto): `npm test` (node:test via
+  tsx, banco descartável `prisma/teste-automatizado.db`) — 17 testes de
+  destino seguro, config, cookie de ida e volta, vínculo, sessão,
+  back-channel (tokens assinados de verdade, inclusive os inválidos), TOTP
+  (vetor da RFC 6238), senha scrypt e limite de tentativas.
+- De passagem: corrigidos os 4 erros de lint que já existiam
+  (`npx eslint .` limpo).
+
+Decisões:
+- **E-mail do Hub desconhecido no Gestor: RECUSADO** com a mensagem "Seu
+  usuário não está cadastrado aqui… Peça ao Felipe para cadastrar você com
+  o mesmo e-mail do Hub." O login nunca cria usuário (muito menos dono):
+  são finanças pessoais. Cadastro só com `npm run usuario:criar`.
+- Vínculo: pelo `sub` do Hub (estável); na primeira vez, pelo e-mail, e o
+  `sub` fica gravado em `Usuario.hubSub`. Trocar o e-mail no Hub depois não
+  quebra nada. Usuário desativado, `sub` em conflito, e-mail não verificado
+  ou papel do Hub fora de `HUB_PAPEIS_PERMITIDOS` → recusado.
+- Papel aceito por padrão: só `admin` do Hub (o guia do Hub diz "sistema
+  pessoal: liberar só para administradores"). Defesa em profundidade: o Hub
+  já recusa quem não tem o sistema liberado.
+- Sem `.env` de SSO nem emergência, o sistema fica **fechado** ("Acesso não
+  configurado"), nunca aberto.
+- Plano B: senha + TOTP do `.env` (hash scrypt, sem `$` por causa da
+  expansão do `.env` do Next), só para o dono, só com
+  `GESTOR_LOGIN_EMERGENCIA=true`, só quando o SSO está desligado ou o Hub
+  não responde (com o Hub no ar, é recusado), 5 tentativas/15 min por IP,
+  sessão de no máximo 4 h. Não aparece no fluxo normal: só como link na
+  tela de aviso quando o Hub falha.
+
+Como foi provado (08/10/2026, Chrome headless + Hub local em
+`localhost:3040`, Gestor em `localhost:3160`, banco descartável
+`prisma/sso-dev.db` — o `dev.db` real nunca foi tocado):
+1. Entrada igual à do lançador (`/auth/hub/iniciar?iss=http://localhost:3040/oidc&target_link_uri=/`,
+   que é exatamente o que `/abrir/5` chama quando a URL de entrada tem a
+   mesma origem do sistema) com só o cookie do Hub → terminou em
+   `http://localhost:3160/`, logado (nome e e-mail no menu), nenhum campo de
+   senha. Acesso direto a `/passivos` sem sessão local → volta em `/passivos`.
+2. "Sair" no Hub → o Hub fez o back-channel; a sessão sumiu do banco e o
+   mesmo cookie do Gestor passou a receber 307 para `/auth/hub/iniciar`.
+3. Pessoa do Hub sem o Gestor liberado → tela "Sem acesso a este sistema"
+   do Hub; nada volta ao Gestor.
+4. Pessoa do Hub com acesso mas sem cadastro no Gestor →
+   `/auth/aviso?motivo=desconhecido` com a mensagem clara.
+5. Sem SSO: `/api/saude` 200 `{"ok":true}`, `/auth/saiu` abre; `/` sem
+   sessão vai para o login do Hub.
+6. "Sair" no Gestor → `end_session` do Hub → `/auth/saiu`; sessão local
+   apagada (307 no `/`).
+Local, o Hub não aceita `initiate_login_uri` `http://` ("must be a https
+uri"), então no teste o cliente ficou sem URL de entrada e a rota foi
+chamada direto; em produção (https) ela vai no cadastro.
+
+### Pendências para colocar no ar (Felipe)
+
+Atenção: push em `master` dispara o deploy (`.github/workflows/deploy.yml`,
+que roda `prisma migrate deploy`). Faça os passos 1–3 **antes** do merge,
+senão o Gestor sobe fechado ("Acesso não configurado").
+
+1. **Hub (produção)**, Sistemas › Gestor Financeiro › Login único:
+   - URL de retorno: `https://gestor.ifatokun.com.br/auth/callback`
+   - URL de entrada (initiate_login_uri): `https://gestor.ifatokun.com.br/auth/hub/iniciar`
+   - URL de logout por back-channel: `https://gestor.ifatokun.com.br/auth/backchannel-logout`
+   - URL após sair: `https://gestor.ifatokun.com.br/auth/saiu`
+   - Método: `client_secret_basic`. Copiar o `client_secret`. Ligar.
+   - Opcional: URL de checagem de status `https://gestor.ifatokun.com.br/api/saude`.
+   - Usuários › liberar o Gestor só para você (administrador).
+2. **`.env` da VPS** (usuário `gestor`): `APP_URL=https://gestor.ifatokun.com.br`,
+   `HUB_ISSUER=https://hub.ifatokun.com.br/oidc`, `HUB_CLIENT_ID=…`,
+   `HUB_CLIENT_SECRET=…`. Recomendado também gerar o plano B
+   (`npm run auth:emergencia -- --senha '…'`), guardar as duas linhas no
+   `.env` e deixar `GESTOR_LOGIN_EMERGENCIA=false` até precisar.
+3. **Seu usuário de dono**: o Hub só emite contas `@ifatokun.com.br`.
+   Se você usava um e-mail pessoal (ex.: gmail) em algum lugar do Gestor,
+   ele não serve para entrar. O Gestor não tinha usuário nenhum antes, então
+   basta criar o dono com o **mesmo e-mail da sua conta no Hub** (no Hub
+   local ela é `ifatokun@ifatokun.com.br`; confirme o de produção em
+   Hub › Meu perfil). Depois do deploy (a tabela nasce com a migração), na VPS:
+   `cd ~/<pasta do app> && npx tsx scripts/usuario-criar.ts --email SEU_EMAIL@ifatokun.com.br --nome "Felipe Chaves"`
+   (`--listar` confere; se cadastrou o e-mail errado:
+   `--email errado@gmail.com --novo-email certo@ifatokun.com.br`).
+   Até isso ser feito, o Hub te deixa passar mas o Gestor mostra "Seu
+   usuário não está cadastrado aqui".
+4. **Tirar o Basic Auth do Nginx** (só depois de testar o login pelo Hub; as
+   duas camadas juntas fariam o navegador pedir senha do Nginx de novo e o
+   back-channel do Hub receberia 401). Na VPS, com sudo:
+   ```
+   F=$(sudo grep -l "gestor.ifatokun.com.br" /etc/nginx/sites-enabled/*) && echo $F
+   sudo cp "$F" "/root/$(basename $F).bak-$(date +%F)"
+   sudo sed -i -E '/^\s*auth_basic(_user_file)?\s/d' "$F"
+   sudo nginx -t && sudo systemctl reload nginx
+   curl -sI https://gestor.ifatokun.com.br/api/saude   # espera 200, não 401
+   ```
+   Confira também que o bloco tem `proxy_set_header Host $host;` e
+   `proxy_set_header X-Forwarded-Proto $scheme;` (DEPLOY_VPS.md, pegadinha 2).
+   O arquivo de senhas (`/etc/nginx/.htpasswd*`) pode ser apagado depois.
+5. Testar: abrir o Gestor pelo lançador do Hub (deve cair em Meu Mapa sem
+   pedir nada), clicar "Sair", e sair do Hub para ver o Gestor fechar junto.

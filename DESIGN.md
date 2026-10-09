@@ -54,4 +54,5 @@ Nunito (next/font/google, subsets latin + latin-ext, pesos 400/600/700/800/900),
 
 ## Pendências conhecidas
 Botões crus (`<button className="rounded-lg bg-primary ...">` em páginas) ainda não têm o degrau 3D;
-migrar para `<Button>` quando mexer nessas telas. Não há tela de login nem logo do leão.
+migrar para `<Button>` quando mexer nessas telas. Não há tela de login (o login é no Hub; as telas
+`/auth/*` de aviso, saída e emergência usam `Card`/`Button` do kit) nem logo do leão.
