@@ -36,6 +36,7 @@ export function PendenciasWizard({ pendencias }: { pendencias: PendenciaWizard[]
       // Aba privada ou storage bloqueado — sem como lembrar "adiado",
       // então só mostra normalmente.
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage só existe no navegador
     if (!adiado) setAberto(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

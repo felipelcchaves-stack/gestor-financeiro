@@ -70,6 +70,7 @@ export function OtimizacaoForm({
   // recomendação anterior não corresponde mais aos cartões mostrados,
   // então some até o Felipe pedir de novo pro cenário atual.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset deliberado quando o cenário muda
     setRecomendacao(null);
   }, [resultados]);
 

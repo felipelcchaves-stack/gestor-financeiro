@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { formatarBRL, centavosParaReais } from "@/lib/money";
+import { centavosParaReais } from "@/lib/money";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { ConfirmForm } from "@/components/ConfirmForm";

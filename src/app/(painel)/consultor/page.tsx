@@ -267,7 +267,7 @@ export default async function ConsultorPage() {
         <p className="mt-1 text-xs text-muted-foreground">
           Separe um % de toda receita de uma categoria pra uma conta à parte — um cofre já reservado pra quitar
           dívida, nunca tratado como despesa. Você marca manualmente cada transferência (aba Transações, campo
-          "Conta destino") pra contar aqui.
+          &ldquo;Conta destino&rdquo;) pra contar aqui.
         </p>
 
         {statusRateio && (
