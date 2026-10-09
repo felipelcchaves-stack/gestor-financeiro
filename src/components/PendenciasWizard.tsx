@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { atualizarSaldoPassivo } from "@/app/passivos/actions";
-import { atualizarSaldoConta } from "@/app/contas/actions";
-import { definirAporteMensal } from "@/app/(mapa)/actions";
+import { atualizarSaldoPassivo } from "@/app/(painel)/passivos/actions";
+import { atualizarSaldoConta } from "@/app/(painel)/contas/actions";
+import { definirAporteMensal } from "@/app/(painel)/(mapa)/actions";
 import type { PendenciaWizard } from "@/lib/pendenciasWizard";
 
 // "Adiar" só guarda a decisão nessa aba/sessão do navegador — nunca

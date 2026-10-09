@@ -1,5 +1,5 @@
 import { formatarBRL } from "@/lib/money";
-import type { CorteSugerido } from "@/app/resumo/ia/actions";
+import type { CorteSugerido } from "@/app/(painel)/resumo/ia/actions";
 
 // Paleta categórica fixa (definida em globals.css) — mesma usada em
 // src/app/ofensores/GraficoComparativoMensal.tsx.

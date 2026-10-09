@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Button } from "@/components/ui/button";
 import { EvolucaoMensalChart } from "@/components/EvolucaoMensalChart";
 import type { PontoEvolucaoMensal } from "@/lib/ofensores";
-import type { AnaliseEvolucao, ResultadoAnaliseEvolucao } from "@/app/(mapa)/actions";
+import type { AnaliseEvolucao, ResultadoAnaliseEvolucao } from "@/app/(painel)/(mapa)/actions";
 
 function formatarDataHora(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });

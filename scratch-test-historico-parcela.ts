@@ -4,7 +4,7 @@
 // custoMensalCentavos eram rastreados) — passivo 100% sintético, sem
 // tocar no financiamento real.
 import { prisma } from "./src/lib/prisma";
-import { atualizarPassivo } from "./src/app/passivos/actions";
+import { atualizarPassivo } from "./src/app/(painel)/passivos/actions";
 
 async function chamarAction<T>(fn: () => Promise<T>): Promise<void> {
   try {

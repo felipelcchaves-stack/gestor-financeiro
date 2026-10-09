@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Button } from "@/components/ui/button";
 import { formatarBRL } from "@/lib/money";
 import { CorteSugeridoChart } from "@/components/CorteSugeridoChart";
-import type { ResultadoSugestaoIA, SugestaoGerada } from "@/app/resumo/ia/actions";
+import type { ResultadoSugestaoIA, SugestaoGerada } from "@/app/(painel)/resumo/ia/actions";
 
 function formatarDataHora(iso: string): string {
   return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });

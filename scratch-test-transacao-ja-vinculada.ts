@@ -5,7 +5,7 @@
 // tinham a transação vinculada antes de esse fluxo existir). Passivo e
 // transação 100% sintéticos, sem tocar em dado real.
 import { prisma } from "./src/lib/prisma";
-import { confirmarPagamentoPassivo } from "./src/app/passivos/actions";
+import { confirmarPagamentoPassivo } from "./src/app/(painel)/passivos/actions";
 
 async function chamarAction<T>(fn: () => Promise<T>): Promise<void> {
   try {

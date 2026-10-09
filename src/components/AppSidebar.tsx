@@ -25,10 +25,12 @@ import {
   FileText,
   Compass,
   Crown,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -81,7 +83,13 @@ const NAV_GROUPS = [
   },
 ];
 
-export function AppSidebar({ sugestoesPendentes = 0 }: { sugestoesPendentes?: number }) {
+export function AppSidebar({
+  sugestoesPendentes = 0,
+  usuario,
+}: {
+  sugestoesPendentes?: number;
+  usuario?: { nome: string; email: string };
+}) {
   const pathname = usePathname();
 
   return (
@@ -139,6 +147,25 @@ export function AppSidebar({ sugestoesPendentes = 0 }: { sugestoesPendentes?: nu
           </SidebarGroup>
         ))}
       </SidebarContent>
+      {usuario && (
+        <SidebarFooter className="border-t border-sidebar-border px-3 py-3">
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-bold text-sidebar-foreground">{usuario.nome}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{usuario.email}</p>
+          </div>
+          {/* Sair = encerra a sessão daqui e segue para o "Sair" do Hub (login único). */}
+          <form action="/auth/sair" method="post">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton render={<button type="submit" />} tooltip="Sair">
+                  <LogOut />
+                  <span>Sair</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </form>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

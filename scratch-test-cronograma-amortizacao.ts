@@ -4,7 +4,7 @@
 // dos 6 consignados reais do Felipe.
 import { prisma } from "./src/lib/prisma";
 import { calcularEstimativaCronograma, proximaParcela } from "./src/lib/cronogramaAmortizacao";
-import { confirmarPagamentoPassivo, aceitarEstimativaCronograma } from "./src/app/passivos/actions";
+import { confirmarPagamentoPassivo, aceitarEstimativaCronograma } from "./src/app/(painel)/passivos/actions";
 
 // As actions chamam revalidatePath, que só funciona dentro de uma
 // requisição real do Next — fora disso (rodando via tsx) lança

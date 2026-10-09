@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { HelpSheet } from "@/components/HelpSheet";
-import { NotificacoesSheet } from "@/components/NotificacoesSheet";
-import { PendenciasWizard } from "@/components/PendenciasWizard";
-import { contarSugestoesPendentes } from "@/lib/sugestoesPendentes";
-import { carregarNotificacoes } from "@/lib/notificacoes";
-import { calcularPendenciasWizard } from "@/lib/pendenciasWizard";
 
 const SCRIPT_TEMA_INICIAL = `
 (function () {
@@ -40,13 +30,9 @@ export const metadata: Metadata = {
   description: "Sistema de gestão financeira e quitação de passivos",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [sugestoesPendentes, notificacoes, pendenciasWizard] = await Promise.all([
-    contarSugestoesPendentes(),
-    carregarNotificacoes(),
-    calcularPendenciasWizard(),
-  ]);
-
+// Só o esqueleto (fontes, tema). O menu, o cabeçalho e a checagem de sessão ficam em
+// (painel)/layout.tsx; as telas de entrada/saída (/auth/*) têm o layout delas, sem dado financeiro.
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="pt-BR"
@@ -61,23 +47,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             streaming, roda tarde demais). */}
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_INICIAL }} />
       </head>
-      <body className="min-h-full bg-background text-foreground">
-        <SidebarProvider>
-          <AppSidebar sugestoesPendentes={sugestoesPendentes} />
-          <SidebarInset>
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-surface px-4">
-              <SidebarTrigger />
-              <Separator orientation="vertical" className="h-4" />
-              <span className="text-sm font-medium text-muted-foreground">Gestor Financeiro</span>
-              <NotificacoesSheet notificacoes={notificacoes} className="ml-auto" />
-              <HelpSheet />
-              <ThemeToggle />
-            </header>
-            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-          </SidebarInset>
-        </SidebarProvider>
-        <PendenciasWizard pendencias={pendenciasWizard} />
-      </body>
+      <body className="min-h-full bg-background text-foreground">{children}</body>
     </html>
   );
 }
