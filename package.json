@@ -8,16 +8,21 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "rm -f prisma/teste-automatizado.db && DATABASE_URL=file:./teste-automatizado.db prisma migrate deploy > /dev/null && DATABASE_URL=file:./teste-automatizado.db tsx --test 'tests/**/*.test.ts'",
+    "usuario:criar": "tsx scripts/usuario-criar.ts",
+    "auth:emergencia": "tsx scripts/auth-emergencia.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
     "@prisma/client": "6.19.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
+    "jose": "^6.2.12",
     "lucide-react": "^1.43.0",
     "motion": "13.2.0",
     "next": "16.3.4",
+    "openid-client": "^6.8.8",
     "pdf-parse": "2.4.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

@@ -527,3 +527,46 @@ model PatrimonioSnapshot {
   // sistema, sempre o número que ele mesmo digitou.
   confiabilidade Confiabilidade?
 }
+
+// Quem pode abrir o sistema (login único pelo Hub — ver ROADMAP, "Login único
+// pelo Hub"). Nunca criado sozinho pelo login: o dono é cadastrado à mão com
+// `npm run usuario:criar` e o Hub só prova quem a pessoa é. E-mail do Hub
+// desconhecido aqui = entrada recusada com mensagem clara.
+model Usuario {
+  id     String @id @default(cuid())
+  // Sempre minúsculo. Precisa ser o mesmo e-mail @ifatokun.com.br da conta no Hub.
+  email  String @unique
+  nome   String
+  // "dono" (único papel hoje — sistema pessoal) | "equipe" (reservado).
+  papel  String @default("dono")
+  // `sub` do Hub (estável, nunca reaproveitado): gravado no primeiro login e
+  // usado dali em diante — trocar o e-mail no Hub não quebra o vínculo.
+  hubSub String? @unique
+  ativo  Boolean @default(true)
+
+  ultimoAcessoEm DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessoes Sessao[]
+}
+
+// Sessão local (cookie httpOnly com um token aleatório; aqui só o hash).
+// `hubSid` é o id da sessão de SSO: o logout por back-channel do Hub apaga
+// todas as sessões com aquele `sid`.
+model Sessao {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  // "hub" | "emergencia"
+  origem    String
+  hubSid    String?
+  hubSub    String?
+  expiraEm  DateTime
+  createdAt DateTime @default(now())
+
+  @@index([hubSid])
+  @@index([hubSub])
+  @@index([usuarioId])
+}
