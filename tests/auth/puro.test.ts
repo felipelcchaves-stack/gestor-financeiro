@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { emissorConfere, lerConfigAuth, urlsParaCadastrarNoHub } from "../../src/lib/auth/config";
 import { codificarPendente, decodificarPendente, destinoSeguro } from "../../src/lib/auth/destino";
 import { AVISOS, motivoValido } from "../../src/lib/auth/mensagens";
-import { basePublica, urlCallback } from "../../src/lib/auth/http";
+import { basePublica, ipDoCliente, urlCallback } from "../../src/lib/auth/http";
+import { hubRespondeAgora } from "../../src/lib/auth/hub";
 
 const APP = "https://gestor.ifatokun.com.br";
 
@@ -88,4 +89,17 @@ test("avisos: motivo desconhecido cai em 'falha'; todos têm texto", () => {
   assert.equal(motivoValido(undefined), "falha");
   for (const a of Object.values(AVISOS)) assert.ok(a.titulo && a.texto);
   assert.match(AVISOS.desconhecido.texto, /mesmo e-mail do Hub/);
+});
+
+test("ipDoCliente: só X-Real-IP (o Nginx sobrescreve); sem ele, o ÚLTIMO salto do XFF, nunca o primeiro", () => {
+  assert.equal(ipDoCliente(new Headers({ "x-real-ip": "198.51.100.7", "x-forwarded-for": "1.2.3.4" })), "198.51.100.7");
+  assert.equal(ipDoCliente(new Headers({ "x-forwarded-for": "1.2.3.4, 10.0.0.1" })), "10.0.0.1", "o primeiro é do cliente e pode ser forjado");
+  assert.equal(ipDoCliente(new Headers()), "local");
+});
+
+test("hubRespondeAgora: Hub fora do ar → false rápido (sem cache)", async () => {
+  const cfg = { issuer: "http://127.0.0.1:9/oidc", clientId: "x", clientSecret: "y", scopes: "openid", tokenAuthMethod: "client_secret_basic" as const, papeisPermitidos: [] };
+  const t0 = Date.now();
+  assert.equal(await hubRespondeAgora(cfg, 2), false);
+  assert.ok(Date.now() - t0 < 5000);
 });

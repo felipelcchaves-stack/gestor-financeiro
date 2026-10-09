@@ -2,7 +2,7 @@
 import { after, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { PrismaClient } from "../../src/generated/prisma";
-import { criarSessao, encerrarSessaoPorToken, encerrarSessoesDoHub, hashToken, limparSessoesVencidas, validarSessao } from "../../src/lib/auth/sessao";
+import { consumirContadorEmergencia, criarSessao, ultimoContadorEmergencia, encerrarSessaoPorToken, encerrarSessoesDoHub, hashToken, limparSessoesVencidas, validarSessao } from "../../src/lib/auth/sessao";
 import { resolverUsuarioDoHub, type ClaimsHub } from "../../src/lib/auth/vinculo";
 
 assert.match(process.env.DATABASE_URL ?? "", /teste-automatizado\.db$/, "rode pelo npm test (banco descartável)");
@@ -11,6 +11,7 @@ after(() => db.$disconnect());
 beforeEach(async () => {
   await db.sessao.deleteMany();
   await db.usuario.deleteMany();
+  await db.authEstado.deleteMany();
 });
 
 const claims = (c: Partial<ClaimsHub> = {}): ClaimsHub => ({
@@ -99,4 +100,14 @@ test("limpeza das sessões vencidas", async () => {
   await criarSessao(db, { usuarioId: u.id, origem: "hub", horas: 1 });
   assert.equal(await limparSessoesVencidas(db), 1);
   assert.equal(await db.sessao.count(), 1);
+});
+
+test("emergência: cada contador TOTP só é consumido uma vez, e nunca um menor que o último", async () => {
+  assert.equal(await ultimoContadorEmergencia(db), null);
+  assert.equal(await consumirContadorEmergencia(db, 100), true);
+  assert.equal(await consumirContadorEmergencia(db, 100), false, "replay");
+  assert.equal(await consumirContadorEmergencia(db, 99), false, "contador antigo");
+  assert.equal(await ultimoContadorEmergencia(db), 100);
+  const [a, b] = await Promise.all([consumirContadorEmergencia(db, 101), consumirContadorEmergencia(db, 101)]);
+  assert.equal(Number(a) + Number(b), 1, "duas ao mesmo tempo: só uma passa");
 });

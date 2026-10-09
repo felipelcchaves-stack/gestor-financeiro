@@ -570,3 +570,12 @@ model Sessao {
   @@index([hubSub])
   @@index([usuarioId])
 }
+
+// Estado do login de emergência que precisa sobreviver a reinícios: o último
+// contador TOTP aceito (um código nunca vale duas vezes, nem dentro da
+// janela de ±30 s).
+model AuthEstado {
+  id                       String   @id @default("singleton")
+  emergenciaUltimoContador Int?
+  updatedAt                DateTime @updatedAt
+}

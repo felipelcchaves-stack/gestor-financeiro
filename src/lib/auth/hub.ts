@@ -44,6 +44,22 @@ export function configHub(c: HubSsoConfig): Promise<oidc.Configuration> {
   return hit;
 }
 
+/**
+ * O Hub responde AGORA? Descoberta nova, sem cache e com timeout curto — usada pelo login de
+ * emergência (o cache de configHub vive para sempre e mentiria durante uma queda do Hub).
+ */
+export async function hubRespondeAgora(c: HubSsoConfig, timeoutS = 3): Promise<boolean> {
+  try {
+    await oidc.discovery(new URL(c.issuer), c.clientId, undefined, oidc.None(), {
+      timeout: timeoutS,
+      ...(inseguroPermitido(c.issuer) ? { execute: [oidc.allowInsecureRequests] } : {}),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function iniciarLoginHub(c: HubSsoConfig, redirectUri: string, destino: string): Promise<{ url: URL; pendente: LoginPendente }> {
   const config = await configHub(c);
   const verifier = oidc.randomPKCECodeVerifier();
@@ -82,7 +98,7 @@ export async function concluirLoginHub(c: HubSsoConfig, urlAtual: URL, p: LoginP
   const out: ClaimsHub = {
     sub: str(claims.sub),
     email: str(claims.email),
-    emailVerificado: claims.email_verified !== false,
+    emailVerificado: claims.email_verified === true,
     nome: str(claims.name),
     papelHub: str(claims.hub_role),
     sid: str(claims.sid),

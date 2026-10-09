@@ -18,8 +18,17 @@ export function urlCallback(req: Request, appUrl: string): URL {
 export const urlAviso = (req: Request, appUrl: string, motivo: MotivoAviso): URL =>
   new URL(`${ROTAS_AUTH.aviso}?motivo=${encodeURIComponent(motivo)}`, basePublica(req, appUrl));
 
-export function ipDoCliente(req: Request): string {
-  return req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+/**
+ * IP de quem fez a requisição, para limite de tentativas. Em produção vale só o `X-Real-IP` que o
+ * Nginx sobrescreve com `$remote_addr` (DEPLOY_VPS.md); o primeiro item do X-Forwarded-For vem do
+ * cliente e pode ser forjado, então nunca é usado. Sem X-Real-IP (dev), usa o ÚLTIMO salto do XFF
+ * (o que o proxy mais próximo viu).
+ */
+export function ipDoCliente(h: Pick<Headers, "get">): string {
+  const real = h.get("x-real-ip")?.trim();
+  if (real) return real.slice(0, 64);
+  const saltos = (h.get("x-forwarded-for") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return saltos.length ? saltos[saltos.length - 1].slice(0, 64) : "local";
 }
 
 export const SEM_CACHE = { "cache-control": "no-store" } as const;

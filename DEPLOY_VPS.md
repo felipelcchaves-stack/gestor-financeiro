@@ -86,7 +86,13 @@ sobrescreve o banco de teste local).
    `X-Forwarded-Host`/`Host` do header da requisição, não de
    `request.url`. Nginx precisa mandar `proxy_set_header Host $host;` e
    `proxy_set_header X-Forwarded-Proto $scheme;` (e idealmente também
-   `X-Forwarded-Host`).
+   `X-Forwarded-Host`). Para limite de tentativas por IP (ex.: login de
+   emergência do Gestor), o Nginx também precisa **sobrescrever** os
+   cabeçalhos de IP com o endereço real da conexão — senão o cliente
+   forja o IP e escapa do limite:
+   `proxy_set_header X-Real-IP $remote_addr;` e
+   `proxy_set_header X-Forwarded-For $remote_addr;`. O app só confia no
+   `X-Real-IP`.
 3. **GitHub Actions com SSH (`appleboy/ssh-action` ou similar) precisa
    de `port` explícito** (`${{ secrets.VPS_PORT }}`, nunca hardcoded) —
    o padrão de qualquer action é porta 22 e falha calado com "connection

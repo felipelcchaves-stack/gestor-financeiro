@@ -68,3 +68,21 @@ export async function encerrarSessoesDoHub(db: Db, alvo: { sid: string | null; s
 export async function limparSessoesVencidas(db: Db, agora = new Date()): Promise<number> {
   return (await db.sessao.deleteMany({ where: { expiraEm: { lte: agora } } })).count;
 }
+
+/** Último contador TOTP aceito no login de emergência (null = nenhum ainda). */
+export async function ultimoContadorEmergencia(db: Db): Promise<number | null> {
+  return (await db.authEstado.findUnique({ where: { id: "singleton" } }))?.emergenciaUltimoContador ?? null;
+}
+
+/**
+ * Grava `contador` como último aceito SÓ se for maior que o atual (condicional, atômico): duas
+ * tentativas simultâneas com o mesmo código não passam as duas. Devolve se gravou.
+ */
+export async function consumirContadorEmergencia(db: Db, contador: number): Promise<boolean> {
+  await db.authEstado.upsert({ where: { id: "singleton" }, create: { id: "singleton" }, update: {} });
+  const r = await db.authEstado.updateMany({
+    where: { id: "singleton", OR: [{ emergenciaUltimoContador: null }, { emergenciaUltimoContador: { lt: contador } }] },
+    data: { emergenciaUltimoContador: contador },
+  });
+  return r.count === 1;
+}

@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { lerConfigAuth, ROTAS_AUTH } from "@/lib/auth/config";
 import { nomeCookieSessao, opcoesCookieSessao } from "@/lib/auth/cookies";
 import { destinoSeguro } from "@/lib/auth/destino";
-import { bloqueado, conferirSenha, conferirTotp, limparFalhas, registrarFalha } from "@/lib/auth/emergencia";
-import { configHub } from "@/lib/auth/hub";
-import { criarSessao } from "@/lib/auth/sessao";
+import { bloqueado, conferirSenha, contadorTotpAceito, limparFalhas, registrarFalha } from "@/lib/auth/emergencia";
+import { hubRespondeAgora } from "@/lib/auth/hub";
+import { ipDoCliente } from "@/lib/auth/http";
+import { consumirContadorEmergencia, criarSessao, ultimoContadorEmergencia } from "@/lib/auth/sessao";
 
 const voltar = (erro: string): never => redirect(`${ROTAS_AUTH.emergencia}?erro=${erro}`);
 
@@ -20,22 +21,18 @@ export async function entrarEmergencia(form: FormData): Promise<void> {
   const cfg = lerConfigAuth();
   if (!cfg.emergencia) redirect(ROTAS_AUTH.iniciar);
   const emergencia = cfg.emergencia!;
-  const h = await headers();
-  const ip = h.get("x-real-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  const ip = ipDoCliente(await headers());
   if (bloqueado(ip)) voltar("bloqueado");
 
-  if (cfg.hub) {
-    const hubNoAr = await configHub(cfg.hub).then(
-      () => true,
-      () => false,
-    );
-    if (hubNoAr) voltar("hub_no_ar");
-  }
+  // Checagem nova (sem cache) e curta: com o Hub no ar, o caminho é o Hub.
+  if (cfg.hub && (await hubRespondeAgora(cfg.hub))) voltar("hub_no_ar");
 
   const senha = String(form.get("senha") ?? "");
   const codigo = String(form.get("codigo") ?? "");
   const senhaOk = conferirSenha(senha, emergencia.senhaHash);
-  const codigoOk = conferirTotp(codigo, emergencia.totpSecret);
+  const contador = contadorTotpAceito(codigo, emergencia.totpSecret, Date.now(), await ultimoContadorEmergencia(prisma));
+  // Código já usado (mesmo dentro da janela de ±30 s) não vale de novo.
+  const codigoOk = senhaOk && contador !== null && (await consumirContadorEmergencia(prisma, contador));
   if (!senhaOk || !codigoOk) {
     registrarFalha(ip);
     console.warn(`[auth] emergência: tentativa recusada de ${ip}`);

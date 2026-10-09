@@ -3986,10 +3986,10 @@ O que mudou:
   `src/lib/auth/config.ts`; documentados em `.env.example`.
 - Ajuda: nova entrada "Entrar e sair (login único)" em "Outros".
 - Testes automatizados (primeiros do projeto): `npm test` (node:test via
-  tsx, banco descartável `prisma/teste-automatizado.db`) — 17 testes de
-  destino seguro, config, cookie de ida e volta, vínculo, sessão,
+  tsx, banco descartável `prisma/teste-automatizado.db`) — 23 testes de
+  destino seguro, config, cookie de ida e volta, vínculo, sessão, IP confiável,
   back-channel (tokens assinados de verdade, inclusive os inválidos), TOTP
-  (vetor da RFC 6238), senha scrypt e limite de tentativas.
+  (vetor da RFC 6238 e recusa de reuso), senha scrypt e limites de tentativas.
 - De passagem: corrigidos os 4 erros de lint que já existiam
   (`npx eslint .` limpo).
 
@@ -4010,8 +4010,12 @@ Decisões:
 - Plano B: senha + TOTP do `.env` (hash scrypt, sem `$` por causa da
   expansão do `.env` do Next), só para o dono, só com
   `GESTOR_LOGIN_EMERGENCIA=true`, só quando o SSO está desligado ou o Hub
-  não responde (com o Hub no ar, é recusado), 5 tentativas/15 min por IP,
-  sessão de no máximo 4 h. Não aparece no fluxo normal: só como link na
+  não responde (checagem nova, sem cache, timeout de 3 s; com o Hub no ar,
+  é recusado), 5 erros/15 min por IP e 20 erros/15 min no total (mapa de
+  IPs com tamanho máximo), IP só pelo `X-Real-IP` que o Nginx sobrescreve,
+  cada código TOTP vale uma vez só (último contador aceito em
+  `AuthEstado`, migração `auth_estado_totp`), sessão de no máximo 4 h.
+- `email_verified` precisa vir `true` no ID token (o Hub sempre manda). Não aparece no fluxo normal: só como link na
   tela de aviso quando o Hub falha.
 
 Como foi provado (08/10/2026, Chrome headless + Hub local em
@@ -4076,8 +4080,12 @@ senão o Gestor sobe fechado ("Acesso não configurado").
    sudo nginx -t && sudo systemctl reload nginx
    curl -sI https://gestor.ifatokun.com.br/api/saude   # espera 200, não 401
    ```
-   Confira também que o bloco tem `proxy_set_header Host $host;` e
-   `proxy_set_header X-Forwarded-Proto $scheme;` (DEPLOY_VPS.md, pegadinha 2).
+   Confira também que o bloco tem `proxy_set_header Host $host;`,
+   `proxy_set_header X-Forwarded-Proto $scheme;`,
+   `proxy_set_header X-Real-IP $remote_addr;` e
+   `proxy_set_header X-Forwarded-For $remote_addr;` (DEPLOY_VPS.md,
+   pegadinha 2 — sem o X-Real-IP o limite de tentativas do login de
+   emergência pode ser driblado).
    O arquivo de senhas (`/etc/nginx/.htpasswd*`) pode ser apagado depois.
 5. Testar: abrir o Gestor pelo lançador do Hub (deve cair em Meu Mapa sem
    pedir nada), clicar "Sair", e sair do Hub para ver o Gestor fechar junto.

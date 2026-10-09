@@ -80,33 +80,72 @@ export function codigoTotp(segredoBase32: string, momentoMs = Date.now(), passo 
   return String(bin % 1_000_000).padStart(6, "0");
 }
 
-export function conferirTotp(codigo: string, segredoBase32: string, momentoMs = Date.now()): boolean {
+/**
+ * Confere o código (±1 janela de 30 s) e devolve o contador TOTP que bateu, ou null. Quem chama
+ * guarda o último contador aceito e recusa qualquer um <= ele (um código nunca vale duas vezes).
+ */
+export function contadorTotpAceito(codigo: string, segredoBase32: string, momentoMs = Date.now(), ultimoAceito: number | null = null): number | null {
   const c = codigo.replace(/\s+/g, "");
-  if (!/^\d{6}$/.test(c)) return false;
+  if (!/^\d{6}$/.test(c)) return null;
+  const atual = Math.floor(momentoMs / 30_000);
   for (const delta of [-1, 0, 1]) {
-    const esperado = codigoTotp(segredoBase32, momentoMs + delta * 30_000);
-    if (timingSafeEqual(Buffer.from(esperado), Buffer.from(c))) return true;
+    const contador = atual + delta;
+    if (ultimoAceito !== null && contador <= ultimoAceito) continue;
+    const esperado = codigoTotp(segredoBase32, contador * 30_000);
+    if (timingSafeEqual(Buffer.from(esperado), Buffer.from(c))) return contador;
   }
-  return false;
+  return null;
+}
+
+export function conferirTotp(codigo: string, segredoBase32: string, momentoMs = Date.now()): boolean {
+  return contadorTotpAceito(codigo, segredoBase32, momentoMs) !== null;
 }
 
 export const gerarSegredoTotp = () => base32Encode(randomBytes(20));
 
-/** Limite simples em memória: 5 tentativas erradas por IP a cada 15 minutos. */
+/**
+ * Limite em memória: 5 erros por IP e 20 erros no total (todos os IPs juntos) a cada 15 minutos.
+ * O limite global segura quem troca de IP; o mapa tem tamanho máximo (as entradas vencidas saem
+ * primeiro, depois as mais antigas), então não cresce sem fim.
+ */
 const tentativas = new Map<string, { n: number; desde: number }>();
 const JANELA_MS = 15 * 60_000;
-const MAX = 5;
+const MAX_POR_IP = 5;
+const MAX_GLOBAL = 20;
+export const MAX_IPS_GUARDADOS = 1000;
+let global: { n: number; desde: number } = { n: 0, desde: 0 };
 
 export function bloqueado(ip: string, agora = Date.now()): boolean {
+  if (agora - global.desde <= JANELA_MS && global.n >= MAX_GLOBAL) return true;
   const t = tentativas.get(ip);
   if (!t || agora - t.desde > JANELA_MS) return false;
-  return t.n >= MAX;
+  return t.n >= MAX_POR_IP;
+}
+
+function abrirEspaco(agora: number): void {
+  if (tentativas.size < MAX_IPS_GUARDADOS) return;
+  for (const [k, v] of tentativas) if (agora - v.desde > JANELA_MS) tentativas.delete(k);
+  // Map mantém ordem de inserção: o primeiro é o mais antigo.
+  while (tentativas.size >= MAX_IPS_GUARDADOS) tentativas.delete(tentativas.keys().next().value as string);
 }
 
 export function registrarFalha(ip: string, agora = Date.now()): void {
+  if (agora - global.desde > JANELA_MS) global = { n: 1, desde: agora };
+  else global.n += 1;
   const t = tentativas.get(ip);
-  if (!t || agora - t.desde > JANELA_MS) tentativas.set(ip, { n: 1, desde: agora });
-  else t.n += 1;
+  if (!t || agora - t.desde > JANELA_MS) {
+    tentativas.delete(ip);
+    abrirEspaco(agora);
+    tentativas.set(ip, { n: 1, desde: agora });
+  } else t.n += 1;
 }
 
 export const limparFalhas = (ip: string) => void tentativas.delete(ip);
+
+/** Só para testes. */
+export function zerarLimites(): void {
+  tentativas.clear();
+  global = { n: 0, desde: 0 };
+}
+
+export const ipsGuardados = () => tentativas.size;
