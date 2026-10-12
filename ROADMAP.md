@@ -4089,3 +4089,52 @@ senão o Gestor sobe fechado ("Acesso não configurado").
    O arquivo de senhas (`/etc/nginx/.htpasswd*`) pode ser apagado depois.
 5. Testar: abrir o Gestor pelo lançador do Hub (deve cair em Meu Mapa sem
    pedir nada), clicar "Sair", e sair do Hub para ver o Gestor fechar junto.
+
+## Análise da IA passa a enxergar dívida caindo, pagamento de dívida e reserva
+
+Felipe reportou que a análise de evolução mensal sempre vinha pessimista
+("volatilidade extrema", "colapso financeiro"), mesmo tendo reduzido
+dívida de verdade (quitou parte do Oluwo com R$20 mil do cofre/Bradesco,
+cartões caindo mês a mês) — isso o deixava desconfiado do sistema.
+Causa raiz: o prompt só via entradas x despesas por mês, sem nenhum
+sinal de que parte das "despesas" é pagamento de dívida (progresso, não
+gasto descontrolado), sem ver a dívida total caindo ao longo do tempo,
+sem ver transferência pra reserva, sem comparar categoria a categoria
+mês a mês, e sem o status do Cofre.
+
+- `src/lib/ofensores.ts`: `PontoEvolucaoMensal` ganhou
+  `pagoDividasCentavos` (subconjunto de despesas vinculado a um
+  passivo) e `transferidoReservaCentavos` (transações `ehTransferencia`,
+  antes excluídas da série inteira, sem nenhum rastro). `calcularMaioresOfensores`/
+  `calcularMovimentacaoDoMes` ganharam um `ate?: Date` opcional, pra dar
+  pra pedir "só o mês X", não só "desde X até hoje".
+- `src/lib/promptAnaliseEvolucao.ts`: prompt reescrito com seções novas
+  — dívida total documentada (hoje x snapshot mais antigo), lista de
+  dívidas ativas (nenhuma some sem motivo), status do Cofre/rateio,
+  comparação de gasto por categoria mês a mês (cartão/empréstimo
+  caindo aparece explícito), e cada mês da série mostrando quanto da
+  despesa foi pagamento de dívida/transferência pra reserva. Instruções
+  novas: pagamento de dívida e transferência pra reserva são sinais
+  POSITIVOS, nunca "gasto descontrolado"; o indicador mais importante é
+  a dívida total caindo, não a oscilação de caixa; categoria que caiu
+  vai em `pontosPositivos`; dado que destoa do padrão (valor isolado
+  muito alto, categoria zerada de repente) vira `pontosAtencao` pedindo
+  CONFIRMAÇÃO, nunca acusação.
+- `src/app/(painel)/(mapa)/actions.ts` (`gerarAnaliseEvolucao`):
+  monta `movimentacaoDoMesAtual`/`movimentacaoDoMesAnterior` a partir
+  do ÚLTIMO MÊS COM TRANSAÇÃO REAL da série (não o mês civil de hoje)
+  — achado testando com chamada real: usar "hoje" fazia a comparação
+  de categoria mostrar tudo "caindo pra zero" num mês sem extrato
+  importado ainda, um falso positivo por ausência de dado, não por
+  economia de verdade. Passa `estado` completo e `calcularStatusRateio(estado)`
+  pro prompt.
+- Testado com dado real: `pagoDividasCentavos` conferido contra soma
+  manual do banco (bateu exato); `transferidoReservaCentavos` testado
+  com transação fabricada de R$20.000 (mesmo valor citado pelo Felipe,
+  revertida ao final); chamada real à Claude confirmou a virada —
+  antes "colapso financeiro", depois "Felipe está genuinamente no
+  caminho certo", citando a dívida caindo, cartão de crédito caindo
+  R$13.908 e empréstimo caindo R$12.025 mês a mês, e pedindo
+  confirmação (não acusando) de dois pontos que destoavam do padrão.
+  Resultado real já salvo no cache — sem precisar gerar de novo.
+- `npx tsc --noEmit` limpo.

@@ -34,10 +34,11 @@ export function inicioDoPeriodo(periodo: Periodo, hoje: Date = new Date()): Date
 // de /categorias que olha os dois lados ao mesmo tempo.
 export async function calcularMaioresOfensores(
   desde: Date,
-  tipo: TipoTransacao = TipoTransacao.DESPESA
+  tipo: TipoTransacao = TipoTransacao.DESPESA,
+  ate?: Date
 ): Promise<CategoriaComDetalhe[]> {
   const transacoes = await prisma.transacao.findMany({
-    where: { tipo, ehTransferencia: false, data: { gte: desde } },
+    where: { tipo, ehTransferencia: false, data: { gte: desde, ...(ate ? { lt: ate } : {}) } },
     select: {
       valorCentavos: true,
       categoria: {
@@ -127,17 +128,17 @@ export type MovimentacaoDoMes = {
 // de somar despesasPorCategoria — transação sem categoria entra no
 // total mas não aparece na quebra por categoria, e não pode sumir do
 // total por isso (mesma classe do bug do `take: 40` já corrigido antes).
-export async function calcularMovimentacaoDoMes(desde: Date): Promise<MovimentacaoDoMes> {
+export async function calcularMovimentacaoDoMes(desde: Date, ate?: Date): Promise<MovimentacaoDoMes> {
   const [entradas, despesasTotal, despesasPorCategoria] = await Promise.all([
     prisma.transacao.aggregate({
-      where: { tipo: "ENTRADA", ehTransferencia: false, data: { gte: desde } },
+      where: { tipo: "ENTRADA", ehTransferencia: false, data: { gte: desde, ...(ate ? { lt: ate } : {}) } },
       _sum: { valorCentavos: true },
     }),
     prisma.transacao.aggregate({
-      where: { tipo: "DESPESA", ehTransferencia: false, data: { gte: desde } },
+      where: { tipo: "DESPESA", ehTransferencia: false, data: { gte: desde, ...(ate ? { lt: ate } : {}) } },
       _sum: { valorCentavos: true },
     }),
-    calcularMaioresOfensores(desde, TipoTransacao.DESPESA),
+    calcularMaioresOfensores(desde, TipoTransacao.DESPESA, ate),
   ]);
 
   return {
@@ -147,7 +148,23 @@ export async function calcularMovimentacaoDoMes(desde: Date): Promise<Movimentac
   };
 }
 
-export type PontoEvolucaoMensal = { mes: string; entradasCentavos: number; despesasCentavos: number; projetado: boolean };
+export type PontoEvolucaoMensal = {
+  mes: string;
+  entradasCentavos: number;
+  despesasCentavos: number;
+  // Subconjunto de despesasCentavos vinculado a um passivo (Transacao.passivoId
+  // não nulo) — pagamento/amortização de dívida, não gasto descontrolado. Sem
+  // isso, um mês com quitação grande parecia "piora" pra quem só olhasse o
+  // total de despesas.
+  pagoDividasCentavos: number;
+  // Dinheiro movido de propósito pra outra conta (ehTransferencia=true) —
+  // hoje a query principal exclui transferência de entradas/despesas (não é
+  // gasto nem receita de verdade), mas isso fazia o valor desaparecer
+  // inteiramente da evolução. Normalmente é acúmulo visando quitar dívida
+  // depois (ex: PIX pro Bradesco antes de pagar um credor de lá).
+  transferidoReservaCentavos: number;
+  projetado: boolean;
+};
 
 function somarMesesData(data: Date, offset: number): Date {
   return new Date(data.getFullYear(), data.getMonth() + offset, 1);
@@ -168,8 +185,8 @@ function somarMesesData(data: Date, offset: number): Date {
 // adiante repetiria o mesmo número sem informação nova.
 export async function calcularEvolucaoMensal(desde: Date, margemLivre?: MargemLivre): Promise<PontoEvolucaoMensal[]> {
   const transacoes = await prisma.transacao.findMany({
-    where: { ehTransferencia: false, data: { gte: desde } },
-    select: { data: true, tipo: true, valorCentavos: true },
+    where: { data: { gte: desde } },
+    select: { data: true, tipo: true, valorCentavos: true, ehTransferencia: true, passivoId: true },
   });
 
   // Teto no mês corrente: um extrato pode trazer um agendamento com
@@ -186,9 +203,16 @@ export async function calcularEvolucaoMensal(desde: Date, margemLivre?: MargemLi
     if (t.tipo !== "ENTRADA" && t.tipo !== "DESPESA") continue;
     const mes = `${t.data.getFullYear()}-${String(t.data.getMonth() + 1).padStart(2, "0")}`;
     if (mes > mesAtualStr) continue;
-    const ponto = porMes.get(mes) ?? { mes, entradasCentavos: 0, despesasCentavos: 0, projetado: false };
-    if (t.tipo === "ENTRADA") ponto.entradasCentavos += t.valorCentavos;
-    else ponto.despesasCentavos += t.valorCentavos;
+    const ponto =
+      porMes.get(mes) ?? { mes, entradasCentavos: 0, despesasCentavos: 0, pagoDividasCentavos: 0, transferidoReservaCentavos: 0, projetado: false };
+    if (t.ehTransferencia) {
+      ponto.transferidoReservaCentavos += t.valorCentavos;
+    } else if (t.tipo === "ENTRADA") {
+      ponto.entradasCentavos += t.valorCentavos;
+    } else {
+      ponto.despesasCentavos += t.valorCentavos;
+      if (t.passivoId) ponto.pagoDividasCentavos += t.valorCentavos;
+    }
     porMes.set(mes, ponto);
   }
 
@@ -208,6 +232,12 @@ export async function calcularEvolucaoMensal(desde: Date, margemLivre?: MargemLi
         margemLivre.custoMensalPassivosCentavos +
         margemLivre.aporteMensalExtraCentavos +
         parcelasCartaoCentavos,
+      // Parcela mínima dos passivos + parcelas de cartão já conhecidas são,
+      // pela própria natureza, pagamento de dívida — mesmo critério usado
+      // nos meses reais (despesa vinculada a um passivo).
+      pagoDividasCentavos: margemLivre.custoMensalPassivosCentavos + parcelasCartaoCentavos,
+      // Sem como projetar transferência discricionária pra reserva.
+      transferidoReservaCentavos: 0,
       projetado: true,
     });
   }

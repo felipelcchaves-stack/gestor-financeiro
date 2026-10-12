@@ -8,6 +8,7 @@ import { carregarEstadoAtual } from "@/lib/estadoAtual";
 import { calcularEvolucaoMensal, calcularMovimentacaoDoMes, inicioDoPeriodo } from "@/lib/ofensores";
 import { gerarPromptAnaliseEvolucao, parseAnaliseEvolucao, ANALISE_EVOLUCAO_SCHEMA, type AnaliseEvolucaoEstruturada } from "@/lib/promptAnaliseEvolucao";
 import { nomesProtegidos } from "@/lib/promptCorteDeGastos";
+import { calcularStatusRateio } from "@/lib/rateio";
 import { chamarClaude } from "@/lib/claude";
 import { Confiabilidade } from "@/generated/prisma";
 
@@ -26,16 +27,29 @@ const ID_CACHE_ANALISE_EVOLUCAO = "analise-evolucao-mapa";
 export async function gerarAnaliseEvolucao(): Promise<ResultadoAnaliseEvolucao> {
   await exigirSessaoAcao();
   try {
-    const [estado, movimentacaoDoMesAtual] = await Promise.all([
-      carregarEstadoAtual(),
-      calcularMovimentacaoDoMes(inicioDoPeriodo("mes")),
+    const estado = await carregarEstadoAtual();
+    const [pontos, statusRateio] = await Promise.all([
+      calcularEvolucaoMensal(inicioDoPeriodo("tudo"), estado.margemLivre),
+      calcularStatusRateio(estado),
     ]);
-    const pontos = await calcularEvolucaoMensal(inicioDoPeriodo("tudo"), estado.margemLivre);
     if (pontos.length === 0) {
       return { ok: false, erro: "Sem transação importada ainda pra analisar — importe um extrato primeiro." };
     }
 
-    const prompt = gerarPromptAnaliseEvolucao(pontos, movimentacaoDoMesAtual);
+    // Base no último mês com transação real (nunca o mês civil de hoje): se o
+    // extrato do mês corrente ainda não foi importado, "hoje" fica sem
+    // nenhum dado, e a comparação por categoria mostraria tudo "caindo pra
+    // zero" por ausência de lançamento, não por economia de verdade.
+    const ultimoMesReal = pontos.filter((p) => !p.projetado).at(-1)?.mes ?? inicioDoPeriodo("mes").toISOString().slice(0, 7);
+    const [anoRecente, mesRecente] = ultimoMesReal.split("-").map(Number);
+    const inicioMesRecente = new Date(anoRecente, mesRecente - 1, 1);
+    const inicioMesAnterior = new Date(anoRecente, mesRecente - 2, 1);
+    const [movimentacaoDoMesAtual, movimentacaoDoMesAnterior] = await Promise.all([
+      calcularMovimentacaoDoMes(inicioMesRecente, new Date(anoRecente, mesRecente, 1)),
+      calcularMovimentacaoDoMes(inicioMesAnterior, inicioMesRecente),
+    ]);
+
+    const prompt = gerarPromptAnaliseEvolucao(pontos, estado, movimentacaoDoMesAtual, movimentacaoDoMesAnterior, statusRateio);
     const textoJson = await chamarClaude(prompt, { schema: ANALISE_EVOLUCAO_SCHEMA });
     const analise = parseAnaliseEvolucao(textoJson, nomesProtegidos(movimentacaoDoMesAtual));
 
