@@ -60,13 +60,13 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
       </div>
 
       {ativo.observacao && (
-        <p className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-sm text-gold">
+        <p className="rounded-xl bg-secondary p-3 text-sm text-gold">
           {ativo.observacao}
         </p>
       )}
 
       {vinculosGarantia.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-muted/30 p-3 text-sm">
+        <div className="grid grid-cols-2 gap-3 rounded-xl bg-secondary p-3 text-sm">
           <div>
             <div className="text-xs text-muted-foreground">Preso em garantia (dívidas ativas)</div>
             <div className="font-medium text-debt">{formatarBRL(presoCentavos)}</div>
@@ -79,7 +79,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
       )}
 
       {arbitragem && (
-        <div className="rounded-lg border border-debt/30 bg-debt/[0.06] p-4">
+        <div className="rounded-xl bg-secondary p-4">
           <p className="text-sm text-debt">
             Rendendo {arbitragem.rendimentoMensalPct}% a.m., isso está te custando{" "}
             <span className="font-semibold">{formatarBRL(arbitragem.custoMensalTotalCentavos)}/mês</span> — as
@@ -102,7 +102,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-foreground">Vinculação a passivos</h2>
+        <h2 className="text-xl font-bold text-foreground">Vinculação a passivos</h2>
         {ativo.vinculos.length > 0 && (
           <ul className="mt-2 flex flex-col gap-1">
             {ativo.vinculos.map((v) => {
@@ -122,13 +122,13 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
                       </span>
                     )}
                     <form action={removerVinculo.bind(null, id, v.id)}>
-                      <button type="submit" className="text-xs text-muted-foreground/70 hover:text-debt">
+                      <button type="submit" className="text-xs text-muted-foreground hover:text-debt">
                         remover
                       </button>
                     </form>
                   </div>
                   {financiado && (
-                    <p className="text-xs text-debt/80">
+                    <p className="text-xs text-debt">
                       o saldo desse ativo veio do dinheiro dessa dívida — ainda não é patrimônio líquido novo
                     </p>
                   )}
@@ -144,7 +144,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
         >
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Passivo</label>
-            <select name="passivoId" required className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground">
+            <select name="passivoId" required className="w-56 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground">
               <option value="">selecione…</option>
               {passivos.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -158,7 +158,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
             <select
               name="tipoVinculo"
               defaultValue="GARANTIA"
-              className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              className="w-56 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             >
               <option value="GARANTIA">Garantia (esse ativo garante essa dívida)</option>
               <option value="FINANCIAMENTO">Financiamento (o saldo veio dessa dívida)</option>
@@ -170,7 +170,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
               type="text"
               name="valorGarantido"
               placeholder="só p/ Garantia"
-              className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              className="w-40 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             />
           </div>
           <Button type="submit">Vincular</Button>
@@ -179,7 +179,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
 
       {ativo.historico.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Histórico de valor</h2>
+          <h2 className="text-xl font-bold text-foreground">Histórico de valor</h2>
           <ul className="mt-2 flex flex-col gap-2">
             {ativo.historico.map((h) => (
               <li key={h.id} className="rounded glass-card p-3 text-sm">
@@ -187,7 +187,7 @@ export default async function AtivoDetalhePage({ params }: { params: Promise<{ i
                   {h.valorAnteriorCentavos != null ? formatarBRL(h.valorAnteriorCentavos) : "não documentado"} →{" "}
                   {formatarBRL(h.valorNovoCentavos)}
                 </div>
-                <div className="mt-0.5 text-xs text-muted-foreground/70">
+                <div className="mt-0.5 text-xs text-muted-foreground">
                   {new Date(h.registradoEm).toLocaleString("pt-BR")}
                 </div>
               </li>

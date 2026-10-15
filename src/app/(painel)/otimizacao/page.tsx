@@ -30,14 +30,14 @@ export default async function OtimizacaoPage() {
       />
 
       {semValor.length > 0 && (
-        <p className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-xs text-gold">
+        <p className="rounded-xl bg-secondary p-3 text-xs text-gold">
           Fora da simulação por não terem saldo total documentado:{" "}
           {semValor.map((p) => p.nome).join(", ")}.
         </p>
       )}
 
       {pendentesNaSimulacao.length > 0 && (
-        <p className="rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-xs text-debt">
+        <p className="rounded-xl bg-secondary p-3 text-xs text-debt">
           Atenção: {pendentesNaSimulacao.length} passivo(s) entrando nessa simulação já têm pagamento real
           registrado mas não confirmado —{" "}
           {pendentesNaSimulacao.map((p, i) => (

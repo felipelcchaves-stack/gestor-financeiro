@@ -35,9 +35,9 @@ import {
 export const dynamic = "force-dynamic";
 
 const ESTILO_SINAL: Record<NivelSinal, string> = {
-  VERDE: "border-liquidity/25 bg-liquidity/[0.06] text-liquidity",
-  AMARELO: "border-gold/25 bg-gold/[0.06] text-gold",
-  VERMELHO: "border-debt/25 bg-debt/[0.06] text-debt",
+  VERDE: "bg-secondary text-liquidity",
+  AMARELO: "bg-secondary text-gold",
+  VERMELHO: "bg-secondary text-debt",
 };
 
 export default async function MapaPage() {
@@ -131,7 +131,7 @@ export default async function MapaPage() {
 
       <section>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
             <TrendingUp className="size-4 text-gold" /> Evolução mensal — entradas x despesas
           </h2>
           <AnaliseEvolucaoSheet sugestaoInicial={ultimaAnaliseEvolucao} pontos={evolucaoMensal} acaoGerar={gerarAnaliseEvolucao} />
@@ -147,18 +147,18 @@ export default async function MapaPage() {
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Wallet className="size-4" />
-          <p className="text-xs font-semibold uppercase tracking-wider">Dívida total</p>
+          <p className="text-sm font-semibold">Dívida total</p>
         </div>
 
         <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Hoje</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Hoje</p>
             <p className="num text-2xl font-semibold text-debt">{formatarBRL(passivoTotal)}</p>
           </div>
 
           {temComparacaoDeDivida && (
             <div className="border-l border-dashed border-border pl-8">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+              <p className="text-[0.8125rem] text-muted-foreground">
                 Em {formatarMesLabel(snapshotMaisAntigo!.mesReferencia)}
               </p>
               <p className="num text-2xl font-semibold text-muted-foreground">
@@ -169,7 +169,7 @@ export default async function MapaPage() {
 
           {temComparacaoDeDivida && (
             <div className="border-l border-dashed border-border pl-8">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Variação</p>
+              <p className="text-[0.8125rem] text-muted-foreground">Variação</p>
               <p
                 className={`num flex items-center gap-1 text-2xl font-semibold ${
                   deltaDividaCentavos <= 0 ? "text-liquidity" : "text-debt"
@@ -185,7 +185,7 @@ export default async function MapaPage() {
         {!temComparacaoDeDivida && (
           <p className="mt-3 text-xs text-muted-foreground">
             Só existe um registro (hoje) — ainda não dá pra comparar com o passado.{" "}
-            <a href="#documentar-mes-anterior" className="text-gold underline underline-offset-4">
+            <a href="#documentar-mes-anterior" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
               Documente um mês anterior que você lembra
             </a>{" "}
             pra ver evolução de verdade agora, sem esperar meses acumulando snapshot.
@@ -223,20 +223,20 @@ export default async function MapaPage() {
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Receipt className="size-4" />
-          <p className="text-xs font-semibold uppercase tracking-wider">Balanço deste mês (extrato real)</p>
+          <p className="text-sm font-semibold">Balanço deste mês (extrato real)</p>
         </div>
 
         <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Entradas</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Entradas</p>
             <p className="num text-2xl font-semibold text-liquidity">{formatarBRL(movimentacaoDoMes.entradasCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Despesas</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Despesas</p>
             <p className="num text-2xl font-semibold text-debt">{formatarBRL(movimentacaoDoMes.despesasTotalCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo do mês</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Saldo do mês</p>
             <p className={`num text-2xl font-semibold ${saldoDoMesCentavos >= 0 ? "text-liquidity" : "text-debt"}`}>
               {formatarBRL(saldoDoMesCentavos)}
             </p>
@@ -252,26 +252,26 @@ export default async function MapaPage() {
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Receipt className="size-4" />
-          <p className="text-xs font-semibold uppercase tracking-wider">Resumo de {anoCorrente}</p>
+          <p className="text-sm font-semibold">Resumo de {anoCorrente}</p>
         </div>
 
         <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Entradas no ano</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Entradas no ano</p>
             <p className="num text-2xl font-semibold text-liquidity">{formatarBRL(movimentacaoDoAno.entradasCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Despesas no ano</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Despesas no ano</p>
             <p className="num text-2xl font-semibold text-debt">{formatarBRL(movimentacaoDoAno.despesasTotalCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo do ano</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Saldo do ano</p>
             <p className={`num text-2xl font-semibold ${saldoDoAnoCentavos >= 0 ? "text-liquidity" : "text-debt"}`}>
               {formatarBRL(saldoDoAnoCentavos)}
             </p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Pago em dívidas</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Pago em dívidas</p>
             <p className="num text-2xl font-semibold text-gold">{formatarBRL(pagoEmDividasDoAnoCentavos)}</p>
           </div>
         </div>
@@ -283,7 +283,7 @@ export default async function MapaPage() {
         </p>
       </section>
 
-      <section className={`flex items-start gap-3 rounded-2xl border p-4 ${ESTILO_SINAL[sinal.nivel]}`}>
+      <section className={`flex items-start gap-3 rounded-2xl p-4 ${ESTILO_SINAL[sinal.nivel]}`}>
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
         <div>
           <p className="text-sm font-semibold">{sinal.titulo}</p>
@@ -292,18 +292,18 @@ export default async function MapaPage() {
       </section>
 
       <section
-        className={`rounded-2xl border p-5 ${
-          margemLivre.margemConfirmadaCentavos <= 0 ? "border-debt/25 bg-debt/[0.06]" : "glass-card"
+        className={`rounded-2xl p-5 ${
+          margemLivre.margemConfirmadaCentavos <= 0 ? "bg-secondary" : "glass-card"
         }`}
       >
         <div className="flex items-center gap-2 text-muted-foreground">
           <Wallet className="size-4" />
-          <p className="text-xs font-semibold uppercase tracking-wider">Fluxo do mês</p>
+          <p className="text-sm font-semibold">Fluxo do mês</p>
         </div>
 
         <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-[0.8125rem] text-muted-foreground">
               Confirmado <span className="text-liquidity">●</span>
             </p>
             <p
@@ -317,10 +317,10 @@ export default async function MapaPage() {
 
           {margemLivre.entradasEstimadasCentavos > 0 && (
             <div className="border-l border-dashed border-border pl-8">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+              <p className="text-[0.8125rem] text-muted-foreground">
                 Projetado (com estimativa) <span className="text-gold">◌</span>
               </p>
-              <p className="num text-2xl font-semibold text-muted-foreground/70 italic">
+              <p className="num text-2xl font-semibold text-muted-foreground italic">
                 {formatarBRL(margemLivre.margemLivreCentavos)}
               </p>
             </div>
@@ -360,12 +360,12 @@ export default async function MapaPage() {
 
       {alertas.length > 0 && (
         <section>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
             <Bell className="size-4 text-gold" /> Alertas
           </h2>
           <div className="mt-3 flex flex-col gap-2">
             {alertas.map((alerta) => (
-              <div key={alerta.titulo} className="rounded-2xl border border-gold/25 bg-gold/[0.06] p-4">
+              <div key={alerta.titulo} className="rounded-2xl bg-secondary p-4">
                 <p className="text-sm font-medium text-gold">{alerta.titulo}</p>
                 <p className="mt-0.5 text-sm text-foreground/80">{alerta.mensagem}</p>
               </div>
@@ -375,7 +375,7 @@ export default async function MapaPage() {
       )}
 
       <section>
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
           <ListChecks className="size-4 text-gold" /> O que fazer agora
         </h2>
         <div className="mt-3 flex flex-col gap-3">
@@ -398,7 +398,7 @@ export default async function MapaPage() {
                     inputMode="decimal"
                     placeholder="ex: 10000"
                     required
-                    className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1 text-sm"
+                    className="w-32 rounded-lg border border-input bg-card px-3 py-1.5 text-sm"
                   />
                   <Button type="submit" size="sm">
                     Salvar
@@ -412,12 +412,12 @@ export default async function MapaPage() {
 
       {estacoes.length > 0 && (
         <section>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
             <RouteIcon className="size-4 text-gold" /> Sua rota de saída
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Ordem calculada pelo menor juro total pago no total.{" "}
-            <Link href="/otimizacao" className="text-gold underline underline-offset-4">
+            <Link href="/otimizacao" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
               Comparar com outras estratégias
             </Link>
             .
@@ -436,10 +436,10 @@ export default async function MapaPage() {
       )}
 
       {vitoriaRapida && (
-        <section className="rounded-2xl border border-gold/25 bg-gold/[0.06] p-5">
+        <section className="rounded-2xl bg-secondary p-5">
           <div className="flex items-center gap-2 text-gold">
             <Zap className="size-4" />
-            <p className="text-xs font-semibold uppercase tracking-wider">Vitória rápida</p>
+            <p className="text-sm font-semibold">Vitória rápida</p>
           </div>
           <p className="mt-2 text-sm text-foreground/90">
             <span className="font-medium">{vitoriaRapida.nome}</span> é a dívida mais fácil de matar
@@ -447,7 +447,7 @@ export default async function MapaPage() {
             <span className="num">{formatarBRL(vitoriaRapida.saldoCentavos)}</span> de saldo liberando{" "}
             <span className="num">{formatarBRL(vitoriaRapida.custoMensalCentavos)}</span>/mês quando cair.
           </p>
-          <Link href="/ataque-rapido" className="mt-2 inline-block text-xs font-medium text-gold underline underline-offset-4">
+          <Link href="/ataque-rapido" className="mt-2 inline-block text-xs font-medium font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             Simular só as dívidas pequenas
           </Link>
         </section>
@@ -455,7 +455,7 @@ export default async function MapaPage() {
 
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
             <Thermometer className="size-4 text-gold" /> Seu termômetro
           </h2>
           {jaRegistrouEsteMes ? (
@@ -484,7 +484,7 @@ export default async function MapaPage() {
         )}
 
         <details id="documentar-mes-anterior" className="mt-3">
-          <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+          <summary className="cursor-pointer text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             Documentar um mês anterior (de memória)
           </summary>
           <form
@@ -498,7 +498,7 @@ export default async function MapaPage() {
                 name="mesReferencia"
                 required
                 max={mesAnteriorMax}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -509,7 +509,7 @@ export default async function MapaPage() {
                 name="passivoTotal"
                 required
                 placeholder="ex: 1450000"
-                className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-40 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -519,14 +519,14 @@ export default async function MapaPage() {
                 inputMode="decimal"
                 name="ativoTotal"
                 placeholder="deixe em branco se não lembrar"
-                className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-56 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <Button type="submit" size="sm">
               Documentar
             </Button>
           </form>
-          <p className="mt-2 text-[11px] text-muted-foreground/70">
+          <p className="mt-2 text-[11px] text-muted-foreground">
             Nunca calculado pelo sistema — o número que você lembra, marcado como estimativa (círculo vazado no
             gráfico), só pra dar um ponto de partida até acumular snapshots reais mês a mês.
           </p>

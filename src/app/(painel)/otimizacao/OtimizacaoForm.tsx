@@ -138,7 +138,7 @@ export function OtimizacaoForm({
                   onChange={() => alternar(p.id)}
                 />
                 {p.nome}{" "}
-                <span className="text-xs text-muted-foreground/70">
+                <span className="text-xs text-muted-foreground">
                   ({formatarBRL(p.saldoCentavos)}
                   {p.custoMensalCentavos > 0 ? ` · ${formatarBRL(p.custoMensalCentavos)}/mês` : ""})
                 </span>
@@ -156,9 +156,9 @@ export function OtimizacaoForm({
             inputMode="decimal"
             value={aporteReais}
             onChange={(e) => setAporteReais(e.target.value)}
-            className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-40 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
-          <span className="text-[11px] text-muted-foreground/70">
+          <span className="text-[11px] text-muted-foreground">
             além dos pagamentos mínimos já em curso
           </span>
         </div>
@@ -171,9 +171,9 @@ export function OtimizacaoForm({
             value={aportePontualReais}
             onChange={(e) => setAportePontualReais(e.target.value)}
             placeholder="ex: 5000"
-            className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-40 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
-          <span className="text-[11px] text-muted-foreground/70">
+          <span className="text-[11px] text-muted-foreground">
             13º, restituição, bônus — entra só no primeiro mês, além do aporte mensal
           </span>
         </div>
@@ -191,7 +191,7 @@ export function OtimizacaoForm({
             onChange={(e) => setSplitPct(Number(e.target.value))}
             className="w-40"
           />
-          <span className="text-[11px] text-muted-foreground/70">
+          <span className="text-[11px] text-muted-foreground">
             {splitPct}% pro mais difícil (mais juro) · {100 - splitPct}% pro mais fácil (amortiza rápido)
           </span>
         </div>
@@ -265,7 +265,7 @@ export function OtimizacaoForm({
               type="button"
               onClick={pedirRecomendacao}
               disabled={carregandoRecomendacao}
-              className="w-fit rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-60"
+              className="w-fit rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-85 disabled:opacity-60"
             >
               {carregandoRecomendacao ? "Pedindo recomendação…" : "Pedir recomendação da IA (Claude)"}
             </button>
@@ -277,7 +277,7 @@ export function OtimizacaoForm({
           </div>
 
           {recomendacao && !recomendacao.ok && (
-            <p className="rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">{recomendacao.erro}</p>
+            <p className="rounded-xl bg-secondary p-3 text-sm text-debt">{recomendacao.erro}</p>
           )}
 
           {recomendacao?.ok && (
@@ -353,11 +353,11 @@ function CartaoEstrategia({
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-lg border p-4 ${
+      className={`flex flex-col gap-3 rounded-xl p-4 ${
         recomendadaPelaIA
-          ? "border-2 border-primary bg-primary/[0.05]"
+          ? "border-2 border-primary bg-secondary"
           : ativa
-            ? "border-liquidity/50 bg-liquidity/[0.05]"
+            ? "bg-secondary"
             : destaque
               ? "border-gold/40 bg-surface"
               : "glass-card"
@@ -377,15 +377,15 @@ function CartaoEstrategia({
 
       <div className="flex flex-wrap gap-4 text-sm">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Tempo total</div>
+          <div className="text-sm text-muted-foreground">Tempo total</div>
           <div className="font-medium text-foreground">{resultado.mesesTotais} meses</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Juros total pago</div>
+          <div className="text-sm text-muted-foreground">Juros total pago</div>
           <div className="font-medium text-debt">{formatarBRL(resultado.jurosTotalCentavos)}</div>
         </div>
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">1º alívio visível</div>
+          <div className="text-sm text-muted-foreground">1º alívio visível</div>
           <div className="font-medium text-foreground">
             {resultado.mesesAteAlivioVisivel != null ? `mês ${resultado.mesesAteAlivioVisivel}` : "—"}
           </div>
@@ -393,7 +393,7 @@ function CartaoEstrategia({
       </div>
 
       {resultado.mesesNoEscuro.some((m) => m.meses > 0) && (
-        <div className="rounded-lg border border-gold/20 bg-gold/[0.06] p-2 text-[11px] text-gold">
+        <div className="rounded-xl bg-secondary p-2 text-[11px] text-gold">
           {resultado.mesesNoEscuro
             .filter((m) => m.meses > 0)
             .map((m) => `${nomePorId.get(m.passivoId)} fica ${m.meses} ${m.meses === 1 ? "mês" : "meses"} sem nenhum progresso visível (só juro, até quitar de uma vez)`)
@@ -409,7 +409,7 @@ function CartaoEstrategia({
               <span>
                 {i + 1}. {nomePorId.get(pid)}
               </span>
-              <span className="text-xs text-muted-foreground/70">
+              <span className="text-xs text-muted-foreground">
                 {quitacao ? `quitado no mês ${quitacao.mes}` : "não quitado"}
               </span>
             </li>
@@ -423,8 +423,8 @@ function CartaoEstrategia({
         disabled={pending || ativa}
         className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
           ativa
-            ? "cursor-default bg-liquidity/15 text-liquidity"
-            : "bg-primary text-primary-foreground hover:bg-primary/80"
+            ? "cursor-default bg-secondary text-liquidity"
+            : "bg-primary text-primary-foreground hover:opacity-85"
         } disabled:opacity-60`}
       >
         {ativa ? "usando esse critério agora" : pending ? "aplicando…" : "usar esse critério no Mapa e no Consultor"}

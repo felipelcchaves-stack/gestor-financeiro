@@ -111,7 +111,7 @@ export default async function RelatorioPage() {
           <p className="text-sm font-medium text-foreground">Score de saúde financeira</p>
           <p className="text-xs text-muted-foreground">
             Detalhamento completo e simuladores em{" "}
-            <Link href="/consultor" className="text-gold underline underline-offset-4">
+            <Link href="/consultor" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
               Consultor
             </Link>
             .
@@ -124,7 +124,7 @@ export default async function RelatorioPage() {
         {metasComProgresso.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
             Nenhuma meta ativa.{" "}
-            <Link href="/metas/novo" className="text-gold underline underline-offset-4">
+            <Link href="/metas/novo" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
               Criar uma meta
             </Link>
             .
@@ -166,7 +166,7 @@ export default async function RelatorioPage() {
             ))}
           </ul>
         )}
-        <Link href="/ofensores" className="mt-3 inline-block text-xs text-gold underline underline-offset-4">
+        <Link href="/ofensores" className="mt-3 inline-block text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
           ver detalhamento completo
         </Link>
       </div>
@@ -215,12 +215,12 @@ export default async function RelatorioPage() {
         {(qualidadeDados.semCategoria > 0 || qualidadeDados.semVinculo > 0) && (
           <div className="mt-2 flex gap-3 text-xs">
             {qualidadeDados.semCategoria > 0 && (
-              <Link href="/transacoes?semCategoria=1" className="text-gold underline underline-offset-4">
+              <Link href="/transacoes?semCategoria=1" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                 resolver sem categoria
               </Link>
             )}
             {qualidadeDados.semVinculo > 0 && (
-              <Link href="/transacoes?semVinculo=1" className="text-gold underline underline-offset-4">
+              <Link href="/transacoes?semVinculo=1" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                 resolver sem vínculo
               </Link>
             )}
@@ -229,7 +229,7 @@ export default async function RelatorioPage() {
 
         {qualidadeDados.passivosComReconciliacaoPendente.length > 0 && (
           <div className="mt-4 border-t border-border pt-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-debt">
+            <p className="text-sm font-semibold text-debt">
               Pagamento real pendente de confirmação
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -254,7 +254,7 @@ export default async function RelatorioPage() {
 
         {qualidadeDados.passivosDesatualizados.length > 0 && (
           <div className="mt-4 border-t border-border pt-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold text-muted-foreground">
               Passivos desatualizados há muito tempo
             </p>
             <ul className="mt-1 flex flex-col gap-1">
@@ -274,7 +274,7 @@ export default async function RelatorioPage() {
 
         {qualidadeDados.ativosFinanciadosDesatualizados.length > 0 && (
           <div className="mt-4 border-t border-border pt-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold text-muted-foreground">
               Ativos financiados por dívida com sinal desatualizado
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -300,7 +300,7 @@ export default async function RelatorioPage() {
 
         {qualidadeDados.passivosSemMovimentoRecente.length > 0 && (
           <div className="mt-4 border-t border-border pt-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold text-muted-foreground">
               Passivos sem nenhuma transação vinculada nos últimos 12 meses
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -320,7 +320,7 @@ export default async function RelatorioPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/transacoes?semVinculo=1" className="mt-2 inline-block text-xs text-gold underline underline-offset-4">
+            <Link href="/transacoes?semVinculo=1" className="mt-2 inline-block text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
               resolver sem vínculo
             </Link>
           </div>
@@ -338,7 +338,7 @@ export default async function RelatorioPage() {
           <div className="mt-3 flex flex-col gap-4">
             {estado.proximasAcoes.filter((a) => a.tipo === "tarefa").length > 0 && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-sm font-semibold text-muted-foreground">
                   Ações imediatas
                 </p>
                 <ul className="mt-1 flex flex-col gap-1">
@@ -348,7 +348,7 @@ export default async function RelatorioPage() {
                       <li key={a.titulo} className="text-sm text-foreground">
                         ☐ {a.titulo}
                         {a.href && (
-                          <Link href={a.href} className="ml-1 text-xs text-gold underline underline-offset-4">
+                          <Link href={a.href} className="ml-1 text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                             resolver
                           </Link>
                         )}
@@ -360,7 +360,7 @@ export default async function RelatorioPage() {
 
             {estado.alertas.length > 0 && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-sm font-semibold text-muted-foreground">
                   Alertas de risco
                 </p>
                 <ul className="mt-1 flex flex-col gap-1">
@@ -375,7 +375,7 @@ export default async function RelatorioPage() {
 
             {fatoresPendentes.length > 0 && (
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="text-sm font-semibold text-muted-foreground">
                   Pra fechar o score
                 </p>
                 <ul className="mt-1 flex flex-col gap-1">
@@ -383,7 +383,7 @@ export default async function RelatorioPage() {
                     <li key={f.nome} className="text-sm text-foreground">
                       ☐ {f.nome} ({f.pontosAtuais}/{f.pontosMaximos})
                       {f.href && (
-                        <Link href={f.href} className="ml-1 text-xs text-gold underline underline-offset-4">
+                        <Link href={f.href} className="ml-1 text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                           resolver
                         </Link>
                       )}

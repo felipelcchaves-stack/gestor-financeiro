@@ -87,7 +87,7 @@ export function GraficoComparativoMensal({ series }: { series: SerieMensal[] }) 
     <div className="flex flex-col gap-4">
       <div className="overflow-x-auto glass-card rounded-2xl p-4">
         <svg
-          viewBox={`0 0 ${largura + 12} ${ALTURA + 24}`}
+          viewBox={`0 -12 ${largura + 12} ${ALTURA + 36}`}
           className="w-full"
           style={{ minWidth: `${Math.min(largura + 12, 1100)}px` }}
           role="img"
@@ -97,7 +97,7 @@ export function GraficoComparativoMensal({ series }: { series: SerieMensal[] }) 
             const y = ALTURA - MARGEM_BASE - escalaAltura(valor);
             return (
               <g key={i}>
-                <line x1={MARGEM_ESQ} y1={y} x2={largura} y2={y} stroke="var(--border)" strokeWidth={1} />
+                <line x1={MARGEM_ESQ} y1={y} x2={largura} y2={y} stroke="var(--border-strong)" strokeOpacity={0.6} strokeDasharray="3 3" strokeWidth={1} />
                 <text x={MARGEM_ESQ - 6} y={y + 3} textAnchor="end" fontSize={9} fill="var(--muted-foreground)">
                   {formatarBRL(valor).replace(",00", "")}
                 </text>
@@ -143,7 +143,7 @@ export function GraficoComparativoMensal({ series }: { series: SerieMensal[] }) 
           })}
         </svg>
 
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-border pt-3">
+        <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1.5 pt-3">
           {series.map((serie, i) => {
             const total = serie.porMes.reduce((acc, p) => acc + p.totalCentavos, 0);
             const link = linkResolverDe(serie);
@@ -153,7 +153,7 @@ export function GraficoComparativoMensal({ series }: { series: SerieMensal[] }) 
                 <span className={ehPendente(serie) ? "text-gold" : "text-foreground"}>{serie.nome}</span>
                 <span className="num">{formatarBRL(total)}</span>
                 {link && (
-                  <Link href={link} className="text-gold underline underline-offset-4">
+                  <Link href={link} className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                     resolver
                   </Link>
                 )}
@@ -163,9 +163,9 @@ export function GraficoComparativoMensal({ series }: { series: SerieMensal[] }) 
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-2xl bg-card">
         <table className="w-full min-w-[720px] text-xs">
-          <thead className="bg-surface-2 text-left uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-surface-2 text-left text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">Ofensor</th>
               {meses.map((mes) => (

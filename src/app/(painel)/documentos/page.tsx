@@ -13,9 +13,9 @@ const TIPO_LABEL: Record<string, string> = {
 };
 
 const TIPO_CLASSES: Record<string, string> = {
-  extrato: "bg-liquidity/[0.06] text-liquidity",
-  fatura: "bg-liquidity/[0.06] text-liquidity",
-  imagem: "bg-gold/10 text-gold",
+  extrato: "bg-secondary text-liquidity",
+  fatura: "bg-secondary text-liquidity",
+  imagem: "bg-secondary text-gold",
   contrato: "bg-muted text-muted-foreground",
 };
 
@@ -50,7 +50,7 @@ export default async function DocumentosPage() {
       {documentos.length === 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <FileText className="size-4" /> Nenhum documento ainda. Use{" "}
-          <a href="/importar" className="text-gold underline underline-offset-4">
+          <a href="/importar" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             Importar
           </a>{" "}
           para começar.
@@ -58,7 +58,7 @@ export default async function DocumentosPage() {
       ) : (
         <div className="overflow-x-auto glass-card rounded-2xl">
           <table className="w-full text-sm">
-            <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-medium">Arquivo</th>
                 <th className="px-4 py-2 font-medium">Tipo</th>

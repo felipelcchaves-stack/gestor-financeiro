@@ -17,9 +17,9 @@ type Opcao = { id: string; nome: string };
 // Mesmo padrão de selo já usado em src/app/consultor/page.tsx
 // (VEREDICTO_CLASSES) — reaproveitado aqui pra natureza do grupo.
 const NATUREZA_CLASSES: Record<"despesa" | "receita" | "emprestimo", string> = {
-  despesa: "bg-debt/[0.06] text-debt border-debt/20",
-  emprestimo: "bg-debt/[0.06] text-debt border-debt/20",
-  receita: "bg-liquidity/[0.06] text-liquidity border-liquidity/20",
+  despesa: "before:bg-debt",
+  emprestimo: "before:bg-debt",
+  receita: "before:bg-liquidity",
 };
 
 export function GruposSugeridosSheet({
@@ -108,7 +108,7 @@ export function GruposSugeridosSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-3 px-4 pb-4">
+        <div className="flex flex-col gap-3 px-6 pb-6">
           {carregando && <p className="text-sm text-muted-foreground">Procurando grupos parecidos…</p>}
 
           {!carregando && carregado && grupos.length === 0 && (
@@ -142,7 +142,7 @@ export function GruposSugeridosSheet({
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-medium text-foreground">{grupo.exemploDescricao}</span>
                   <span className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${NATUREZA_CLASSES[naturezaChave]}`}>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground before:size-1.5 before:rounded-full before:content-[''] ${NATUREZA_CLASSES[naturezaChave]}`}>
                       {naturezaLabel}
                     </span>
                     <span className={`num text-sm ${corValor}`}>
@@ -163,7 +163,7 @@ export function GruposSugeridosSheet({
                       onChange={(e) =>
                         setEscolhas((prev) => ({ ...prev, [grupo.chave]: { ...escolha, categoriaId: e.target.value } }))
                       }
-                      className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground"
+                      className="w-40 rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground"
                     >
                       <option value="">nenhuma</option>
                       {opcoesCategoriaFiltradas.map((o) => (
@@ -181,7 +181,7 @@ export function GruposSugeridosSheet({
                       onChange={(e) =>
                         setEscolhas((prev) => ({ ...prev, [grupo.chave]: { ...escolha, vinculo: e.target.value } }))
                       }
-                      className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground"
+                      className="w-40 rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground"
                     >
                       <option value="">nenhum</option>
                       {passivos.length > 0 && (

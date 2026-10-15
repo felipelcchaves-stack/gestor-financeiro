@@ -41,7 +41,7 @@ export function AlocacaoEntradaPontual({ resultado }: { resultado: ResultadoCons
           value={valor}
           onChange={(e) => setValor(e.target.value)}
           placeholder="ex: 3000"
-          className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+          className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
         />
         <Button type="button" size="sm" onClick={simular}>
           Simular

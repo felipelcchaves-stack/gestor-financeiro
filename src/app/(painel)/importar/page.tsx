@@ -45,7 +45,7 @@ function CardImportar({
 }) {
   return (
     <Link href={href} className="glass-card rounded-2xl p-4 transition-colors hover:border-gold/40">
-      <span className="flex size-8 items-center justify-center rounded-lg bg-gold/10 text-gold">
+      <span className="flex size-8 items-center justify-center rounded-lg bg-secondary text-gold">
         <Icon className="size-4" />
       </span>
       <p className="mt-3 text-sm font-medium text-foreground">{titulo}</p>

@@ -32,7 +32,7 @@ export default async function AtivosPage() {
       ) : (
       <div className="overflow-hidden glass-card rounded-2xl">
         <table className="w-full text-sm">
-          <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
             <tr>
               <th className="px-4 py-2 font-medium">Nome</th>
               <th className="px-4 py-2 font-medium text-right">Valor</th>
@@ -48,7 +48,7 @@ export default async function AtivosPage() {
                     {a.nome}
                   </Link>
                   {a.observacao && (
-                    <div className="mt-0.5 max-w-md text-xs text-muted-foreground/70">{a.observacao}</div>
+                    <div className="mt-0.5 max-w-md text-xs text-muted-foreground">{a.observacao}</div>
                   )}
                 </td>
                 <td className="num px-4 py-3 text-right text-liquidity">

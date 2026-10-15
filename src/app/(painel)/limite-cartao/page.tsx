@@ -64,7 +64,7 @@ export default async function LimiteCartaoPage() {
                     inputMode="decimal"
                     defaultValue={limite != null ? centavosParaReais(limite) : undefined}
                     placeholder="ex: 5000"
-                    className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                    className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                   />
                   <Button type="submit" size="sm">
                     Salvar
@@ -81,12 +81,12 @@ export default async function LimiteCartaoPage() {
                       cartao.metaGastoMensalCentavos != null ? centavosParaReais(cartao.metaGastoMensalCentavos) : undefined
                     }
                     placeholder="ex: 3000"
-                    className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                    className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                   />
                   <Button type="submit" size="sm" variant="outline">
                     Salvar
                   </Button>
-                  <Link href="/cartoes" className="text-xs text-gold underline underline-offset-4">
+                  <Link href="/cartoes" className="text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                     ver histórico e progresso
                   </Link>
                 </form>

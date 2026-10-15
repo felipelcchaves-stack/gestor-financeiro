@@ -26,7 +26,7 @@ export function RecorrenciaForm({
             name="nome"
             defaultValue={recorrencia?.nome}
             required
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -34,7 +34,7 @@ export function RecorrenciaForm({
           <select
             name="tipo"
             defaultValue={recorrencia?.tipo ?? "DESPESA"}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="DESPESA">Despesa</option>
             <option value="ENTRADA">Entrada</option>
@@ -48,7 +48,7 @@ export function RecorrenciaForm({
             inputMode="decimal"
             required
             defaultValue={recorrencia ? centavosParaReais(recorrencia.valorCentavos) : undefined}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -56,7 +56,7 @@ export function RecorrenciaForm({
           <select
             name="frequencia"
             defaultValue={recorrencia?.frequencia ?? "MENSAL"}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="MENSAL">Mensal</option>
             <option value="SEMANAL">Semanal</option>
@@ -69,7 +69,7 @@ export function RecorrenciaForm({
           <select
             name="confiabilidade"
             defaultValue={recorrencia?.confiabilidade ?? "CONFIRMADO"}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="CONFIRMADO">Confirmado</option>
             <option value="ESTIMADO">Estimado</option>
@@ -80,7 +80,7 @@ export function RecorrenciaForm({
           <select
             name="categoriaId"
             defaultValue={recorrencia?.categoriaId ?? ""}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="">nenhuma</option>
             {opcoesCategoria.map((o) => (
@@ -95,7 +95,7 @@ export function RecorrenciaForm({
           <select
             name="passivoId"
             defaultValue={recorrencia?.passivoId ?? ""}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="">nenhum</option>
             {cartoes.map((c) => (
@@ -119,7 +119,7 @@ export function RecorrenciaForm({
           name="observacao"
           defaultValue={recorrencia?.observacao ?? undefined}
           rows={2}
-          className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+          className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
         />
       </Campo>
 
@@ -148,7 +148,7 @@ function Campo({
         {required && <span className="text-debt"> *</span>}
       </label>
       {children}
-      {hint && <span className="text-[11px] text-muted-foreground/70">{hint}</span>}
+      {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
     </div>
   );
 }

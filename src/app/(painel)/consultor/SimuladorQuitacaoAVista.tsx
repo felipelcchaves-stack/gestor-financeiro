@@ -38,7 +38,7 @@ export function SimuladorQuitacaoAVista({
         <select
           value={passivoId}
           onChange={(e) => setPassivoId(e.target.value)}
-          className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+          className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
         >
           {passivos.map((p) => (
             <option key={p.id} value={p.id}>
@@ -52,12 +52,12 @@ export function SimuladorQuitacaoAVista({
           value={desconto}
           onChange={(e) => setDesconto(e.target.value)}
           placeholder="desconto %"
-          className="w-28 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+          className="w-28 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
         />
         <button
           type="button"
           onClick={simular}
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
+          className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-85"
         >
           Simular
         </button>

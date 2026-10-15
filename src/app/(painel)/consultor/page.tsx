@@ -24,9 +24,9 @@ const VEREDICTO_LABEL: Record<string, string> = {
 };
 
 const VEREDICTO_CLASSES: Record<string, string> = {
-  QUITAR_PRIORITARIO: "bg-debt/[0.06] text-debt border-debt/20",
-  MANTER_MINIMO: "bg-liquidity/[0.06] text-liquidity border-liquidity/20",
-  SEM_DADO: "bg-muted text-muted-foreground border-border",
+  QUITAR_PRIORITARIO: "before:bg-debt",
+  MANTER_MINIMO: "before:bg-liquidity",
+  SEM_DADO: "before:bg-border-strong",
 };
 
 const FAIXA_CLASSES: Record<string, string> = {
@@ -118,7 +118,7 @@ export default async function ConsultorPage() {
                     {f.href && (
                       <>
                         {" "}
-                        <Link href={f.href} className="text-gold underline underline-offset-4">
+                        <Link href={f.href} className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                           resolver
                         </Link>
                       </>
@@ -131,7 +131,7 @@ export default async function ConsultorPage() {
       </div>
 
       {pendentesNestaTela.length > 0 && (
-        <div className="rounded-lg border border-debt/30 bg-debt/[0.06] p-4 text-sm text-debt">
+        <div className="rounded-xl bg-secondary p-4 text-sm text-debt">
           <p className="font-medium">Pagamento real pendente de confirmação</p>
           <p className="mt-1">
             {pendentesNestaTela.length} passivo(s) já têm uma transação vinculada que muda o saldo, mas isso ainda
@@ -150,7 +150,7 @@ export default async function ConsultorPage() {
       )}
 
       {alertaChequeEspecial.length > 0 && (
-        <div className="rounded-lg border border-debt/20 bg-debt/[0.06] p-4 text-sm text-debt">
+        <div className="rounded-xl bg-secondary p-4 text-sm text-debt">
           <p className="font-medium">Antes de qualquer coisa nessa lista: resolva o cheque especial.</p>
           {alertaChequeEspecial.map((a) => (
             <p key={a.titulo} className="mt-1">
@@ -162,7 +162,7 @@ export default async function ConsultorPage() {
       )}
 
       {!resultado.reservaOk && (
-        <div className="rounded-lg border border-gold/20 bg-gold/[0.06] p-4 text-sm text-gold">
+        <div className="rounded-xl bg-secondary p-4 text-sm text-gold">
           <p className="font-medium">Complete sua reserva de emergência antes de acelerar quitação.</p>
           <p className="mt-1">
             Você tem {formatarBRL(resultado.reservaAtualCentavos)} guardado, e a meta (3 meses de despesas
@@ -174,7 +174,7 @@ export default async function ConsultorPage() {
       )}
 
       {!resultado.temFolego && (
-        <div className="rounded-lg border border-debt/20 bg-debt/[0.06] p-4 text-sm text-debt">
+        <div className="rounded-xl bg-secondary p-4 text-sm text-debt">
           Sua margem livre mensal está zerada ou negativa — não há sobra de caixa pra atacar dívida agora. Antes de
           seguir os vereditos abaixo, o foco deveria ser ajustar orçamento ou renda.{" "}
           <Link href="/ofensores" className="underline underline-offset-4">
@@ -185,7 +185,7 @@ export default async function ConsultorPage() {
       )}
 
       {arbitragemGarantia.length > 0 && (
-        <div className="rounded-lg border border-debt/30 bg-debt/[0.06] p-4 text-sm">
+        <div className="rounded-xl bg-secondary p-4 text-sm">
           <p className="font-medium text-debt">Vale mais resgatar investimento e quitar</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Esses investimentos garantem dívidas que custam mais juro do que eles rendem — enquanto ficam presos em
@@ -219,9 +219,9 @@ export default async function ConsultorPage() {
       )}
 
       {oportunidadesRenegociacao.length > 0 && (
-        <div className="rounded-lg border border-gold/20 bg-gold/[0.06] p-4 text-sm text-gold">
+        <div className="rounded-xl bg-secondary p-4 text-sm text-gold">
           <p className="font-medium">Oportunidades de renegociação/portabilidade</p>
-          <p className="mt-1 text-xs text-gold/80">
+          <p className="mt-1 text-xs text-gold">
             Faixa de mercado é uma referência geral aproximada, não um dado oficial nem específico do seu contrato.
           </p>
           <ul className="mt-2 flex flex-col gap-1">
@@ -247,7 +247,7 @@ export default async function ConsultorPage() {
             inputMode="decimal"
             defaultValue={estado.configuracao?.taxaReferenciaMensalPct ?? undefined}
             placeholder="ex: 0.9"
-            className="w-28 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-28 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
           <span className="text-xs text-muted-foreground">% ao mês</span>
           <Button type="submit" size="sm">
@@ -255,7 +255,7 @@ export default async function ConsultorPage() {
           </Button>
         </form>
         {estado.configuracao?.taxaReferenciaMensalPct == null && (
-          <p className="mt-2 text-[11px] text-muted-foreground/70">
+          <p className="mt-2 text-[11px] text-muted-foreground">
             Ainda não definida — os vereditos abaixo assumem 0% (qualquer juro documentado é tratado como prioridade
             de quitação).
           </p>
@@ -273,7 +273,7 @@ export default async function ConsultorPage() {
         {statusRateio && (
           <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3 border-b border-border pb-4">
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              <p className="text-[0.8125rem] text-muted-foreground">
                 Saldo em {statusRateio.contaDestinoNome}
               </p>
               <p className="num text-2xl font-semibold text-liquidity">
@@ -282,26 +282,26 @@ export default async function ConsultorPage() {
                   : "não informado"}
               </p>
               {statusRateio.contaDestinoSaldoAtualizadoEm && (
-                <p className="text-[11px] text-muted-foreground/70">
+                <p className="text-[11px] text-muted-foreground">
                   atualizado em {new Date(statusRateio.contaDestinoSaldoAtualizadoEm).toLocaleDateString("pt-BR")}
                 </p>
               )}
             </div>
             <div className="border-l border-dashed border-border pl-8">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              <p className="text-[0.8125rem] text-muted-foreground">
                 Separado desde {new Date(statusRateio.ativoDesde).toLocaleDateString("pt-BR")}
               </p>
               <p className="num text-2xl font-semibold text-foreground">
                 {formatarBRL(statusRateio.totalDepositadoCentavos)}
               </p>
-              <p className="text-[11px] text-muted-foreground/70">
+              <p className="text-[11px] text-muted-foreground">
                 meta: {statusRateio.percentual}% de {formatarBRL(statusRateio.totalRecebidoCentavos)} recebidos de{" "}
                 {statusRateio.categoriaNome} = {formatarBRL(statusRateio.metaSepararCentavos)}
               </p>
             </div>
             {statusRateio.faltaSepararCentavos > 0 && (
               <div className="border-l border-dashed border-border pl-8">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Falta separar</p>
+                <p className="text-[0.8125rem] text-muted-foreground">Falta separar</p>
                 <p className="num text-2xl font-semibold text-gold">{formatarBRL(statusRateio.faltaSepararCentavos)}</p>
               </div>
             )}
@@ -309,7 +309,7 @@ export default async function ConsultorPage() {
         )}
 
         {statusRateio?.dividaQuitavel && (
-          <p className="mt-3 rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">
+          <p className="mt-3 rounded-xl bg-secondary p-3 text-sm text-debt">
             Seu cofre já tem {formatarBRL(statusRateio.contaDestinoSaldoCentavos ?? 0)} — dá pra quitar{" "}
             <Link href={`/passivos/${statusRateio.dividaQuitavel.passivoId}`} className="font-medium underline underline-offset-4">
               {statusRateio.dividaQuitavel.nome}
@@ -320,7 +320,7 @@ export default async function ConsultorPage() {
         )}
 
         <details className="mt-3">
-          <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+          <summary className="cursor-pointer text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             {statusRateio ? "Editar regra do rateio" : "Configurar rateio"}
           </summary>
           <form action={definirRateio} className="mt-3 flex flex-wrap items-end gap-3">
@@ -330,7 +330,7 @@ export default async function ConsultorPage() {
                 name="categoriaRateioId"
                 required
                 defaultValue={estado.configuracao?.categoriaRateioId ?? ""}
-                className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-56 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               >
                 <option value="">selecione…</option>
                 {categorias
@@ -351,7 +351,7 @@ export default async function ConsultorPage() {
                 max={100}
                 required
                 defaultValue={estado.configuracao?.percentualRateio ?? 50}
-                className="w-20 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-20 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -360,7 +360,7 @@ export default async function ConsultorPage() {
                 name="contaRateioDestinoId"
                 required
                 defaultValue={estado.configuracao?.contaRateioDestinoId ?? ""}
-                className="w-48 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-48 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               >
                 <option value="">selecione…</option>
                 {contas.map((c) => (
@@ -390,14 +390,14 @@ export default async function ConsultorPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium text-foreground">{v.nome}</span>
                 <span
-                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${VEREDICTO_CLASSES[v.veredicto]}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground before:size-1.5 before:rounded-full before:content-[''] ${VEREDICTO_CLASSES[v.veredicto]}`}
                 >
                   {VEREDICTO_LABEL[v.veredicto]}
                 </span>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">{v.motivo}</p>
               {v.taxaJurosPct == null && (
-                <Link href={`/passivos/${v.passivoId}/editar`} className="mt-1 inline-block text-xs text-gold underline underline-offset-4">
+                <Link href={`/passivos/${v.passivoId}/editar`} className="mt-1 inline-block text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                   documentar taxa de juro
                 </Link>
               )}

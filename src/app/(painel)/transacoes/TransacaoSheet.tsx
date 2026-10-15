@@ -101,7 +101,7 @@ export function TransacaoSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 px-4 pb-4">
+        <div className="flex flex-col gap-4 px-6 pb-6">
           {erro && <p className="text-sm text-debt">{erro}</p>}
 
           {editando ? (
@@ -111,7 +111,7 @@ export function TransacaoSheet({
                   name="descricao"
                   defaultValue={transacao.descricao}
                   required
-                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                  className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                 />
               </Campo>
               <div className="grid grid-cols-2 gap-3">
@@ -121,14 +121,14 @@ export function TransacaoSheet({
                     type="date"
                     defaultValue={transacao.data.slice(0, 10)}
                     required
-                    className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                    className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                   />
                 </Campo>
                 <Campo label="Tipo">
                   <select
                     name="tipo"
                     defaultValue={transacao.tipo}
-                    className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                    className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                   >
                     <option value="DESPESA">Despesa</option>
                     <option value="ENTRADA">Entrada</option>
@@ -141,14 +141,14 @@ export function TransacaoSheet({
                     inputMode="decimal"
                     defaultValue={centavosParaReais(transacao.valorCentavos)}
                     required
-                    className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                    className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                   />
                 </Campo>
                 <Campo label="Categoria">
                   <select
                     name="categoriaId"
                     defaultValue={transacao.categoriaId ?? ""}
-                    className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                    className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                   >
                     <option value="">nenhuma</option>
                     {opcoesCategoria.map((o) => (
@@ -168,7 +168,7 @@ export function TransacaoSheet({
                 <select
                   name="contaDestinoId"
                   defaultValue={transacao.contaDestinoId ?? ""}
-                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                  className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                 >
                   <option value="">nenhuma</option>
                   {contas.map((c) => (
@@ -229,7 +229,7 @@ export function TransacaoSheet({
 
               {transacao.documento && (
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <p className="text-sm font-semibold text-muted-foreground">
                     Documento de origem
                   </p>
                   <p className="mt-1 text-sm text-foreground">
@@ -253,7 +253,7 @@ export function TransacaoSheet({
                     href={`/api/documentos/${transacao.documento.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1 inline-block text-xs text-gold underline underline-offset-4"
+                    className="mt-1 inline-block text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline"
                   >
                     abrir em nova aba
                   </a>
@@ -274,7 +274,7 @@ export function TransacaoSheet({
 function Campo({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
       {children ?? <dd className="mt-0.5 text-sm text-foreground">{value}</dd>}
     </div>
   );

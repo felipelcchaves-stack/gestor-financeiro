@@ -19,9 +19,9 @@ function ComparacaoTabela({ comparacao }: { comparacao: NonNullable<SugestaoGera
       <p className="text-xs font-medium text-muted-foreground">
         Desde a análise de {formatarDataHora(comparacao.analisadaEmAnterior)}
       </p>
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-2xl bg-card">
         <table className="w-full text-xs">
-          <thead className="bg-surface-2 text-left uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-surface-2 text-left text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">Categoria</th>
               <th className="px-2 py-2 text-right font-medium">Antes</th>
@@ -55,7 +55,7 @@ function ComparacaoTabela({ comparacao }: { comparacao: NonNullable<SugestaoGera
 function ProjecaoBanner({ projecao }: { projecao: NonNullable<SugestaoGerada["projecao"]> }) {
   if (projecao.faltaParaQuitarCentavos === 0) {
     return (
-      <div className="rounded-lg border border-liquidity/30 bg-liquidity/[0.06] p-3 text-sm text-liquidity">
+      <div className="rounded-xl bg-secondary p-3 text-sm text-liquidity">
         O saldo já separado no cofre ({formatarBRL(projecao.saldoJaSeparadoCentavos)}) já cobre essa meta inteira —
         já dá pra quitar agora, mesmo sem nenhum corte novo.
       </div>
@@ -64,7 +64,7 @@ function ProjecaoBanner({ projecao }: { projecao: NonNullable<SugestaoGerada["pr
 
   if (projecao.mesesEstimados == null) {
     return (
-      <div className="rounded-lg border border-border bg-surface-2 p-3 text-sm text-muted-foreground">
+      <div className="rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
         Faltam {formatarBRL(projecao.faltaParaQuitarCentavos)} pra fechar essa meta (saldo já separado:{" "}
         {formatarBRL(projecao.saldoJaSeparadoCentavos)}). A IA não sugeriu nenhum corte com valor dessa vez, então
         não dá pra projetar um prazo.
@@ -73,7 +73,7 @@ function ProjecaoBanner({ projecao }: { projecao: NonNullable<SugestaoGerada["pr
   }
 
   return (
-    <div className="rounded-lg border border-gold/30 bg-gold/[0.06] p-3 text-sm text-gold">
+    <div className="rounded-xl bg-secondary p-3 text-sm text-gold">
       Se todos os cortes abaixo forem feitos ({formatarBRL(projecao.totalLiberadoMensalCentavos)}/mês) — considerando
       o saldo real já separado no cofre agora ({formatarBRL(projecao.saldoJaSeparadoCentavos)}) — faltam{" "}
       {formatarBRL(projecao.faltaParaQuitarCentavos)}, o que fecha em <strong>~{projecao.mesesEstimados}{" "}
@@ -128,7 +128,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
         </Button>
       </div>
 
-      {erro && <p className="rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-xs text-debt">{erro}</p>}
+      {erro && <p className="rounded-xl bg-secondary p-3 text-xs text-debt">{erro}</p>}
 
       <Sheet open={aberto} onOpenChange={setAberto}>
         <SheetContent>
@@ -137,7 +137,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
             {sugestao && <SheetDescription>Gerado em {formatarDataHora(sugestao.geradoEm)}</SheetDescription>}
           </SheetHeader>
 
-          <div className="flex flex-col gap-4 px-4">
+          <div className="flex flex-col gap-4 px-6">
             {sugestao ? (
               <>
                 {sugestao.projecao && <ProjecaoBanner projecao={sugestao.projecao} />}
@@ -151,7 +151,7 @@ export function SugestaoIA({ sugestaoInicial, acaoGerar, titulo }: Props) {
           </div>
 
           <SheetFooter>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[0.8125rem] text-muted-foreground">
               Envia os totais por categoria e o custo mensal de cada dívida (nunca suas transações individuais) pra
               API do Claude (Anthropic). Tem custo por chamada e os dados saem da sua máquina.
             </p>

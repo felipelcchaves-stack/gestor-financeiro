@@ -43,7 +43,7 @@ export default async function CategoriasPage() {
       ) : (
         <div className="overflow-x-auto glass-card rounded-2xl">
           <table className="w-full text-sm">
-            <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-medium">Nome</th>
                 <th className="px-4 py-2 font-medium">Vínculos</th>
@@ -88,7 +88,7 @@ function CategoriaRow({ categoria, filha = false }: { categoria: CategoriaComCon
         {filha ? "— " : ""}
         {categoria.nome}
         {categoria.protegidaDeCorte && (
-          <span className="ml-2 rounded-full bg-gold/[0.08] px-2 py-0.5 text-[10px] font-medium text-gold">
+          <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-gold">
             protegida
           </span>
         )}
@@ -96,14 +96,14 @@ function CategoriaRow({ categoria, filha = false }: { categoria: CategoriaComCon
       <td className="px-4 py-3 text-muted-foreground">{vinculos.length > 0 ? vinculos.join(" · ") : "—"}</td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-3 text-xs">
-          <Link href={`/categorias/${categoria.id}/editar`} className="text-muted-foreground/70 hover:text-foreground">
+          <Link href={`/categorias/${categoria.id}/editar`} className="text-muted-foreground hover:text-foreground">
             editar
           </Link>
           <ConfirmForm
             action={excluirCategoria.bind(null, categoria.id)}
             confirmMessage={`Excluir a categoria "${categoria.nome}"? Essa ação não pode ser desfeita.`}
           >
-            <button type="submit" className="text-muted-foreground/70 hover:text-debt">
+            <button type="submit" className="text-muted-foreground hover:text-debt">
               excluir
             </button>
           </ConfirmForm>

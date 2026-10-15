@@ -21,7 +21,7 @@ export function CopiarResumo({ markdown }: { markdown: string }) {
         <button
           type="button"
           onClick={copiar}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80"
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-85"
         >
           {copiado ? "Copiado!" : "Copiar resumo"}
         </button>

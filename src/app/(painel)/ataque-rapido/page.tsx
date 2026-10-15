@@ -28,7 +28,7 @@ export default async function AtaqueRapidoPage() {
       />
 
       {semValor.length > 0 && (
-        <p className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-xs text-gold">
+        <p className="rounded-xl bg-secondary p-3 text-xs text-gold">
           Fora da simulação por não terem saldo total documentado:{" "}
           {semValor.map((p) => p.nome).join(", ")}.
         </p>

@@ -26,7 +26,7 @@ export function MetaForm({
             name="nome"
             defaultValue={meta?.nome}
             required
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -36,7 +36,7 @@ export function MetaForm({
             type="text"
             inputMode="decimal"
             defaultValue={meta ? centavosParaReais(meta.valorAlvoCentavos) : undefined}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -46,7 +46,7 @@ export function MetaForm({
             type="date"
             required
             defaultValue={dataAlvoValue}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -55,7 +55,7 @@ export function MetaForm({
             <select
               name="status"
               defaultValue={meta?.status}
-              className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             >
               <option value="ATIVA">Ativa</option>
               <option value="CONCLUIDA">Concluída</option>

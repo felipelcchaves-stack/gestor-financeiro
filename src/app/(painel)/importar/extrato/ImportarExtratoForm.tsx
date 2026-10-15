@@ -272,7 +272,7 @@ export function ImportarExtratoForm({
           <select
             value={contaId}
             onChange={(e) => setContaId(e.target.value)}
-            className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             {contas.map((c) => (
               <option key={c.id} value={c.id}>
@@ -295,7 +295,7 @@ export function ImportarExtratoForm({
         <button
           type="submit"
           disabled={analisando}
-          className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+          className="rounded-xl bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-85 disabled:opacity-50"
         >
           {analisando ? "Analisando…" : "Analisar"}
         </button>
@@ -326,7 +326,7 @@ export function ImportarExtratoForm({
           )}
 
           {resultado.linhasNaoReconhecidas.length > 0 && (
-            <details className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-sm text-gold">
+            <details className="rounded-xl bg-secondary p-3 text-sm text-gold">
               <summary className="cursor-pointer font-medium">
                 {resultado.linhasNaoReconhecidas.length} linha(s) com data mas não reconhecida(s) —
                 nada foi perdido, revise manualmente
@@ -348,7 +348,7 @@ export function ImportarExtratoForm({
                 value={categoriaEmLote}
                 onChange={(e) => setCategoriaEmLote(e.target.value)}
                 disabled={selecionadas.size === 0}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground disabled:opacity-50"
+                className="rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground disabled:opacity-50"
               >
                 <option value="">categoria…</option>
                 {opcoesCategoria.map((o) => (
@@ -361,7 +361,7 @@ export function ImportarExtratoForm({
                 type="button"
                 onClick={aplicarCategoriaEmLote}
                 disabled={selecionadas.size === 0 || !categoriaEmLote}
-                className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                className="rounded-xl bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-85 disabled:opacity-50"
               >
                 Aplicar categoria
               </button>
@@ -371,7 +371,7 @@ export function ImportarExtratoForm({
           {linhas.length > 0 && (
             <div className="overflow-x-auto glass-card rounded-2xl">
               <table className="w-full min-w-[900px] text-sm">
-                <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 font-medium">
                       <input
@@ -397,9 +397,9 @@ export function ImportarExtratoForm({
                       key={l.key}
                       className={
                         l.sugestaoOrigem === "exata"
-                          ? "bg-gold/[0.06]"
+                          ? "bg-secondary"
                           : l.sugestaoOrigem === "aproximada"
-                            ? "bg-gold/[0.02]"
+                            ? "bg-secondary"
                             : l.sugestaoOrigem === "valor"
                               ? "bg-muted/40"
                               : undefined
@@ -433,7 +433,7 @@ export function ImportarExtratoForm({
                           </div>
                         )}
                         {l.sugestaoOrigem === "aproximada" && (
-                          <div className="mt-0.5 text-[10px] text-gold/70">
+                          <div className="mt-0.5 text-[10px] text-gold">
                             sugestão aproximada (parecido com algo já classificado) — confira
                           </div>
                         )}
@@ -508,7 +508,7 @@ export function ImportarExtratoForm({
                               <button
                                 type="button"
                                 onClick={() => confirmarNovaCategoria(l.key)}
-                                className="rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground"
+                                className="rounded-lg bg-primary px-2 py-0.5 text-xs text-primary-foreground"
                               >
                                 Criar
                               </button>
@@ -627,7 +627,7 @@ export function ImportarExtratoForm({
                         <button
                           type="button"
                           onClick={() => removerLinha(l.key)}
-                          className="text-xs text-muted-foreground/70 hover:text-debt"
+                          className="text-xs text-muted-foreground hover:text-debt"
                         >
                           remover
                         </button>
@@ -645,7 +645,7 @@ export function ImportarExtratoForm({
                 type="button"
                 onClick={handleConfirmar}
                 disabled={confirmando}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-85 disabled:opacity-50"
               >
                 {confirmando ? "Importando…" : `Confirmar importação (${linhas.length})`}
               </button>

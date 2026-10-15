@@ -51,7 +51,7 @@ export default async function PassivosPage() {
 
       {quitados.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Quitados</h2>
+          <h2 className="text-xl font-bold text-foreground">Quitados</h2>
           <div className="mt-3">
             <TabelaPassivos passivos={quitados} idsPendentes={idsPendentes} />
           </div>
@@ -77,7 +77,7 @@ function TabelaPassivos({
   return (
     <div className="glass-card overflow-hidden rounded-2xl">
       <table className="w-full text-sm">
-        <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+        <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
           <tr>
             <th className="px-4 py-2 font-medium">Credor</th>
             <th className="px-4 py-2 font-medium">Estrutura</th>
@@ -91,20 +91,20 @@ function TabelaPassivos({
             <tr key={p.id}>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Link href={`/passivos/${p.id}`} className="font-medium text-foreground hover:text-gold hover:underline">
+                  <Link href={`/passivos/${p.id}`} className="font-medium text-foreground hover:text-brand-text hover:underline">
                     {p.nome}
                   </Link>
                   {idsPendentes.has(p.id) && (
                     <span
                       title="Pagamento real pendente de confirmação"
-                      className="rounded-full bg-debt/10 px-2 py-0.5 text-[10px] font-medium text-debt"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground before:size-1.5 before:rounded-full before:bg-debt before:content-['']"
                     >
                       pagamento pendente
                     </span>
                   )}
                 </div>
                 {p.observacao && (
-                  <div className="mt-0.5 max-w-md text-xs text-muted-foreground/70">{p.observacao}</div>
+                  <div className="mt-0.5 max-w-md text-xs text-muted-foreground">{p.observacao}</div>
                 )}
               </td>
               <td className="px-4 py-3 text-muted-foreground">{ESTRUTURA_LABEL[p.estrutura]}</td>
@@ -112,16 +112,16 @@ function TabelaPassivos({
                 {p.valorQuitacaoCentavos != null ? (
                   formatarBRL(p.valorQuitacaoCentavos)
                 ) : (
-                  <span className="font-sans text-xs italic text-muted-foreground/70">não documentado</span>
+                  <span className="font-sans text-xs italic text-muted-foreground">não documentado</span>
                 )}
               </td>
               <td className="num px-4 py-3 text-right text-foreground">
                 {p.custoMensalCentavos != null ? (
                   formatarBRL(p.custoMensalCentavos)
                 ) : p.custoMensalVariavel ? (
-                  <span className="font-sans text-xs italic text-muted-foreground/70">variável por ciclo</span>
+                  <span className="font-sans text-xs italic text-muted-foreground">variável por ciclo</span>
                 ) : (
-                  <span className="font-sans text-xs italic text-muted-foreground/70">—</span>
+                  <span className="font-sans text-xs italic text-muted-foreground">—</span>
                 )}
               </td>
               <td className="px-4 py-3 text-muted-foreground">

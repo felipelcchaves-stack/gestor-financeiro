@@ -19,7 +19,7 @@ export default async function AvisoPage({ searchParams }: { searchParams: Promis
   return (
     <Card>
       <CardHeader>
-        <span className="mb-2 flex size-10 items-center justify-center rounded-xl bg-gold/15 text-gold">
+        <span className="mb-2 flex size-10 items-center justify-center rounded-xl bg-secondary text-gold">
           <CircleAlert className="size-5" aria-hidden />
         </span>
         <CardTitle className="text-xl font-black tracking-tight">{aviso.titulo}</CardTitle>

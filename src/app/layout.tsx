@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Nunito, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const SCRIPT_TEMA_INICIAL = `
@@ -14,12 +14,7 @@ const SCRIPT_TEMA_INICIAL = `
 })();
 `;
 
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "600", "700", "800", "900"],
-});
-
+// A fonte do texto é a Inter Tight auto-hospedada (src/app/fonts, licença OFL), declarada em globals.css.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -30,13 +25,25 @@ export const metadata: Metadata = {
   description: "Sistema de gestão financeira e quitação de passivos",
 };
 
+/** `viewport-fit=cover` deixa o navegador informar a área coberta (barras translúcidas, recortes de tela). */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  // Cor da barra do navegador = fundo do painel (design system Vimeo).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1114" },
+  ],
+};
+
 // Só o esqueleto (fontes, tema). O menu, o cabeçalho e a checagem de sessão ficam em
 // (painel)/layout.tsx; as telas de entrada/saída (/auth/*) têm o layout delas, sem dado financeiro.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="pt-BR"
-      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

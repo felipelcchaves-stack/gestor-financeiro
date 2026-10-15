@@ -34,13 +34,13 @@ export function SeletorTransacaoPagamento({ transacoes }: { transacoes: Transaca
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
         placeholder="buscar por descrição, data ou valor…"
-        className="w-80 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+        className="w-80 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
       />
       <select
         name="transacaoId"
         required
         size={Math.min(8, Math.max(4, filtradas.length))}
-        className="w-80 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+        className="w-80 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
       >
         <option value="">selecione…</option>
         {filtradas.map((t) => (
@@ -49,7 +49,7 @@ export function SeletorTransacaoPagamento({ transacoes }: { transacoes: Transaca
           </option>
         ))}
       </select>
-      <p className="text-[11px] text-muted-foreground/70">
+      <p className="text-[11px] text-muted-foreground">
         {filtradas.length} de {transacoes.length} transação(ões){busca ? " (filtradas)" : ""}
       </p>
     </div>

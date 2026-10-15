@@ -155,12 +155,12 @@ export function TransacoesTable({
               placeholder="Nome da nova categoria"
               value={novaCategoriaNome}
               onChange={(e) => setNovaCategoriaNome(e.target.value)}
-              className="w-44 rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground"
+              className="w-44 rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground"
             />
             <select
               value={novaCategoriaParentId}
               onChange={(e) => setNovaCategoriaParentId(e.target.value)}
-              className="w-44 rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground"
+              className="w-44 rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground"
             >
               <option value="">(categoria raiz)</option>
               {opcoesCategoria
@@ -174,14 +174,14 @@ export function TransacoesTable({
             <button
               type="button"
               onClick={confirmarNovaCategoria}
-              className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/80"
+              className="rounded-xl bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-85"
             >
               Criar
             </button>
             <button
               type="button"
               onClick={() => setCriandoCategoria(false)}
-              className="rounded-lg border border-input px-3 py-1 text-xs text-muted-foreground"
+              className="inline-flex min-h-9 items-center rounded-xl bg-secondary px-3.5 py-1.5 text-[0.8125rem] font-semibold text-foreground hover:bg-accent"
             >
               Cancelar
             </button>
@@ -200,7 +200,7 @@ export function TransacoesTable({
                 }
               }}
               disabled={selecionadas.size === 0}
-              className="rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground disabled:opacity-50"
+              className="rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground disabled:opacity-50"
             >
               <option value="">categoria…</option>
               {opcoesCategoria.map((o) => (
@@ -214,7 +214,7 @@ export function TransacoesTable({
               type="button"
               onClick={aplicarCategoriaEmLote}
               disabled={selecionadas.size === 0 || !categoriaEmLote || aplicando}
-              className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+              className="rounded-xl bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-85 disabled:opacity-50"
             >
               {aplicando ? "Aplicando…" : "Aplicar categoria"}
             </button>
@@ -227,7 +227,7 @@ export function TransacoesTable({
           value={vinculoEmLote}
           onChange={(e) => setVinculoEmLote(e.target.value)}
           disabled={selecionadas.size === 0}
-          className="rounded-lg border border-input bg-input/30 px-2 py-1 text-xs text-foreground disabled:opacity-50"
+          className="rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground disabled:opacity-50"
         >
           <option value="">vínculo…</option>
           {passivos.length > 0 && (
@@ -262,7 +262,7 @@ export function TransacoesTable({
           type="button"
           onClick={aplicarVinculoEmLote}
           disabled={selecionadas.size === 0 || !vinculoEmLote || aplicandoVinculo}
-          className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
+          className="rounded-xl bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-85 disabled:opacity-50"
           title="Vincula as transações selecionadas a esse passivo/ativo/meta — é o que faz o saldo do passivo poder ser reconciliado com os pagamentos reais."
         >
           {aplicandoVinculo ? "Aplicando…" : "Aplicar vínculo"}
@@ -274,7 +274,7 @@ export function TransacoesTable({
           type="button"
           onClick={() => marcarTransferencia(true)}
           disabled={selecionadas.size === 0 || aplicandoTransferencia}
-          className="rounded-lg border border-input px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+          className="inline-flex min-h-9 items-center rounded-xl bg-secondary px-3.5 py-1.5 text-[0.8125rem] font-semibold text-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
           title="Dinheiro que só mudou de conta (TED/DOC/PIX entre bancos próprios, aporte em investimento) — não é gasto nem receita, some dos relatórios de ofensor."
         >
           {aplicandoTransferencia ? "Aplicando…" : "Marcar transferência"}
@@ -283,7 +283,7 @@ export function TransacoesTable({
           type="button"
           onClick={() => marcarTransferencia(false)}
           disabled={selecionadas.size === 0 || aplicandoTransferencia}
-          className="rounded-lg border border-input px-3 py-1 text-xs text-muted-foreground/70 hover:text-foreground disabled:opacity-50"
+          className="inline-flex min-h-9 items-center rounded-xl bg-secondary px-3.5 py-1.5 text-[0.8125rem] font-semibold text-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
         >
           Desmarcar
         </button>
@@ -291,7 +291,7 @@ export function TransacoesTable({
 
       <div className="overflow-x-auto glass-card rounded-2xl">
         <table className="w-full min-w-[800px] text-sm">
-          <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
             <tr>
               <th className="px-3 py-2 font-medium">
                 <input
@@ -344,13 +344,13 @@ export function TransacoesTable({
                 <td className="px-3 py-2 text-foreground">
                   {t.descricao}
                   {t.semelhancaPct != null && (
-                    <span className="ml-1.5 rounded bg-gold/10 px-1 py-0.5 text-[10px] text-gold">
+                    <span className="ml-1.5 inline-flex items-center gap-1.5 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground before:size-1.5 before:rounded-full before:bg-gold before:content-['']">
                       parecido {t.semelhancaPct}%
                     </span>
                   )}
                   <Link
                     href={`/transacoes?tipo=${t.tipo}&q=${encodeURIComponent(t.descricao)}&parecido=1`}
-                    className="ml-1.5 text-[10px] text-muted-foreground/60 hover:text-gold hover:underline"
+                    className="ml-1.5 text-[10px] text-muted-foreground hover:text-brand-text hover:underline"
                     title="Achar outras transações com descrição parecida com essa"
                   >
                     achar parecidos
@@ -368,7 +368,7 @@ export function TransacoesTable({
                     <span className="ml-1.5 text-[10px] text-muted-foreground">transferência</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-xs text-muted-foreground/70">{t.origem}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground">{t.origem}</td>
                 <td
                   className={`num px-3 py-2 text-right ${
                     t.ehTransferencia
@@ -387,7 +387,7 @@ export function TransacoesTable({
                       href={`/api/documentos/${t.documento.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-muted-foreground/70 hover:text-foreground hover:underline"
+                      className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                     >
                       ver documento
                     </a>

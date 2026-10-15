@@ -265,7 +265,7 @@ export default async function TransacoesPage({
       />
 
       {importados != null && (
-        <p className="rounded-lg border border-liquidity/20 bg-liquidity/[0.06] p-4 text-sm text-liquidity">
+        <p className="rounded-xl bg-secondary p-4 text-sm text-liquidity">
           {importados} lançamento(s) importado(s) com sucesso.
           {duplicados != null && Number(duplicados) > 0 && (
             <> {duplicados} já existente(s) foram ignorado(s) como duplicata.</>
@@ -283,19 +283,19 @@ export default async function TransacoesPage({
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Link
           href={hrefComFiltro(filtroAtual, { tipo: undefined })}
-          className={`rounded-lg px-3 py-1 ${!tipo ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${!tipo ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Todas
         </Link>
         <Link
           href={hrefComFiltro(filtroAtual, { tipo: "ENTRADA" })}
-          className={`rounded-lg px-3 py-1 ${tipo === "ENTRADA" ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${tipo === "ENTRADA" ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Receitas
         </Link>
         <Link
           href={hrefComFiltro(filtroAtual, { tipo: "DESPESA" })}
-          className={`rounded-lg px-3 py-1 ${tipo === "DESPESA" ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${tipo === "DESPESA" ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Despesas
         </Link>
@@ -307,8 +307,8 @@ export default async function TransacoesPage({
           <Link
             key={p}
             href={hrefComFiltro(filtroAtual, { periodo: p === "tudo" ? undefined : p })}
-            className={`rounded-lg px-3 py-1 ${
-              periodo === p ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"
+            className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${
+              periodo === p ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"
             }`}
           >
             {LABEL_PERIODO[p]}
@@ -319,13 +319,13 @@ export default async function TransacoesPage({
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <Link
           href={hrefComFiltro(filtroAtual, { semCategoria: undefined })}
-          className={`rounded-lg px-3 py-1 ${!semCategoria ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${!semCategoria ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Todas
         </Link>
         <Link
           href={hrefComFiltro(filtroAtual, { semCategoria: "1" })}
-          className={`rounded-lg px-3 py-1 ${semCategoria ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${semCategoria ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Sem categoria
         </Link>
@@ -339,13 +339,13 @@ export default async function TransacoesPage({
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <Link
           href={hrefComFiltro(filtroAtual, { semVinculo: undefined })}
-          className={`rounded-lg px-3 py-1 ${!semVinculo ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${!semVinculo ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Todas
         </Link>
         <Link
           href={hrefComFiltro(filtroAtual, { semVinculo: "1" })}
-          className={`rounded-lg px-3 py-1 ${semVinculo ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${semVinculo ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Sem vínculo
         </Link>
@@ -360,13 +360,13 @@ export default async function TransacoesPage({
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <Link
           href={hrefComFiltro(filtroAtual, { transferencia: undefined })}
-          className={`rounded-lg px-3 py-1 ${!transferencia ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${!transferencia ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Todas
         </Link>
         <Link
           href={hrefComFiltro(filtroAtual, { transferencia: "1" })}
-          className={`rounded-lg px-3 py-1 ${transferencia ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"}`}
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${transferencia ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"}`}
         >
           Transferências
         </Link>
@@ -392,7 +392,7 @@ export default async function TransacoesPage({
             name="q"
             defaultValue={q ?? ""}
             placeholder="ex: dizimo, uber…"
-            className="w-48 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-48 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -409,7 +409,7 @@ export default async function TransacoesPage({
             inputMode="decimal"
             defaultValue={valorRaw ?? ""}
             placeholder="ex: 250,00"
-            className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -417,7 +417,7 @@ export default async function TransacoesPage({
           <select
             name="categoriaId"
             defaultValue={categoriaId ?? ""}
-            className="w-48 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-48 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="">todas</option>
             {ordenarCategoriasHierarquicamente(categorias).map((o) => (
@@ -429,14 +429,14 @@ export default async function TransacoesPage({
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
+          className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-85"
         >
           Filtrar
         </button>
         {(q || valorRaw || categoriaId) && (
           <Link
             href={hrefComFiltro(filtroAtual, { q: undefined, valor: undefined, categoriaId: undefined, parecido: undefined })}
-            className="text-xs text-muted-foreground/70 hover:text-foreground hover:underline"
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
           >
             limpar busca
           </Link>
@@ -451,7 +451,7 @@ export default async function TransacoesPage({
           ) : (
             <>
               Nenhuma transação ainda. Use{" "}
-              <a href="/importar/extrato" className="text-gold underline underline-offset-4">
+              <a href="/importar/extrato" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                 Importar extrato
               </a>{" "}
               para começar.

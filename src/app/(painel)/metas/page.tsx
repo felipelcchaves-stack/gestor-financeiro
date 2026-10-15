@@ -47,25 +47,25 @@ export default async function MetasPage() {
             return (
               <div key={meta.id} className="glass-card rounded-2xl p-5">
                 <div className="flex items-baseline justify-between">
-                  <h2 className="text-base font-medium text-foreground">{meta.nome}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{meta.nome}</h2>
                   <div className="flex items-center gap-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         meta.status === "ATIVA"
-                          ? "bg-liquidity/[0.06] text-liquidity"
+                          ? "bg-secondary text-liquidity"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {meta.status}
                     </span>
-                    <Link href={`/metas/${meta.id}/editar`} className="text-xs text-muted-foreground/70 hover:text-foreground">
+                    <Link href={`/metas/${meta.id}/editar`} className="text-xs text-muted-foreground hover:text-foreground">
                       editar
                     </Link>
                     <ConfirmForm
                       action={excluirMeta.bind(null, meta.id)}
                       confirmMessage={`Excluir a meta "${meta.nome}"? Essa ação não pode ser desfeita.`}
                     >
-                      <button type="submit" className="text-xs text-muted-foreground/70 hover:text-debt">
+                      <button type="submit" className="text-xs text-muted-foreground hover:text-debt">
                         excluir
                       </button>
                     </ConfirmForm>
@@ -94,7 +94,7 @@ export default async function MetasPage() {
                 </dl>
 
                 {!progresso.temDadosDeAlocacao && (
-                  <p className="mt-3 text-xs text-muted-foreground/70">
+                  <p className="mt-3 text-xs text-muted-foreground">
                     Ainda sem lançamentos classificados como alocação para esta meta. O
                     indicador de &ldquo;no ritmo&rdquo; / &ldquo;atrasado&rdquo; fica disponível
                     assim que houver dados reais de aporte (importação de extrato +
@@ -113,7 +113,7 @@ export default async function MetasPage() {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="num mt-0.5 text-sm font-medium text-foreground">{value}</dd>
     </div>
   );

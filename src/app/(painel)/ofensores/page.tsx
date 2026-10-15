@@ -115,19 +115,19 @@ export default async function OfensoresPage({
 
       <p className="-mt-4 text-xs text-muted-foreground">
         Quer ver despesa e receita lado a lado, com filtro por categoria específica?{" "}
-        <Link href="/relatorio/categorias" className="text-gold underline underline-offset-4">
+        <Link href="/relatorio/categorias" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
           Relatório por categoria
         </Link>
         .
       </p>
 
-      <div className="flex gap-2 text-sm">
+      <div className="flex flex-wrap gap-2 text-sm">
         {(Object.keys(LABEL_PERIODO) as Periodo[]).map((p) => (
           <Link
             key={p}
             href={`/ofensores?periodo=${p}&visao=${visao}`}
-            className={`rounded-lg px-3 py-1 ${
-              p === periodo ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"
+            className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${
+              p === periodo ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"
             }`}
           >
             {LABEL_PERIODO[p]}
@@ -135,31 +135,31 @@ export default async function OfensoresPage({
         ))}
       </div>
 
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-xs text-muted-foreground">ver por:</span>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-sm text-muted-foreground">ver por:</span>
         <Link
           href={`/ofensores?periodo=${periodo}&visao=categoria`}
-          className={`rounded-lg px-3 py-1 ${
-            visao === "categoria" ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${
+            visao === "categoria" ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"
           }`}
         >
           Categoria
         </Link>
         <Link
           href={`/ofensores?periodo=${periodo}&visao=credor`}
-          className={`rounded-lg px-3 py-1 ${
-            visao === "credor" ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"
+          className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${
+            visao === "credor" ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"
           }`}
         >
           Credor
         </Link>
         {visao === "credor" ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="basis-full text-sm text-muted-foreground md:basis-0 md:flex-1">
             agrupado pelo passivo vinculado a cada lançamento — &ldquo;sem vínculo&rdquo; é o que ainda não foi ligado
             a nenhum credor.
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground">
+          <span className="basis-full text-sm text-muted-foreground md:basis-0 md:flex-1">
             aqui, dívidas da mesma categoria raiz somam juntas (ex: Agiota + Leka 1 + Leka 2 + consignados aparecem
             somados como &ldquo;Empréstimo&rdquo;) — troque pra &ldquo;Credor&rdquo; pra ver cada uma separada.
           </span>
@@ -218,7 +218,7 @@ export default async function OfensoresPage({
 
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">Comparativo mensal</h2>
+          <h2 className="text-xl font-bold text-foreground">Comparativo mensal</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Últimos 12 meses, sempre — independente do período escolhido acima — pra comparar um ofensor com o outro,
             mês a mês, e ver se está melhorando ou piorando.
@@ -228,7 +228,7 @@ export default async function OfensoresPage({
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-foreground">Orçamento por categoria</h2>
+        <h2 className="text-xl font-bold text-foreground">Orçamento por categoria</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Defina um limite mensal por categoria e acompanhe quanto já foi usado.
         </p>
@@ -243,7 +243,7 @@ export default async function OfensoresPage({
                   <div className="flex items-baseline justify-between">
                     <span className="font-medium text-foreground">{o.categoria.nome}</span>
                     <form action={removerOrcamento.bind(null, o.id)}>
-                      <button type="submit" className="text-xs text-muted-foreground/70 hover:text-debt">
+                      <button type="submit" className="text-xs text-muted-foreground hover:text-debt">
                         remover
                       </button>
                     </form>
@@ -269,7 +269,7 @@ export default async function OfensoresPage({
         >
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Categoria</label>
-            <select name="categoriaId" required className="w-56 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground">
+            <select name="categoriaId" required className="w-56 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground">
               <option value="">selecione…</option>
               {categorias.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -285,7 +285,7 @@ export default async function OfensoresPage({
               type="text"
               inputMode="decimal"
               required
-              className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             />
           </div>
           <Button type="submit">Salvar</Button>

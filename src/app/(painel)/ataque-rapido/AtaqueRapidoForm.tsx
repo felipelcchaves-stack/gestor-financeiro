@@ -57,7 +57,7 @@ export function AtaqueRapidoForm({
               <label key={p.id} className="flex items-center gap-2 text-sm text-foreground">
                 <input type="checkbox" checked={selecionados.has(p.id)} onChange={() => alternar(p.id)} />
                 {p.nome}{" "}
-                <span className="text-xs text-muted-foreground/70">
+                <span className="text-xs text-muted-foreground">
                   ({formatarBRL(p.saldoCentavos)}
                   {p.custoMensalCentavos > 0 ? ` · ${formatarBRL(p.custoMensalCentavos)}/mês` : ""})
                 </span>
@@ -85,7 +85,7 @@ export function AtaqueRapidoForm({
             inputMode="decimal"
             value={aporteReais}
             onChange={(e) => setAporteReais(e.target.value)}
-            className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </div>
       </div>
@@ -99,7 +99,7 @@ export function AtaqueRapidoForm({
 
       {resultado && (
         <div className="flex flex-col gap-4">
-          <div className="rounded-lg border border-liquidity/25 bg-liquidity/[0.06] p-4 text-sm text-liquidity">
+          <div className="rounded-xl bg-secondary p-4 text-sm text-liquidity">
             Atacando nessa ordem, todas essas dívidas somem em{" "}
             <span className="font-semibold">{formatarMeses(resultado.mesesTotais)}</span> — liberando{" "}
             <span className="font-semibold">{formatarBRL(alivioTotalCentavos)}/mês</span> no seu caixa quando
@@ -128,10 +128,10 @@ export function AtaqueRapidoForm({
                         <p className="text-sm font-semibold text-liquidity">
                           vira pó em {formatarMeses(quitacao.mes)}
                         </p>
-                        <p className="text-xs text-muted-foreground/70">({mesAnoDaquiA(quitacao.mes)})</p>
+                        <p className="text-xs text-muted-foreground">({mesAnoDaquiA(quitacao.mes)})</p>
                       </>
                     ) : (
-                      <p className="text-sm text-muted-foreground/70">não fecha no período simulado</p>
+                      <p className="text-sm text-muted-foreground">não fecha no período simulado</p>
                     )}
                   </div>
                 </div>

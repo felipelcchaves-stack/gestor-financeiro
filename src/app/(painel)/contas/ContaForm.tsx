@@ -8,14 +8,14 @@ export function ContaForm({ action }: { action: (formData: FormData) => void }) 
           <label className="text-xs font-medium text-muted-foreground">
             Nome <span className="text-debt">*</span>
           </label>
-          <input name="nome" required className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground" />
+          <input name="nome" required className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground" />
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">
             Tipo <span className="text-debt">*</span>
           </label>
-          <select name="tipo" className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground">
+          <select name="tipo" className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground">
             <option value="CORRENTE_PF">Corrente PF</option>
             <option value="CORRENTE_PJ">Corrente PJ</option>
             <option value="CHEQUE_ESPECIAL">Cheque especial</option>
@@ -30,7 +30,7 @@ export function ContaForm({ action }: { action: (formData: FormData) => void }) 
             name="limiteChequeEspecial"
             type="text"
             inputMode="decimal"
-            className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </div>
 
@@ -40,7 +40,7 @@ export function ContaForm({ action }: { action: (formData: FormData) => void }) 
             name="taxaJurosChequeEspecial"
             type="text"
             inputMode="decimal"
-            className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </div>
 
@@ -50,7 +50,7 @@ export function ContaForm({ action }: { action: (formData: FormData) => void }) 
             name="carenciaDiasChequeEspecial"
             type="text"
             inputMode="numeric"
-            className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </div>
       </div>

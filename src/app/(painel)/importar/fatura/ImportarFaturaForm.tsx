@@ -240,7 +240,7 @@ export function ImportarFaturaForm({
       <form onSubmit={handleAnalisar} className="flex flex-wrap items-end gap-4 glass-card rounded-2xl p-4">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">Cartão</label>
-          <select value={passivoId} onChange={(e) => setPassivoId(e.target.value)} className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground">
+          <select value={passivoId} onChange={(e) => setPassivoId(e.target.value)} className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground">
             {cartoes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -279,7 +279,7 @@ export function ImportarFaturaForm({
           className="flex flex-col gap-4 glass-card rounded-2xl p-5"
         >
           <div>
-            <h2 className="text-sm font-medium text-foreground">
+            <h2 className="text-xl font-bold text-foreground">
               Totais da fatura
               {nomeArquivoPorDocumento[resultado.documentoId] && (
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
@@ -296,7 +296,7 @@ export function ImportarFaturaForm({
               <label className="text-xs font-medium text-muted-foreground">
                 Referência (ex: 2026-09) <span className="text-debt">*</span>
               </label>
-              <input name="referencia" required className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground" />
+              <input name="referencia" required className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground" />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">
@@ -308,7 +308,7 @@ export function ImportarFaturaForm({
                 inputMode="decimal"
                 required
                 defaultValue={resultado.candidato.valorCentavos != null ? centavosParaReais(resultado.candidato.valorCentavos) : undefined}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
               {resultado.candidato.valorCentavos == null && (
                 <span className="text-[11px] text-gold">não encontrado automaticamente — confira o PDF</span>
@@ -321,7 +321,7 @@ export function ImportarFaturaForm({
                 type="text"
                 inputMode="decimal"
                 defaultValue={resultado.candidato.valorMinimoCentavos != null ? centavosParaReais(resultado.candidato.valorMinimoCentavos) : undefined}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -330,7 +330,7 @@ export function ImportarFaturaForm({
                 name="vencimento"
                 type="date"
                 defaultValue={resultado.candidato.vencimento ?? undefined}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
           </div>
@@ -341,7 +341,7 @@ export function ImportarFaturaForm({
             </Button>
           </div>
           {sucessoDocumento[resultado.documentoId] && (
-            <p className="rounded-lg border border-liquidity/20 bg-liquidity/[0.06] p-3 text-sm text-liquidity">
+            <p className="rounded-xl bg-secondary p-3 text-sm text-liquidity">
               Ciclo de fatura registrado.
             </p>
           )}
@@ -351,7 +351,7 @@ export function ImportarFaturaForm({
       {resultados.length > 0 && (
         <div className="flex flex-col gap-4 glass-card rounded-2xl p-5">
           <div>
-            <h2 className="text-sm font-medium text-foreground">Compras da(s) fatura(s)</h2>
+            <h2 className="text-xl font-bold text-foreground">Compras da(s) fatura(s)</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Revise linha por linha — marque como &ldquo;essencial&rdquo; o que não pode deixar de existir,
               pra alimentar a tela de limite de cartão.
@@ -366,7 +366,7 @@ export function ImportarFaturaForm({
           </div>
 
           {resultados.some((r) => r.linhasNaoReconhecidas.length > 0) && (
-            <details className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-sm text-gold">
+            <details className="rounded-xl bg-secondary p-3 text-sm text-gold">
               <summary className="cursor-pointer font-medium">
                 {resultados.reduce((acc, r) => acc + r.linhasNaoReconhecidas.length, 0)} linha(s) com data mas não
                 reconhecida(s) — nada foi perdido, revise manualmente
@@ -389,7 +389,7 @@ export function ImportarFaturaForm({
           )}
 
           {resultadoLinhas && (
-            <p className="rounded-lg border border-liquidity/20 bg-liquidity/[0.06] p-3 text-sm text-liquidity">
+            <p className="rounded-xl bg-secondary p-3 text-sm text-liquidity">
               {resultadoLinhas.importados} compra(s) importada(s)
               {resultadoLinhas.duplicadosNaConfirmacao > 0 && `, ${resultadoLinhas.duplicadosNaConfirmacao} duplicada(s) ignorada(s)`}.
             </p>
@@ -402,9 +402,9 @@ export function ImportarFaturaForm({
           )}
 
           {linhas.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <div className="overflow-x-auto rounded-2xl bg-card">
               <table className="w-full min-w-[800px] text-sm">
-                <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
                   <tr>
                     {resultados.length > 1 && <th className="px-3 py-2 font-medium">Fatura</th>}
                     <th className="px-3 py-2 font-medium">Data</th>
@@ -423,9 +423,9 @@ export function ImportarFaturaForm({
                       key={l.key}
                       className={
                         l.sugestaoOrigem === "exata"
-                          ? "bg-gold/[0.06]"
+                          ? "bg-secondary"
                           : l.sugestaoOrigem === "aproximada"
-                            ? "bg-gold/[0.02]"
+                            ? "bg-secondary"
                             : l.sugestaoOrigem === "valor"
                               ? "bg-muted/40"
                               : undefined
@@ -457,7 +457,7 @@ export function ImportarFaturaForm({
                           </div>
                         )}
                         {l.sugestaoOrigem === "aproximada" && (
-                          <div className="mt-0.5 text-[10px] text-gold/70">
+                          <div className="mt-0.5 text-[10px] text-gold">
                             sugestão aproximada (parecido com algo já classificado) — confira
                           </div>
                         )}
@@ -537,7 +537,7 @@ export function ImportarFaturaForm({
                         <button
                           type="button"
                           onClick={() => removerLinha(l.key)}
-                          className="text-xs text-muted-foreground/70 hover:text-debt"
+                          className="text-xs text-muted-foreground hover:text-debt"
                         >
                           remover
                         </button>

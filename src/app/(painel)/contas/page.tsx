@@ -35,7 +35,7 @@ export default async function ContasPage() {
 
       <div className="overflow-hidden glass-card rounded-2xl">
         <table className="w-full text-sm">
-          <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
             <tr>
               <th className="px-4 py-2 font-medium">Nome</th>
               <th className="px-4 py-2 font-medium">Tipo</th>
@@ -60,9 +60,9 @@ export default async function ContasPage() {
                       inputMode="decimal"
                       defaultValue={c.saldoAtualCentavos != null ? centavosParaReais(c.saldoAtualCentavos) : ""}
                       placeholder="0,00"
-                      className="num w-28 rounded-lg border border-input bg-input/30 px-2 py-1 text-right text-sm text-foreground"
+                      className="num w-28 rounded-lg border border-input bg-card px-3 py-1.5 text-right text-sm text-foreground"
                     />
-                    <button type="submit" className="text-xs text-gold underline underline-offset-4">
+                    <button type="submit" className="text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                       salvar
                     </button>
                   </form>
@@ -75,7 +75,7 @@ export default async function ContasPage() {
                     action={excluirConta.bind(null, c.id)}
                     confirmMessage={`Excluir a conta "${c.nome}"? Essa ação não pode ser desfeita.`}
                   >
-                    <button type="submit" className="text-xs text-muted-foreground/70 hover:text-debt">
+                    <button type="submit" className="text-xs text-muted-foreground hover:text-debt">
                       excluir
                     </button>
                   </ConfirmForm>

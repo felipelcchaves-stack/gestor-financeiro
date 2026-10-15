@@ -37,7 +37,7 @@ export default async function ResumoIAPage() {
       <CopiarResumo markdown={markdown} />
 
       <div className="mt-4 border-t border-border pt-4">
-        <h2 className="text-base font-semibold text-foreground">Ou peça uma sugestão automática</h2>
+        <h2 className="text-xl font-bold text-foreground">Ou peça uma sugestão automática</h2>
         <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
           Diferente do bloco acima (que só sai se você mesmo colar em algum lugar), isso manda os totais por
           categoria pra API do Claude e abre a análise numa aba lateral.

@@ -132,8 +132,8 @@ export default async function RelatorioCategoriasPage({
             href={`/relatorio/categorias?periodo=${p}${
               selecionados.size > 0 ? `&${Array.from(selecionados).map((id) => `categorias=${id}`).join("&")}` : ""
             }`}
-            className={`rounded-lg px-3 py-1 ${
-              p === periodo ? "bg-gold/10 text-gold" : "border border-input text-muted-foreground"
+            className={`inline-flex min-h-9 items-center rounded-full px-4 py-1.5 ${
+              p === periodo ? "bg-primary font-semibold text-primary-foreground" : "bg-secondary text-foreground hover:bg-accent"
             }`}
           >
             {LABEL_PERIODO[p]}
@@ -143,19 +143,19 @@ export default async function RelatorioCategoriasPage({
 
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <p className="text-xs font-semibold uppercase tracking-wider">Saldo do período{selecionados.size > 0 ? " (categorias filtradas)" : ""}</p>
+          <p className="text-sm font-semibold">Saldo do período{selecionados.size > 0 ? " (categorias filtradas)" : ""}</p>
         </div>
         <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Receitas</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Receitas</p>
             <p className="num text-2xl font-semibold text-liquidity">{formatarBRL(totalReceitasCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Despesas</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Despesas</p>
             <p className="num text-2xl font-semibold text-debt">{formatarBRL(totalDespesasCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Saldo</p>
             <p className={`num text-2xl font-semibold ${saldoCentavos >= 0 ? "text-liquidity" : "text-debt"}`}>
               {formatarBRL(saldoCentavos)}
             </p>
@@ -164,7 +164,7 @@ export default async function RelatorioCategoriasPage({
       </section>
 
       <section className="glass-card rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-foreground">Filtrar por categoria</h2>
+        <h2 className="text-xl font-bold text-foreground">Filtrar por categoria</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Marque uma categoria raiz pra ver ela inteira (com subcategorias), ou só subcategorias específicas pra ver
           só essas. Nenhuma marcada = mostra tudo.
@@ -204,7 +204,7 @@ export default async function RelatorioCategoriasPage({
               Aplicar filtro
             </Button>
             {selecionados.size > 0 && (
-              <Link href={`/relatorio/categorias?periodo=${periodo}`} className="text-xs text-gold underline underline-offset-4">
+              <Link href={`/relatorio/categorias?periodo=${periodo}`} className="text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                 Limpar filtro
               </Link>
             )}
@@ -214,13 +214,13 @@ export default async function RelatorioCategoriasPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Despesas por categoria</h2>
+          <h2 className="text-xl font-bold text-foreground">Despesas por categoria</h2>
           <div className="mt-3">
             <Ranking itens={despesas} corTotal="text-debt" />
           </div>
         </section>
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Receitas por categoria</h2>
+          <h2 className="text-xl font-bold text-foreground">Receitas por categoria</h2>
           <div className="mt-3">
             <Ranking itens={receitas} corTotal="text-liquidity" />
           </div>
@@ -229,7 +229,7 @@ export default async function RelatorioCategoriasPage({
 
       <p className="text-xs text-muted-foreground">
         Pra orçamento por categoria, trajetória de saldo por credor e o comparativo mensal em gráfico, veja{" "}
-        <Link href="/ofensores" className="text-gold underline underline-offset-4">
+        <Link href="/ofensores" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
           Maiores ofensores
         </Link>
         .

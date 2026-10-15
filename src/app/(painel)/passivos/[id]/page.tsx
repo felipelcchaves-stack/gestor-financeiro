@@ -135,7 +135,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
       </dl>
 
       <section className="glass-card rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-foreground">Evolução</h2>
+        <h2 className="text-xl font-bold text-foreground">Evolução</h2>
         {trajetoria.length > 1 ? (
           <>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -159,14 +159,14 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
       </section>
 
       {passivo.observacao && (
-        <p className="rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-sm text-gold">
+        <p className="rounded-xl bg-secondary p-3 text-sm text-gold">
           {passivo.observacao}
         </p>
       )}
 
       {passivo.status === "ATIVO" && passivo.valorQuitacaoCentavos != null && (
         <section className="glass-card rounded-2xl p-5">
-          <h2 className="text-sm font-semibold text-foreground">Quitar / Amortizar</h2>
+          <h2 className="text-xl font-bold text-foreground">Quitar / Amortizar</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Escolha uma transação de saída já importada — nova (sem vínculo) ou já vinculada a este passivo
             aguardando confirmação — nunca cria uma transação do zero. Se o valor pago cobrir o saldo inteiro,
@@ -174,7 +174,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
             documentada (nunca o valor pago inteiro, que incluiria juro).
           </p>
           {parcelaSeguinte && (
-            <p className="mt-2 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <p className="mt-2 rounded-xl bg-secondary p-3 text-xs text-muted-foreground">
               Próxima parcela do contrato: <span className="font-medium text-foreground">{parcelaSeguinte.numeroParcela}</span>{" "}
               (venc. {new Date(parcelaSeguinte.vencimento).toLocaleDateString("pt-BR")}) — dela,{" "}
               {formatarBRL(parcelaSeguinte.principalCentavos)} seriam principal e{" "}
@@ -182,7 +182,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
             </p>
           )}
           {cronograma.length > 0 && (
-            <p className="mt-2 rounded-lg border border-gold/20 bg-gold/[0.06] p-3 text-xs text-gold">
+            <p className="mt-2 rounded-xl bg-secondary p-3 text-xs text-gold">
               Empréstimo consignado é descontado direto do salário, antes de cair na conta — ele nunca vai aparecer
               no extrato bancário importado, não importa quanto extrato você importe. Pra esse tipo de dívida,
               prefira a estimativa por cronograma (baseada no contrato) logo abaixo, quando disponível, em vez de
@@ -207,7 +207,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
       )}
 
       {estimativa && (
-        <section className="rounded-lg border border-gold/30 bg-gold/[0.06] p-4">
+        <section className="rounded-xl bg-secondary p-4">
           <p className="text-sm text-gold">
             Pelas datas do contrato, você já deveria estar na parcela{" "}
             <span className="font-medium">{estimativa.novaParcelaAtual}</span> — dado real do banco (soma do
@@ -226,7 +226,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
 
       {passivo.ativosVinculados.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Ativos vinculados (garantia)</h2>
+          <h2 className="text-xl font-bold text-foreground">Ativos vinculados (garantia)</h2>
           <ul className="mt-2 text-sm text-muted-foreground">
             {passivo.ativosVinculados.map((v) => (
               <li key={v.id}>
@@ -239,7 +239,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
 
       {passivo.custoMensalVariavel && (
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Ciclos de fatura</h2>
+          <h2 className="text-xl font-bold text-foreground">Ciclos de fatura</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Este passivo não tem custo mensal fixo — lance o valor da fatura a cada ciclo.
           </p>
@@ -254,7 +254,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
                 name="referencia"
                 placeholder="2026-09"
                 required
-                className="w-28 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-28 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -264,7 +264,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
                 type="text"
                 inputMode="decimal"
                 required
-                className="w-32 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-32 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -273,19 +273,19 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
                 name="valorMinimo"
                 type="text"
                 inputMode="decimal"
-                className="w-28 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="w-28 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted-foreground">Vencimento</label>
-              <input name="vencimento" type="date" className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground" />
+              <input name="vencimento" type="date" className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground" />
             </div>
             <Button type="submit">Lançar</Button>
           </form>
 
           {passivo.ciclosFatura.length > 0 && (
             <table className="mt-3 w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="text-left text-sm text-muted-foreground">
                 <tr>
                   <th className="py-1 font-medium">Referência</th>
                   <th className="py-1 font-medium text-right">Valor</th>
@@ -311,7 +311,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
                           href={`/api/documentos/${c.documentoId}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-muted-foreground/70 underline"
+                          className="text-xs text-muted-foreground underline"
                         >
                           documento
                         </a>
@@ -326,7 +326,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-foreground">Movimentações vinculadas</h2>
+        <h2 className="text-xl font-bold text-foreground">Movimentações vinculadas</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Transações do extrato/fatura vinculadas a este passivo — pagamento reduz o saldo, desembolso (empréstimo
           recebido) aumenta. É o que permite conferir se o saldo documentado ainda bate com a realidade.
@@ -366,7 +366,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
         )}
 
         {reconciliacao && reconciliacao.pagamentoEhSoJuroSemAbaterPrincipal && (
-          <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
+          <div className="mt-3 rounded-xl bg-secondary p-4">
             <p className="text-sm text-muted-foreground">
               Desde {new Date(reconciliacao.dataUltimaAtualizacao).toLocaleDateString("pt-BR")}, você tem{" "}
               {formatarBRL(reconciliacao.pagoDesdeUltimaAtualizacaoCentavos)} em pagamentos vinculados — mas essa
@@ -378,7 +378,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
         )}
 
         {reconciliacao && reconciliacao.saldoSugeridoCentavos != null && (
-          <div className="mt-3 rounded-lg border border-gold/30 bg-gold/[0.06] p-4">
+          <div className="mt-3 rounded-xl bg-secondary p-4">
             <p className="text-sm text-gold">
               Desde {new Date(reconciliacao.dataUltimaAtualizacao).toLocaleDateString("pt-BR")} (última vez que o
               saldo foi confirmado), você tem{" "}
@@ -408,7 +408,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
                   type="text"
                   inputMode="decimal"
                   defaultValue={centavosParaReais(reconciliacao.saldoSugeridoCentavos)}
-                  className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                  className="w-40 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                 />
               </div>
               <Button type="submit">Atualizar saldo</Button>
@@ -419,7 +419,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
 
       {passivo.historico.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-foreground">Histórico de mudanças</h2>
+          <h2 className="text-xl font-bold text-foreground">Histórico de mudanças</h2>
           <ul className="mt-2 flex flex-col gap-2">
             {passivo.historico.map((h) => (
               <li key={h.id} className="rounded glass-card p-3 text-sm">
@@ -427,7 +427,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
                   <span className="font-medium">{h.campo}</span>: {h.valorAnterior ?? "não documentado"} →{" "}
                   {h.valorNovo}
                 </div>
-                <div className="mt-0.5 text-xs text-muted-foreground/70">
+                <div className="mt-0.5 text-xs text-muted-foreground">
                   {new Date(h.registradoEm).toLocaleString("pt-BR")}
                   {h.motivo && ` · ${h.motivo}`}
                   {h.documentoId && (
@@ -451,7 +451,7 @@ export default async function PassivoDetalhePage({ params }: { params: Promise<{
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-sm font-medium text-foreground">{value}</dd>
     </div>
   );

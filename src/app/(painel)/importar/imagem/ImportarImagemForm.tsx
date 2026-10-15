@@ -66,7 +66,7 @@ export function ImportarImagemForm({
   if (sucesso) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="rounded-lg border border-liquidity/20 bg-liquidity/[0.06] p-4 text-sm text-liquidity">
+        <p className="rounded-xl bg-secondary p-4 text-sm text-liquidity">
           Lançamento salvo com a imagem anexada.
         </p>
         <button
@@ -94,7 +94,7 @@ export function ImportarImagemForm({
           <label className="text-xs font-medium text-muted-foreground">
             Conta <span className="text-debt">*</span>
           </label>
-          <select name="contaId" required className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground">
+          <select name="contaId" required className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground">
             {contas.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -107,26 +107,26 @@ export function ImportarImagemForm({
           <label className="text-xs font-medium text-muted-foreground">
             Data <span className="text-debt">*</span>
           </label>
-          <input name="data" type="date" required className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground" />
+          <input name="data" type="date" required className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground" />
         </div>
 
         <div className="flex flex-col gap-1 sm:col-span-2">
           <label className="text-xs font-medium text-muted-foreground">
             Descrição <span className="text-debt">*</span>
           </label>
-          <input name="descricao" required className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground" />
+          <input name="descricao" required className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground" />
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">
             Valor (R$) <span className="text-debt">*</span>
           </label>
-          <input name="valor" type="text" inputMode="decimal" required className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground" />
+          <input name="valor" type="text" inputMode="decimal" required className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground" />
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">Tipo</label>
-          <select name="tipo" className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground">
+          <select name="tipo" className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground">
             <option value="DESPESA">Despesa</option>
             <option value="ENTRADA">Entrada</option>
           </select>
@@ -143,12 +143,12 @@ export function ImportarImagemForm({
                 placeholder="Nome da categoria"
                 value={novaCategoriaNome}
                 onChange={(e) => setNovaCategoriaNome(e.target.value)}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               />
               <select
                 value={novaCategoriaParentId}
                 onChange={(e) => setNovaCategoriaParentId(e.target.value)}
-                className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
               >
                 <option value="">(categoria raiz)</option>
                 {opcoesCategoria
@@ -160,7 +160,7 @@ export function ImportarImagemForm({
                   ))}
               </select>
               <div className="flex gap-1">
-                <button type="button" onClick={confirmarNovaCategoria} className="rounded bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+                <button type="button" onClick={confirmarNovaCategoria} className="rounded-lg bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                   Criar
                 </button>
                 <button type="button" onClick={() => setCriandoCategoria(false)} className="rounded border border-input px-2 py-0.5 text-xs">
@@ -172,7 +172,7 @@ export function ImportarImagemForm({
             <select
               value={categoriaId}
               onChange={(e) => (e.target.value === "__nova__" ? setCriandoCategoria(true) : setCategoriaId(e.target.value))}
-              className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             >
               <option value="">selecione…</option>
               {opcoesCategoria.map((o) => (
@@ -196,7 +196,7 @@ export function ImportarImagemForm({
                 setVinculo({ tipo: tipo as VinculoTipo, id });
               }
             }}
-            className="rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="NENHUM">nenhum</option>
             {passivos.length > 0 && (

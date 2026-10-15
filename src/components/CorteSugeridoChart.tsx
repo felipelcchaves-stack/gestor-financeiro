@@ -37,7 +37,7 @@ export function CorteSugeridoChart({ cortes }: { cortes: CorteSugerido[] }) {
                   style={{ width: `${pct}%`, backgroundColor: CORES_CATEGORICAS[i % CORES_CATEGORICAS.length] }}
                 />
               </div>
-              {c.justificativa && <p className="text-[11px] text-muted-foreground/70">{c.justificativa}</p>}
+              {c.justificativa && <p className="text-[11px] text-muted-foreground">{c.justificativa}</p>}
             </div>
           );
         })}

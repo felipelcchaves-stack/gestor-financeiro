@@ -1,58 +1,92 @@
 # DESIGN.md — Sistema visual do Gestor Financeiro
 
-Em 08/10/2026, a pedido do dono, o visual MV (verde-esmeralda/DM Sans/glass,
-depois dourado/ardósia + Sora/Manrope) foi **substituído** pelo sistema do
-**Baba Ifá** (`Baba Ifa/baba-ifa/baba/web/landing/landing.css`). A estrutura do
-padrão MV (sidebar em grupos, PageTabs, sheets, ajuda "?", gráficos com tabela,
-cores semânticas, regras de acessibilidade AA) continua valendo.
+**Experimento (branch `feat/design-vimeo`, 15/10/2026):** o Gestor usa o design system "Vimeo" do Felipe, descrito na
+skill `vimeo-design` (`~/.claude/skills/vimeo-design/`, origem: o painel do Movies). É o mesmo experimento já feito no
+CRM. O visual anterior (Baba Ifá, 08/10/2026) continua guardado na tag de backup. A estrutura não mudou: menu lateral
+em grupos, sheets, ajuda "?", gráficos sempre com tabela, cores com significado e contraste AA.
 
-## Tokens (src/app/globals.css)
-Claro = `:root` (creme/verde/marrom). Escuro = `.dark` (marrom quente, nunca ardósia).
-Verificar com `node scripts/contrast.mjs` (sai com código 1 se algo reprovar).
+Antes de mexer no visual, leia a skill (`SKILL.md` e o arquivo do assunto em `references/guide/`). Não copie o que está
+em `references/guide/99-divergencias.md`.
 
-| Token | Claro | Escuro |
-|---|---|---|
-| background | #f6f3ee (creme) | #1c1510 |
-| card / surface | #ffffff | #261e17 |
-| foreground | #2b2118 (marrom) | #f6f3ee |
-| muted-foreground | #5f5a52 | #b9afa1 |
-| primary (verde) | #1a7f45 / texto #fff | #4cc27f / texto #0b2415 |
-| accent (verde-cl) | #e6f6ec / texto #12592f | #2a3a2c / texto #e6f6ec |
-| destructive / debt (dinheiro saindo) | #b3261e / #a3321f | #f08a7a |
-| liquidity (dinheiro entrando) | #12592f (verde-esc) | #7ccf93 |
-| gold (pendente/atenção) | #6b4a00 (amarelo-t) | #f0b54a |
-| border | #d6d1c8 | #3f3328 |
-| input (borda de campo) | #857e72 | #8c8070 |
-| ring | #1a7f45 | #5fd08e |
-| charts 1-5 | #1a7f45 #b8661a #2a6fb0 #b08400 #c2457f | #4cc27f #e08a3c #5aa3f0 #f0b54a #e66ba0 |
+## Tokens (`src/app/globals.css`)
+Claro = `:root`, escuro = `.dark` (classe posta no `<html>` pelo script do layout raiz, antes da pintura). Valores em
+hex, com os **mesmos nomes** de variável que o Gestor já usava (`--background`, `--surface`, `--surface-2`,
+`--liquidity`, `--debt`, `--gold`, `--chart-1..5`, `--sidebar-*`...). Novos: `--border-soft`, `--border-strong`,
+`--brand`, `--brand-text`, `--brand-ink`, `--info`, `--info-soft`, `--shadow-menu`, `--destructive-foreground` e
+`--top-inset`.
 
-`chart-2` é a terracota do painel admin da Baba. Verde = dinheiro entrando/aprovado,
-vermelho = saindo/estorno, âmbar = pendente/atenção — nunca decorativos.
-O verde de texto sobre tints usa `liquidity`/`accent-foreground` (verde-esc),
-porque #1a7f45 sobre tint de 10% dá só 4,4:1.
+| Token | Claro | Escuro | Uso |
+|---|---|---|---|
+| background / sidebar | #f4f5f7 | #0f1114 | fundo da página; topo e menu no mesmo fundo, sem divisória |
+| card / surface | #ffffff | #1a1d21 | cartões brancos, **sem borda e sem sombra** |
+| popover | #ffffff | #202428 | sheets, menus, dicas |
+| foreground | #111418 | #f3f4f6 | texto |
+| muted-foreground | #5f6670 | #a4abb5 | texto secundário |
+| primary | #15181c / texto #fff | #f3f4f6 / texto #111418 | **ação principal preta** (no escuro, clara) |
+| secondary / muted / surface-2 | #eceef1 | #262a30 | ação secundária, pílulas, avisos neutros, cabeçalho de tabela |
+| accent / sidebar-accent | #e7e9ec | #2f343b / #262a30 | hover; **item ativo do menu em pílula cinza** |
+| liquidity (dinheiro entrando) | #036b44 | #4cc795 | verde |
+| debt / destructive (dinheiro saindo, dívida) | #b02236 | #f5818b | vermelho |
+| gold (pendente, atenção) | #7d5200 | #f0b54a | âmbar |
+| brand-text (links) | #006680 | #5bc7f2 | links e "ver mais" (antes eram dourados) |
+| input (borda de campo) | #868d96 | #7a818b | >= 3:1 |
+| ring | #0a7f9e | #5bc7f2 | foco |
+| chart 1-5 | #038153 #1c8cc0 #ad5918 #3353e2 #a81897 | #4cc795 #5bc7f2 #ffb057 #7d9cff #e27fd3 | séries categóricas |
 
-## Contraste (WCAG, razão; mínimo 4,5 texto / 3 foco, borda de campo e gráficos)
-Texto/fundo 14,2 (claro) e 16,3 (escuro); muted/card 6,8 e 7,6; botão primário 5,0 e 7,3;
-destructive/card 6,5 e 6,7; liquidity/card 8,4 e 8,8; debt/tint 5,9 e 5,7; gold/card 8,1 e 8,9;
-ring/fundo 4,6 e 9,4; borda de campo/card 4,0 e 4,3. Lista completa: `node scripts/contrast.mjs`.
+**Cores com significado** (nunca decorativas): verde = dinheiro entrando/quitado, vermelho = dinheiro saindo/dívida,
+âmbar = pendente/atenção. Elas ficam em valores, pontinhos, ícones e séries de gráfico; **pílulas e fundos são
+neutros** (cinza), sempre com a palavra ao lado (ex.: "pagamento pendente" = pílula cinza com ponto vermelho).
+
+Contraste: `node scripts/contrast.mjs` (sai com código 1 se algo reprovar). Os valores do script precisam bater com
+`globals.css`. Alguns pares: texto/fundo 16,9 (claro) e 17,2 (escuro); muted/card 5,8 e 7,3; botão preto 17,8;
+liquidity/card 6,6; debt/card 6,7; gold/card 6,8; as três cores sobre o cinza dos avisos >= 5,3; borda de campo/card 3,35.
 
 ## Fonte
-Nunito (next/font/google, subsets latin + latin-ext, pesos 400/600/700/800/900), variável
-`--font-nunito` para sans/display/heading. Corpo 600, rótulos e botões 800 em caixa-alta com
-`letter-spacing .05em`, títulos 900 com tracking `-0.02em`. Geist Mono segue para mono.
+Inter Tight auto-hospedada (`src/app/fonts/inter-tight-*.woff2`, licença `src/app/fonts/OFL-InterTight.txt`), com
+`@font-face` em `globals.css`. Saiu a Nunito do `next/font`; Geist Mono continua para mono. Corpo 16 px / 400;
+títulos 700 (`--brand-ink`); título de página 44 px / 800 (32 px no celular), sem sobretítulo; título de seção
+(`h2`) 20 px / 700; rótulos sem caixa alta. Números com `num` (600, `tabular-nums`).
 
-## Formas
-- Controles (botão, input, select): raio 12px (`--radius: .75rem`), borda de 2px, altura mínima 44px
-  (xs/sm menores no desktop, 44px em telas de toque via `pointer: coarse`).
-- Botão primário: borda inferior de 4px mais escura (35% de preto); ao clicar desce (borda de 2px).
-  Outline/secundário/destrutivo seguem o mesmo "degrau". Variante `link` sem caixa-alta.
-- Cards: raio 20px, borda de 2px + inferior de 5px (`Card` e utilitário `glass-card`).
-- Badges: pílula, borda de 2px, peso 800.
-- Foco: contorno de 3px verde com offset (global `:focus-visible` + componentes).
-- Campos nativos usados direto nos formulários recebem borda 2px/raio 12px/44px por regra global
-  (fora de `@layer`, para vencer `bg-input/30`).
+## Componentes (`src/components/ui`)
+- **Botão:** preto (`default`), cinza (`secondary`), `outline` (borda `--border-strong`), `ghost`, `destructive`
+  (vermelho cheio), `link` (`--brand-text`). Raio 12 px, 44 px (48 no `lg`; pequenos crescem para 44 px em tela de
+  toque), rótulo normal. No celular o rótulo pode quebrar linha em vez de alargar a página.
+- **Campos:** 52 px, raio 12, borda 1 px `--input`, foco com contorno `--ring`. Campos nativos dos formulários usam
+  `min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base`.
+- **Cartões:** `rounded-2xl bg-card`, sem borda e sem sombra (`Card` e utilitário `glass-card`), padding 24 px.
+- **Menus (select):** raio 16, a única sombra larga (`--shadow-menu`).
+- **Sheets:** do topo à base (`top-[var(--top-inset)] h-[calc(100dvh-var(--top-inset))]`), `rounded-l-3xl`,
+  largura total no celular e até 576 px no computador, fundo sem blur, botão de fechar redondo cinza ("Fechar").
+- **Filtros em pílula** (Transações, Maiores ofensores, Relatório por categoria): ativo preto, os outros cinza.
+- **Liga/desliga:** o Gestor não tem; se ganhar um, trilho preto (`Switch` da skill).
+
+## Casca
+- Menu lateral (`components/ui/sidebar.tsx` + `components/AppSidebar.tsx`): 292 px, fundo da página, itens 17 px com
+  ícone lucide de 20 px, ativo em pílula cinza, grupos separados por linha fina, marca na altura do topo, cartão branco
+  com o usuário no rodapé. No celular, o mesmo menu abre como sheet pela esquerda.
+- Topo (`app/(painel)/layout.tsx`): `sticky top-[var(--top-inset)] h-20 md:h-28 md:pt-6`, mesmo fundo, botões redondos
+  de notificações, ajuda "?" e tema.
+- `viewport` do layout raiz: `viewportFit: "cover"` e `themeColor` `#f4f5f7` / `#0f1114`.
+
+## Gráficos
+SVG próprio (sem Recharts), no estilo do Movies: grade tracejada clara, barras com topo arredondado, legenda com
+quadradinho, área com degradê embaixo da linha quando há uma série só, "ver os valores" em caixa cinza. **Todo gráfico
+continua com a tabela ou a lista dos números.**
+
+## Desvios em relação ao Movies / à skill
+- Menu com **ícones lucide** (o Gestor já usava), não emoji. Não há "+ Criar" nem busca no topo (seriam funções novas).
+- O menu usa o `Sidebar` do shadcn: some inteiro ao recolher (não fica em 88 px só com ícones).
+- **Valores em dinheiro continuam coloridos** (verde/vermelho/âmbar) no texto: no Gestor o sinal do dinheiro é a
+  informação principal. Fundos e pílulas ficaram neutros.
+- Cores de gráfico: `chart-1` verde e `chart-2` azul (o Movies começa pelo azul), para o verde continuar sendo a 1ª cor
+  como no Gestor. Gráficos de entrada × despesa usam `liquidity`/`debt`, não a paleta.
+- Avisos (fora da rota, erro da IA, dicas) viraram caixas cinza com o texto na cor do significado, em vez de caixas
+  tingidas.
+- Não há `--success`/`--warning` separados: o Gestor já tem `liquidity` e `gold` com o mesmo papel.
+- Corrigido junto: `useIsMobile` lia a janela no 1º render e causava "Hydration failed" no celular, o que apagava o
+  tema escuro; agora usa `useSyncExternalStore` (sem mudança de comportamento).
 
 ## Pendências conhecidas
-Botões crus (`<button className="rounded-lg bg-primary ...">` em páginas) ainda não têm o degrau 3D;
-migrar para `<Button>` quando mexer nessas telas. Não há tela de login (o login é no Hub; as telas
-`/auth/*` de aviso, saída e emergência usam `Card`/`Button` do kit) nem logo do leão.
+- Telas de entrada/saída (`/auth/*`) receberam só os tokens e componentes; não foram revisadas uma a uma.
+- O gráfico "Evolução mensal" escala o SVG pela largura: com poucos meses os rótulos ficam grandes no computador.
+- O termômetro do Meu Mapa com um único ponto ainda mostra uma área vazia grande (comportamento anterior).

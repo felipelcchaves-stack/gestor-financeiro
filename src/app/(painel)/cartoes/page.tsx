@@ -73,7 +73,7 @@ export default async function CartoesPage() {
                 ) : (
                   <p className="mt-2 text-xs text-muted-foreground">
                     Sem meta de gasto mensal definida —{" "}
-                    <Link href="/limite-cartao" className="text-gold underline underline-offset-4">
+                    <Link href="/limite-cartao" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                       definir uma
                     </Link>
                     .
@@ -87,7 +87,7 @@ export default async function CartoesPage() {
                 {parcelasAbertas.length > 0 && (
                   <div className="mt-4 border-t border-border pt-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <h3 className="text-sm font-semibold text-muted-foreground">
                         Próximas parcelas
                       </h3>
                       <span className="num text-xs text-debt">
@@ -119,7 +119,7 @@ export default async function CartoesPage() {
         </div>
       )}
 
-      <Link href="/limite-cartao" className="text-xs text-gold underline underline-offset-4">
+      <Link href="/limite-cartao" className="text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
         Ver conta de redução de limite por gasto essencial
       </Link>
     </div>

@@ -44,7 +44,7 @@ export default async function ResumoPage() {
         title="Resumo completo"
         description="Dados de referência 09/09/2026."
         action={
-          <Link href="/resumo/ia" className="text-xs text-gold underline underline-offset-4">
+          <Link href="/resumo/ia" className="text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             Gerar resumo para revisar com IA
           </Link>
         }
@@ -80,7 +80,7 @@ export default async function ResumoPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-foreground">Passivo por estrutura</h2>
+        <h2 className="text-xl font-bold text-foreground">Passivo por estrutura</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetricCard
             icon={Flame}
@@ -107,7 +107,7 @@ export default async function ResumoPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-foreground">Metas ativas</h2>
+        <h2 className="text-xl font-bold text-foreground">Metas ativas</h2>
         {metas.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">Nenhuma meta ativa cadastrada.</p>
         ) : (
@@ -147,7 +147,7 @@ export default async function ResumoPage() {
                     )}
                   </div>
                   {!progresso.temDadosDeAlocacao && (
-                    <p className="mt-2 text-xs text-muted-foreground/70">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       Ainda sem lançamentos classificados para esta meta — sem dados para
                       projetar &ldquo;no ritmo&rdquo; vs &ldquo;atrasado&rdquo;.
                     </p>
@@ -164,8 +164,8 @@ export default async function ResumoPage() {
 
 const TONE_CLASSES: Record<"neutral" | "debt" | "liquidity", { icon: string; value: string }> = {
   neutral: { icon: "bg-muted text-foreground", value: "text-foreground" },
-  debt: { icon: "bg-debt/10 text-debt", value: "num text-debt" },
-  liquidity: { icon: "bg-liquidity/10 text-liquidity", value: "num text-liquidity" },
+  debt: { icon: "bg-secondary text-debt", value: "num text-debt" },
+  liquidity: { icon: "bg-secondary text-liquidity", value: "num text-liquidity" },
 };
 
 function MetricCard({
@@ -188,9 +188,9 @@ function MetricCard({
       <span className={`flex size-8 items-center justify-center rounded-lg ${classes.icon}`}>
         <Icon className="size-4" />
       </span>
-      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-3 text-sm font-semibold text-muted-foreground">{label}</p>
       <p className={`mt-1 text-lg font-semibold ${classes.value}`}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground/70">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

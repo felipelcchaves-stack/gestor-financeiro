@@ -106,7 +106,7 @@ export function WizardCarga({ passivosIniciais }: { passivosIniciais: ItemCriado
             <div
               className={`h-1.5 w-full rounded-full ${i <= indiceAtual ? "bg-primary" : "bg-muted"}`}
             />
-            <span className={`text-[10px] ${i === indiceAtual ? "font-semibold text-foreground" : "text-muted-foreground/70"}`}>
+            <span className={`text-[10px] ${i === indiceAtual ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
               {e.label}
             </span>
           </div>
@@ -189,7 +189,7 @@ export function WizardCarga({ passivosIniciais }: { passivosIniciais: ItemCriado
         <div className="flex flex-col gap-4 glass-card rounded-2xl p-6">
           <div className="flex items-center gap-2">
             <Wallet className="size-5 text-foreground" />
-            <h2 className="text-base font-medium text-foreground">Quanto você consegue direcionar por mês?</h2>
+            <h2 className="text-xl font-bold text-foreground">Quanto você consegue direcionar por mês?</h2>
           </div>
           <p className="text-sm text-muted-foreground">
             Além dos pagamentos mínimos que já saem — esse número destrava a trilha completa e as
@@ -202,7 +202,7 @@ export function WizardCarga({ passivosIniciais }: { passivosIniciais: ItemCriado
               inputMode="decimal"
               placeholder="ex: 10000"
               required
-              className="w-40 rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+              className="w-40 min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             />
             <Button type="submit">Salvar e continuar</Button>
             <button type="button" onClick={() => setEtapa("resumo")} className="text-sm text-muted-foreground underline">
@@ -213,7 +213,7 @@ export function WizardCarga({ passivosIniciais }: { passivosIniciais: ItemCriado
       )}
 
       {etapa === "resumo" && (
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-liquidity/25 bg-liquidity/[0.06] p-8 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-xl bg-secondary p-8 text-center">
           <PartyPopper className="size-10 text-liquidity" />
           <h1 className="text-xl font-semibold text-liquidity">Pronto pra ver seu Mapa</h1>
           <ul className="text-sm text-liquidity">
@@ -262,7 +262,7 @@ function EtapaWizard({
       <div>
         <div className="flex items-center gap-2">
           {icon}
-          <h2 className="text-base font-medium text-foreground">{titulo}</h2>
+          <h2 className="text-xl font-bold text-foreground">{titulo}</h2>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
       </div>

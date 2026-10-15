@@ -69,7 +69,7 @@ export function DocumentoSheet({ documento }: { documento: DocumentoDetalhe }) {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 px-4 pb-4">
+        <div className="flex flex-col gap-4 px-6 pb-6">
           {erro && <p className="text-sm text-debt">{erro}</p>}
 
           {isImagem ? (
@@ -80,7 +80,7 @@ export function DocumentoSheet({ documento }: { documento: DocumentoDetalhe }) {
           )}
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Vínculos</p>
+            <p className="text-sm font-semibold text-muted-foreground">Vínculos</p>
             {documento.vinculos.length > 0 ? (
               <ul className="mt-1 flex flex-col gap-1 text-sm text-foreground">
                 {documento.vinculos.map((v) => (
@@ -96,7 +96,7 @@ export function DocumentoSheet({ documento }: { documento: DocumentoDetalhe }) {
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-gold underline underline-offset-4"
+            className="text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline"
           >
             abrir em nova aba
           </a>

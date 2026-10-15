@@ -35,8 +35,8 @@ function Topicos({ topicos }: { topicos: PaginaAjuda["topicos"] }) {
     <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
       {topicos.map((topico) => (
         <div key={topico.titulo}>
-          <p className="text-xs font-medium text-foreground">{topico.titulo}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{topico.explicacao}</p>
+          <p className="text-sm font-semibold text-foreground">{topico.titulo}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{topico.explicacao}</p>
         </div>
       ))}
     </div>
@@ -45,18 +45,18 @@ function Topicos({ topicos }: { topicos: PaginaAjuda["topicos"] }) {
 
 function ListaCompleta() {
   return (
-    <div className="flex flex-col gap-6 overflow-y-auto px-4 pb-4">
+    <div className="flex flex-col gap-6 overflow-y-auto px-6 pb-6">
       {AJUDA_CONTEUDO.map((grupo) => (
         <div key={grupo.label}>
-          <p className="text-xs font-medium uppercase tracking-wide text-gold">{grupo.label}</p>
+          <p className="text-[0.8125rem] font-semibold text-muted-foreground">{grupo.label}</p>
           <div className="mt-2 flex flex-col gap-4">
             {grupo.paginas.map((pagina) => (
               <div key={pagina.href}>
-                <Link href={pagina.href} className="text-sm font-medium text-foreground underline underline-offset-4">
+                <Link href={pagina.href} className="text-base font-semibold text-foreground underline underline-offset-4 hover:no-underline">
                   {pagina.titulo}
                 </Link>
                 <p className="mt-1 text-sm text-muted-foreground">{pagina.resumo}</p>
-                <p className="mt-1 text-xs text-muted-foreground/70">{pagina.comoUsar}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{pagina.comoUsar}</p>
                 <Topicos topicos={pagina.topicos} />
               </div>
             ))}
@@ -75,7 +75,7 @@ export function HelpSheet({ className }: { className?: string }) {
   return (
     <Sheet onOpenChange={(aberto) => !aberto && setMostrarTudo(false)}>
       <SheetTrigger render={<Button variant="ghost" size="icon" aria-label="Ajuda" className={className} />}>
-        <HelpCircle className="size-4" />
+        <HelpCircle className="size-5" />
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
@@ -88,17 +88,17 @@ export function HelpSheet({ className }: { className?: string }) {
         {mostrarTudo || !paginaAtual ? (
           <ListaCompleta />
         ) : (
-          <div className="flex flex-col gap-4 px-4 pb-4">
+          <div className="flex flex-col gap-4 px-6 pb-6">
             <div>
-              <p className="text-sm font-medium text-foreground">{paginaAtual.titulo}</p>
+              <p className="text-base font-semibold text-foreground">{paginaAtual.titulo}</p>
               <p className="mt-2 text-sm text-muted-foreground">{paginaAtual.resumo}</p>
-              <p className="mt-2 text-sm text-muted-foreground/70">{paginaAtual.comoUsar}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{paginaAtual.comoUsar}</p>
               <Topicos topicos={paginaAtual.topicos} />
             </div>
             <button
               type="button"
               onClick={() => setMostrarTudo(true)}
-              className="self-start text-xs text-gold underline underline-offset-4"
+              className="self-start text-sm font-semibold text-brand-text underline underline-offset-4 hover:no-underline"
             >
               Ver ajuda de todas as páginas
             </button>

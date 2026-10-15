@@ -51,9 +51,27 @@ export function GraficoLinhaTemporal({
 
   return (
     <div className="overflow-x-auto glass-card rounded-2xl p-4">
-      <p className="text-xs font-medium text-muted-foreground">{tituloEixo}</p>
+      <p className="text-sm font-semibold text-muted-foreground">{tituloEixo}</p>
       <svg viewBox={`0 0 ${largura} ${altura + 24}`} className="mt-2 w-full min-w-[480px]" role="img" aria-label={ariaLabel}>
-        <line x1={margem} y1={altura - margem} x2={largura - margem} y2={altura - margem} stroke="var(--border)" strokeDasharray="4 4" />
+        <line x1={margem} y1={altura - margem} x2={largura - margem} y2={altura - margem} stroke="var(--border-strong)" strokeOpacity={0.6} strokeDasharray="3 3" />
+
+        {/* Uma série só: área com degradê embaixo da linha (estilo dos gráficos do Movies). */}
+        {series.length === 1 && series[0].pontos.length > 1 && (
+          <>
+            <defs>
+              <linearGradient id={`area-${series[0].id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={series[0].cor} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={series[0].cor} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <path
+              d={`M ${escalaX(0)} ${altura - margem} ${series[0].pontos
+                .map((p, i) => `L ${escalaX(i)} ${escalaY(p.valorCentavos)}`)
+                .join(" ")} L ${escalaX(series[0].pontos.length - 1)} ${altura - margem} Z`}
+              fill={`url(#area-${series[0].id})`}
+            />
+          </>
+        )}
 
         {series.map((serie) => (
           <g key={serie.id}>
@@ -118,10 +136,10 @@ export function GraficoLinhaTemporal({
                   </>
                 )}
                 <details className="ml-1">
-                  <summary className="cursor-pointer text-[11px] text-muted-foreground/70 hover:text-foreground">
-                    ver valores
+                  <summary className="cursor-pointer text-xs font-semibold text-foreground underline underline-offset-4 hover:no-underline">
+                    ver os valores
                   </summary>
-                  <ul className="mt-1 flex flex-col gap-0.5 pl-2 font-mono text-[11px]">
+                  <ul className="mt-2 flex max-h-72 flex-col gap-0.5 overflow-auto rounded-xl bg-secondary px-3 py-2 text-xs tabular-nums">
                     {serie.pontos.map((p, i) => (
                       <li key={i} className="flex justify-between gap-4">
                         <span>{p.label}</span>

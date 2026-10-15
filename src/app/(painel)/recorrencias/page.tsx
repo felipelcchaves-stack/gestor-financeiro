@@ -40,7 +40,7 @@ export default async function RecorrenciasPage() {
       ) : (
         <div className="overflow-x-auto glass-card rounded-2xl">
           <table className="w-full text-sm">
-            <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-surface-2 text-left text-sm text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-medium">Nome</th>
                 <th className="px-4 py-2 font-medium">Categoria</th>
@@ -58,7 +58,7 @@ export default async function RecorrenciasPage() {
                   <td className="px-4 py-3 font-medium text-foreground">
                     {r.nome}
                     {r.essencial && (
-                      <span className="ml-2 rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-medium text-gold">
+                      <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground before:size-1.5 before:rounded-full before:bg-gold before:content-['']">
                         essencial
                       </span>
                     )}
@@ -80,7 +80,7 @@ export default async function RecorrenciasPage() {
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        r.ativa ? "bg-liquidity/[0.06] text-liquidity" : "bg-muted text-muted-foreground"
+                        r.ativa ? "bg-secondary text-liquidity" : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {r.ativa ? "Ativa" : "Inativa"}
@@ -88,11 +88,11 @@ export default async function RecorrenciasPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-3 text-xs">
-                      <Link href={`/recorrencias/${r.id}/editar`} className="text-muted-foreground/70 hover:text-foreground">
+                      <Link href={`/recorrencias/${r.id}/editar`} className="text-muted-foreground hover:text-foreground">
                         editar
                       </Link>
                       <form action={alternarAtivaRecorrencia.bind(null, r.id)}>
-                        <button type="submit" className="text-muted-foreground/70 hover:text-gold">
+                        <button type="submit" className="text-muted-foreground hover:text-brand-text">
                           {r.ativa ? "desativar" : "reativar"}
                         </button>
                       </form>
@@ -100,7 +100,7 @@ export default async function RecorrenciasPage() {
                         action={excluirRecorrencia.bind(null, r.id)}
                         confirmMessage={`Excluir a recorrência "${r.nome}"? Essa ação não pode ser desfeita.`}
                       >
-                        <button type="submit" className="text-muted-foreground/70 hover:text-debt">
+                        <button type="submit" className="text-muted-foreground hover:text-debt">
                           excluir
                         </button>
                       </ConfirmForm>

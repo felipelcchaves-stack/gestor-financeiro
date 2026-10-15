@@ -94,23 +94,23 @@ export function AppSidebar({
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-3 py-4">
-        <div className="flex items-center gap-2.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-gold">
-            <Crown className="size-5" />
+      <SidebarHeader className="gap-0 p-0">
+        {/* Marca na altura do topo (h-28 pt-6), como no painel do Movies. */}
+        <div className="flex h-28 shrink-0 items-center gap-3 px-6 pt-6">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground">
+            <Crown className="size-[22px]" aria-hidden />
           </span>
-          <div className="leading-tight">
-            <p className="font-display text-sm font-semibold text-sidebar-foreground">Gestor Financeiro</p>
-            <p className="text-[11px] text-muted-foreground">Rota de Saída</p>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-xl font-extrabold tracking-tight text-sidebar-foreground">Gestor Financeiro</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Rota de Saída</p>
           </div>
         </div>
-        <SidebarMenu className="mt-3">
+        <SidebarMenu className="px-3 pb-2">
           <SidebarMenuItem>
             <SidebarMenuButton
               isActive={pathname === "/comecar"}
               render={<Link href="/comecar" />}
               tooltip="Assistente de configuração"
-              className="data-active:bg-gold/10 data-active:text-gold"
             >
               <Compass />
               <span>Assistente de configuração</span>
@@ -130,12 +130,11 @@ export function AppSidebar({
                       isActive={pathname === item.href}
                       render={<Link href={item.href} />}
                       tooltip={item.label}
-                      className="data-active:bg-gold/10 data-active:text-gold"
                     >
                       <item.icon />
                       <span>{item.label}</span>
                       {item.href === "/cofre" && sugestoesPendentes > 0 && (
-                        <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-background">
+                        <span className="ml-auto flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-gold px-1.5 text-xs font-semibold text-background tabular-nums">
                           {sugestoesPendentes}
                         </span>
                       )}
@@ -148,10 +147,10 @@ export function AppSidebar({
         ))}
       </SidebarContent>
       {usuario && (
-        <SidebarFooter className="border-t border-sidebar-border px-3 py-3">
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-bold text-sidebar-foreground">{usuario.nome}</p>
-            <p className="truncate text-[11px] text-muted-foreground">{usuario.email}</p>
+        <SidebarFooter className="gap-1 p-3">
+          <div className="min-w-0 rounded-2xl bg-card px-4 py-3 leading-tight">
+            <p className="truncate text-[0.9375rem] font-bold text-sidebar-foreground">{usuario.nome}</p>
+            <p className="truncate text-[0.8125rem] text-muted-foreground">{usuario.email}</p>
           </div>
           {/* Sair = encerra a sessão daqui e segue para o "Sair" do Hub (login único). */}
           <form action="/auth/sair" method="post">

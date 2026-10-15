@@ -28,7 +28,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   return (
     <Button variant="ghost" size="icon" onClick={alternar} aria-label="Alternar tema claro/escuro" className={className}>
-      {mounted && dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {mounted && dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
     </Button>
   );
 }

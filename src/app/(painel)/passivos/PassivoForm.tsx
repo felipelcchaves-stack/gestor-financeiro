@@ -19,7 +19,7 @@ export function PassivoForm({
             name="nome"
             defaultValue={passivo?.nome}
             required
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -28,7 +28,7 @@ export function PassivoForm({
             name="tipo"
             defaultValue={passivo?.tipo}
             required
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -36,7 +36,7 @@ export function PassivoForm({
           <select
             name="estrutura"
             defaultValue={passivo?.estrutura ?? "AMORTIZA_NORMAL"}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="AMORTIZA_NORMAL">Amortiza normalmente</option>
             <option value="SO_JUROS_SEM_AMORTIZACAO">Só juros, sem amortização</option>
@@ -50,7 +50,7 @@ export function PassivoForm({
             type="text"
             inputMode="decimal"
             defaultValue={passivo?.taxaJurosPct ?? undefined}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -64,7 +64,7 @@ export function PassivoForm({
                 ? centavosParaReais(passivo.valorQuitacaoCentavos)
                 : undefined
             }
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -78,7 +78,7 @@ export function PassivoForm({
                 ? centavosParaReais(passivo.custoMensalCentavos)
                 : undefined
             }
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -88,7 +88,7 @@ export function PassivoForm({
             type="text"
             inputMode="numeric"
             defaultValue={passivo?.parcelaAtual ?? undefined}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -98,7 +98,7 @@ export function PassivoForm({
             type="text"
             inputMode="numeric"
             defaultValue={passivo?.totalParcelas ?? undefined}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
       </div>
@@ -124,7 +124,7 @@ export function PassivoForm({
           name="observacao"
           defaultValue={passivo?.observacao ?? undefined}
           rows={2}
-          className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+          className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
         />
       </Campo>
 
@@ -142,7 +142,7 @@ export function PassivoForm({
             href={`/api/documentos/${passivo.documentoFonteId}`}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 w-fit text-xs text-gold underline underline-offset-4"
+            className="mt-1 w-fit text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline"
           >
             ver documento atual
           </a>
@@ -153,7 +153,7 @@ export function PassivoForm({
         <Campo label="Motivo da mudança" hint="opcional — registrado no histórico se valor ou custo mudarem">
           <input
             name="motivo"
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
       )}
@@ -183,7 +183,7 @@ function Campo({
         {required && <span className="text-debt"> *</span>}
       </label>
       {children}
-      {hint && <span className="text-[11px] text-muted-foreground/70">{hint}</span>}
+      {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
     </div>
   );
 }

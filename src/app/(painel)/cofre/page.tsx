@@ -120,7 +120,7 @@ export default async function CofrePage() {
         />
         <p className="text-sm text-muted-foreground">
           O rateio automático ainda não está configurado.{" "}
-          <Link href="/consultor" className="text-gold underline underline-offset-4">
+          <Link href="/consultor" className="font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             Configure em Consultor
           </Link>{" "}
           (categoria de receita, % a separar e conta destino) pra começar a ver os indicadores aqui.
@@ -146,46 +146,46 @@ export default async function CofrePage() {
       <section className="glass-card rounded-2xl p-5">
         <div className="flex items-center gap-2 text-muted-foreground">
           <PiggyBank className="size-4" />
-          <p className="text-xs font-semibold uppercase tracking-wider">Indicadores</p>
+          <p className="text-sm font-semibold">Indicadores</p>
         </div>
         <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Saldo atual</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Saldo atual</p>
             <p className="num text-2xl font-semibold text-liquidity">
               {statusRateio.contaDestinoSaldoCentavos != null
                 ? formatarBRL(statusRateio.contaDestinoSaldoCentavos)
                 : "não informado"}
             </p>
             {statusRateio.contaDestinoSaldoAtualizadoEm && (
-              <p className="text-[11px] text-muted-foreground/70">
+              <p className="text-[11px] text-muted-foreground">
                 atualizado em {new Date(statusRateio.contaDestinoSaldoAtualizadoEm).toLocaleDateString("pt-BR")}{" "}
                 — <Link href="/contas" className="underline underline-offset-4">atualizar</Link>
               </p>
             )}
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-[0.8125rem] text-muted-foreground">
               Separado desde {new Date(statusRateio.ativoDesde).toLocaleDateString("pt-BR")}
             </p>
             <p className="num text-2xl font-semibold text-foreground">{formatarBRL(statusRateio.totalDepositadoCentavos)}</p>
           </div>
           <div className="border-l border-dashed border-border pl-8">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Meta ({statusRateio.percentual}%)</p>
+            <p className="text-[0.8125rem] text-muted-foreground">Meta ({statusRateio.percentual}%)</p>
             <p className="num text-2xl font-semibold text-foreground">{formatarBRL(statusRateio.metaSepararCentavos)}</p>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[11px] text-muted-foreground">
               de {formatarBRL(statusRateio.totalRecebidoCentavos)} recebidos de {statusRateio.categoriaNome}
             </p>
           </div>
           {statusRateio.faltaSepararCentavos > 0 && (
             <div className="border-l border-dashed border-border pl-8">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Falta separar</p>
+              <p className="text-[0.8125rem] text-muted-foreground">Falta separar</p>
               <p className="num text-2xl font-semibold text-gold">{formatarBRL(statusRateio.faltaSepararCentavos)}</p>
             </div>
           )}
         </div>
 
         {statusRateio.dividaQuitavel && (
-          <p className="mt-4 rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-sm text-debt">
+          <p className="mt-4 rounded-xl bg-secondary p-3 text-sm text-debt">
             Esse saldo já cobre{" "}
             <Link href={`/passivos/${statusRateio.dividaQuitavel.passivoId}`} className="font-medium underline underline-offset-4">
               {statusRateio.dividaQuitavel.nome}
@@ -196,7 +196,7 @@ export default async function CofrePage() {
         )}
 
         {statusRateio.alvoSugerido && !alvoJaEhQuitavel && (
-          <div className="mt-4 rounded-lg border border-gold/30 bg-gold/[0.06] p-4">
+          <div className="mt-4 rounded-xl bg-secondary p-4">
             <p className="text-sm text-gold">
               O alvo mais eficiente pra essa reserva agora é{" "}
               <Link
@@ -214,7 +214,7 @@ export default async function CofrePage() {
               .
             </p>
             {passivoIdsComMeta.has(statusRateio.alvoSugerido.passivoId) ? (
-              <p className="mt-2 text-xs text-gold/80">Já existe uma meta pra esse alvo — ver na lista abaixo.</p>
+              <p className="mt-2 text-xs text-gold">Já existe uma meta pra esse alvo — ver na lista abaixo.</p>
             ) : dataAlvoSugeridaISO ? (
               <form action={criarMetaCofre.bind(null, statusRateio.contaDestinoId)} className="mt-3">
                 <input type="hidden" name="passivosAlvo" value={statusRateio.alvoSugerido.passivoId} />
@@ -225,7 +225,7 @@ export default async function CofrePage() {
                 </Button>
               </form>
             ) : (
-              <p className="mt-2 text-xs text-gold/80">
+              <p className="mt-2 text-xs text-gold">
                 Configure um aporte mensal extra em{" "}
                 <Link href="/consultor" className="underline underline-offset-4">
                   Consultor
@@ -239,7 +239,7 @@ export default async function CofrePage() {
 
       {alvosOportunistas.length > 0 && (
         <section>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
             <Zap className="size-4 text-gold" /> Outras dívidas que esse cofre já poderia aliviar
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -252,7 +252,7 @@ export default async function CofrePage() {
               return (
                 <div key={alvo.passivoId} className="glass-card rounded-2xl p-4">
                   <p className="text-sm text-foreground">
-                    <Link href={`/passivos/${alvo.passivoId}`} className="font-medium text-gold underline underline-offset-4">
+                    <Link href={`/passivos/${alvo.passivoId}`} className="font-medium font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                       {alvo.nome}
                     </Link>{" "}
                     — custo mensal {formatarBRL(alvo.custoMensalCentavos)}, saldo {formatarBRL(alvo.saldoCentavos)}.{" "}
@@ -293,7 +293,7 @@ export default async function CofrePage() {
 
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-foreground">
             <Target className="size-4 text-gold" /> Metas financiadas por este cofre
           </h2>
         </div>
@@ -335,7 +335,7 @@ export default async function CofrePage() {
                     <div className="flex shrink-0 items-center gap-2">
                       {rotulo != null ? (
                         <span
-                          className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-foreground before:size-1.5 before:rounded-full before:bg-gold before:content-['']"
                           title="Posição na rota de menor juro — recalculada a cada carregamento, nunca fixa."
                         >
                           {rotulo}ª prioridade
@@ -347,7 +347,7 @@ export default async function CofrePage() {
                       )}
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          meta.status === "ATIVA" ? "bg-liquidity/[0.06] text-liquidity" : "bg-muted text-muted-foreground"
+                          meta.status === "ATIVA" ? "bg-secondary text-liquidity" : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {meta.status}
@@ -373,13 +373,13 @@ export default async function CofrePage() {
                         style={{ width: `${progressoCofreBarraPct}%` }}
                       />
                     </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground/70">
+                    <p className="mt-1 text-[11px] text-muted-foreground">
                       {formatarBRL(saldoCofreCentavos)} de {formatarBRL(meta.valorAlvoCentavos)} — sobe conforme o
                       saldo de {statusRateio.contaDestinoNome} for atualizado.
                     </p>
                   </div>
 
-                  <Link href="/metas" className="mt-2 inline-block text-xs text-gold underline underline-offset-4">
+                  <Link href="/metas" className="mt-2 inline-block text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
                     editar em Metas
                   </Link>
 
@@ -397,7 +397,7 @@ export default async function CofrePage() {
         )}
 
         <details className="mt-4">
-          <summary className="cursor-pointer text-xs text-gold underline underline-offset-4">
+          <summary className="cursor-pointer text-xs font-semibold text-brand-text underline underline-offset-4 hover:no-underline">
             Nova meta financiada por este cofre
           </summary>
           <form
@@ -410,7 +410,7 @@ export default async function CofrePage() {
                 <input
                   name="nome"
                   required
-                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                  className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -421,7 +421,7 @@ export default async function CofrePage() {
                   name="valorAlvo"
                   type="text"
                   inputMode="decimal"
-                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                  className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -430,7 +430,7 @@ export default async function CofrePage() {
                   name="dataAlvo"
                   type="date"
                   required
-                  className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+                  className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
                 />
               </div>
             </div>

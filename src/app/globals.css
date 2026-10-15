@@ -2,15 +2,61 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Design system "Vimeo" do Felipe (skill ~/.claude/skills/vimeo-design, origem: painel do Movies) — ver DESIGN.md.
+   Modo escuro por classe (o script do layout raiz põe .dark no <html> antes da pintura). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Inter Tight (SIL OFL 1.1, src/app/fonts/OFL-InterTight.txt), variável 100-900, auto-hospedada. */
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/inter-tight-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter Tight";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/inter-tight-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 
 @theme inline {
+  --font-sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-display: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-heading: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+
+  /* títulos pesados (700-800); "black" vira 800 */
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 800;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: var(--radius); /* 12px: campos, botões */
+  --radius-xl: 0.75rem; /* 12px: botões, itens de menu */
+  --radius-2xl: 1rem; /* 16px: cartões, menus */
+  --radius-3xl: 1.25rem; /* 20px: painéis grandes, sheets */
+  --radius-4xl: 1.5rem;
+
+  /* sem sombra nas superfícies; só menus/sheets flutuantes (--shadow-menu) e o botão preto (sutil) */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-nunito);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-nunito);
-  --font-heading: var(--font-nunito);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -35,7 +81,10 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-border-strong: var(--border-strong);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -48,13 +97,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: 1.25rem;
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-brand-ink: var(--brand-ink);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
 }
 
 @keyframes tombar {
@@ -76,129 +123,176 @@
   animation: tombar 0.5s ease-out both;
 }
 
-/* Sistema visual Baba Ifá (pedido do dono em 08/10/2026, substitui o visual
-   MV anterior) — ver DESIGN.md. Claro = :root (creme/verde/marrom); .dark =
-   marrom quente (nunca ardósia fria). Cores semânticas, nunca decorativas:
-   verde (liquidity) = dinheiro entrando/aprovado, vermelho (debt) = saindo/
-   estorno, âmbar (gold) = pendente/atenção. Contraste verificado com
-   `node scripts/contrast.mjs` (texto >= 4,5:1; foco e borda de campo >= 3:1). */
+/* Tokens "Vimeo" (valores do Movies) com os NOMES que o Gestor já usava. Fundo cinza-azulado, cartões brancos sem
+   borda e sem sombra, ação principal PRETA (no escuro, clara). As cores de significado do Gestor continuam:
+   verde (liquidity) = dinheiro entrando, vermelho (debt/destructive) = dinheiro saindo/dívida, âmbar (gold) =
+   pendente/atenção — nunca decorativas; ficam em números, pontos, ícones e séries de gráfico, com pílulas e
+   fundos neutros. Contraste conferido com `node scripts/contrast.mjs` (texto >= 4,5:1; foco, borda de campo e
+   gráfico >= 3:1). Mexeu num valor aqui? Mexa lá também e rode o script. */
 :root {
-  --radius: 0.75rem; /* 12px: controles; cards usam rounded-2xl = 20px */
-  --background: oklch(0.965 0.007 81); /* creme #f6f3ee */
-  --foreground: oklch(0.257 0.022 64); /* marrom #2b2118 */
-  --surface: oklch(1 0 0);
-  --surface-2: oklch(0.929 0.013 82); /* #ece7de */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.257 0.022 64);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.257 0.022 64);
-  --primary: oklch(0.527 0.127 153); /* verde #1a7f45 */
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.929 0.013 82);
-  --secondary-foreground: oklch(0.257 0.022 64);
-  --muted: oklch(0.929 0.013 82);
-  --muted-foreground: oklch(0.47 0.014 80); /* #5f5a52 */
-  --accent: oklch(0.959 0.021 159); /* verde-cl #e6f6ec */
-  --accent-foreground: oklch(0.41 0.097 152); /* verde-esc #12592f */
-  --destructive: oklch(0.501 0.178 29); /* #b3261e */
-  --border: oklch(0.862 0.013 82); /* borda #d6d1c8 */
-  --input: oklch(0.596 0.02 81); /* #857e72 — 4,0:1 sobre o card (>= 3:1) */
-  --ring: oklch(0.527 0.127 153);
-  --liquidity: oklch(0.41 0.097 152); /* verde-esc: texto seguro em tints */
-  --liquidity-soft: oklch(0.64 0.14 153);
-  --debt: oklch(0.484 0.152 32); /* #a3321f */
-  --debt-soft: oklch(0.62 0.15 32);
-  --gold: oklch(0.434 0.09 79); /* âmbar-texto #6b4a00 */
-  --gold-soft: oklch(0.7 0.14 82);
-  /* Gráficos: 5 matizes distintos, 1 = verde Baba, 2 = terracota do painel
-     admin da Baba, >= 3:1 sobre o card. Não reordenar sem rodar o script. */
-  --chart-1: #1a7f45;
-  --chart-2: #b8661a;
-  --chart-3: #2a6fb0;
-  --chart-4: #b08400;
-  --chart-5: #c2457f;
-  --sidebar: oklch(0.983 0.006 85); /* #fbf9f5 */
-  --sidebar-foreground: oklch(0.257 0.022 64);
-  --sidebar-primary: oklch(0.527 0.127 153);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.959 0.021 159);
-  --sidebar-accent-foreground: oklch(0.41 0.097 152);
-  --sidebar-border: oklch(0.862 0.013 82);
-  --sidebar-ring: oklch(0.527 0.127 153);
+  color-scheme: light;
+  --radius: 0.75rem; /* 12px: botões e campos; cartões usam rounded-2xl = 16px */
+  --top-inset: env(safe-area-inset-top, 0px); /* área do topo coberta pelo navegador (Safari, recortes) */
+
+  --background: #f4f5f7;
+  --foreground: #111418;
+  --surface: #ffffff;
+  --surface-2: #eceef1;
+  --card: #ffffff;
+  --card-foreground: #111418;
+  --popover: #ffffff;
+  --popover-foreground: #111418;
+  --primary: #15181c; /* ação principal PRETA */
+  --primary-foreground: #ffffff;
+  --secondary: #eceef1; /* ação secundária cinza */
+  --secondary-foreground: #111418;
+  --muted: #eceef1;
+  --muted-foreground: #5f6670;
+  --accent: #e7e9ec; /* hover e item ativo */
+  --accent-foreground: #111418;
+  --destructive: #b02236;
+  --destructive-foreground: #ffffff;
+  --border: #e6e8ec;
+  --border-soft: #eff1f4;
+  --border-strong: #c3c8cf;
+  --input: #868d96; /* borda de campo >= 3:1 */
+  --ring: #0a7f9e;
+
+  --brand: #0a7f9e;
+  --brand-text: #006680; /* link/destaque em texto (>= 4,5:1) */
+  --brand-ink: #111418; /* títulos */
+  --info: #5bc7f2; /* azul-claro só de preenchimento (área de gráfico, barra fina) */
+  --info-soft: #e8f6fd;
+  --shadow-menu: 0 12px 32px rgba(16, 24, 40, 0.14); /* a única sombra larga: menus, sheets, dicas */
+
+  --liquidity: #036b44; /* dinheiro entrando (verde) */
+  --liquidity-soft: #4cc795;
+  --debt: #b02236; /* dinheiro saindo / dívida (vermelho) */
+  --debt-soft: #f5818b;
+  --gold: #7d5200; /* pendente / atenção (âmbar) */
+  --gold-soft: #f0b54a;
+
+  /* Gráficos (>= 3:1 no cartão): verde, azul, laranja, royal, fúcsia. */
+  --chart-1: #038153;
+  --chart-2: #1c8cc0;
+  --chart-3: #ad5918;
+  --chart-4: #3353e2;
+  --chart-5: #a81897;
+
+  --sidebar: #f4f5f7; /* menu no mesmo fundo da página, sem divisória */
+  --sidebar-foreground: #111418;
+  --sidebar-primary: #15181c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7e9ec; /* pílula cinza do item ativo */
+  --sidebar-accent-foreground: #111418;
+  --sidebar-border: #e0e3e8;
+  --sidebar-ring: #0a7f9e;
 }
 
 .dark {
-  --background: oklch(0.203 0.015 57); /* #1c1510 */
-  --foreground: oklch(0.965 0.007 81);
-  --surface: oklch(0.242 0.018 63); /* #261e17 */
-  --surface-2: oklch(0.285 0.022 64);
-  --card: oklch(0.242 0.018 63);
-  --card-foreground: oklch(0.965 0.007 81);
-  --popover: oklch(0.26 0.019 63);
-  --popover-foreground: oklch(0.965 0.007 81);
-  --primary: oklch(0.73 0.145 155); /* #4cc27f */
-  --primary-foreground: oklch(0.235 0.043 155);
-  --secondary: oklch(0.285 0.022 64);
-  --secondary-foreground: oklch(0.965 0.007 81);
-  --muted: oklch(0.285 0.022 64);
-  --muted-foreground: oklch(0.758 0.023 76);
-  --accent: oklch(0.33 0.032 148);
-  --accent-foreground: oklch(0.959 0.021 159);
-  --destructive: oklch(0.739 0.127 30); /* #f08a7a */
-  --border: oklch(0.331 0.025 64);
-  --input: oklch(0.606 0.028 75); /* #8c8070 */
-  --ring: oklch(0.775 0.141 155);
-  --liquidity: oklch(0.786 0.118 152);
-  --liquidity-soft: oklch(0.5 0.1 152);
-  --debt: oklch(0.739 0.127 30);
-  --debt-soft: oklch(0.5 0.1 30);
-  --gold: oklch(0.809 0.139 79); /* #f0b54a */
-  --gold-soft: oklch(0.55 0.1 79);
-  --chart-1: #4cc27f;
-  --chart-2: #e08a3c;
-  --chart-3: #5aa3f0;
-  --chart-4: #f0b54a;
-  --chart-5: #e66ba0;
-  --sidebar: oklch(0.188 0.014 62); /* #18120d */
-  --sidebar-foreground: oklch(0.93 0.008 80);
-  --sidebar-primary: oklch(0.73 0.145 155);
-  --sidebar-primary-foreground: oklch(0.235 0.043 155);
-  --sidebar-accent: oklch(0.33 0.032 148);
-  --sidebar-accent-foreground: oklch(0.959 0.021 159);
-  --sidebar-border: oklch(0.331 0.025 64);
-  --sidebar-ring: oklch(0.775 0.141 155);
+  color-scheme: dark;
+  --background: #0f1114;
+  --foreground: #f3f4f6;
+  --surface: #1a1d21;
+  --surface-2: #262a30;
+  --card: #1a1d21;
+  --card-foreground: #f3f4f6;
+  --popover: #202428;
+  --popover-foreground: #f3f4f6;
+  --primary: #f3f4f6; /* no escuro a ação principal inverte */
+  --primary-foreground: #111418;
+  --secondary: #262a30;
+  --secondary-foreground: #f3f4f6;
+  --muted: #262a30;
+  --muted-foreground: #a4abb5;
+  --accent: #2f343b;
+  --accent-foreground: #f3f4f6;
+  --destructive: #f5818b;
+  --destructive-foreground: #111418;
+  --border: #2a2e34;
+  --border-soft: #22262b;
+  --border-strong: #3a4048;
+  --input: #7a818b;
+  --ring: #5bc7f2;
+
+  --brand: #5bc7f2;
+  --brand-text: #5bc7f2;
+  --brand-ink: #f3f4f6;
+  --info: #5bc7f2;
+  --info-soft: #172530;
+  --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+  --liquidity: #4cc795;
+  --liquidity-soft: #03784c;
+  --debt: #f5818b;
+  --debt-soft: #c62f3c;
+  --gold: #f0b54a;
+  --gold-soft: #9a6a10;
+
+  --chart-1: #4cc795;
+  --chart-2: #5bc7f2;
+  --chart-3: #ffb057;
+  --chart-4: #7d9cff;
+  --chart-5: #e27fd3;
+
+  --sidebar: #0f1114;
+  --sidebar-foreground: #f3f4f6;
+  --sidebar-primary: #f3f4f6;
+  --sidebar-primary-foreground: #111418;
+  --sidebar-accent: #262a30;
+  --sidebar-accent-foreground: #f3f4f6;
+  --sidebar-border: #2a2e34;
+  --sidebar-ring: #5bc7f2;
 }
 
 @layer base {
+  html {
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    @apply font-sans;
+  }
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-semibold;
+    @apply bg-background text-foreground;
+    line-height: 1.5;
+    font-weight: 400;
     -webkit-font-smoothing: antialiased;
-  }
-  html {
-    @apply font-sans;
   }
   h1,
   h2,
   h3,
   h4 {
+    color: var(--brand-ink);
     font-family: var(--font-display);
-    font-weight: 900;
+    font-weight: 700;
+    line-height: 1.15;
     letter-spacing: -0.02em;
   }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px); /* nunca abaixo de 16px: evita zoom no iOS */
+  }
   :focus-visible {
-    outline: 3px solid var(--ring);
-    outline-offset: 3px;
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 }
 
+/* Cartão: branco, sem borda e sem sombra, raio 16px (o raio vem da classe rounded-2xl de quem usa). */
 @utility glass-card {
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-bottom-width: 5px;
-  border-radius: 1.25rem;
+  background: var(--card);
+  border-radius: 1rem;
 }
 
 @utility gold-text {
@@ -206,22 +300,35 @@
 }
 
 @utility num {
-  font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-/* Campos nativos usados direto nos formulários (fora de components/ui):
-   mesmo formato Baba — borda de 2px, raio de 12px, fundo do card e alvo de
-   toque de 44px. Fica fora de @layer de propósito para vencer o
-   `bg-input/30` dessas classes (o token --input agora é cor de BORDA). */
+/* Barras de rolagem discretas. */
+.painel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Campos nativos usados direto nos formulários (fora de components/ui): borda de 1px, raio 12px, fundo do cartão
+   e alvo de toque de 44px no mínimo (os campos de formulário têm 52px pela classe). Fora de @layer de propósito,
+   para vencer o `bg-input/30` dessas classes (o token --input é cor de BORDA). */
 input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="hidden"]),
 select,
 textarea {
   background-color: var(--card);
-  border-width: 2px;
+  border-width: 1px;
   border-radius: 0.75rem;
-  font-weight: 600;
+  max-width: 100%; /* opções longas não alargam a página no celular */
 }
 input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="hidden"]),
 select {

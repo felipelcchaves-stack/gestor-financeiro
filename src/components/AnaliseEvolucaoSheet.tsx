@@ -53,7 +53,7 @@ export function AnaliseEvolucaoSheet({ sugestaoInicial, pontos, acaoGerar }: Pro
         {carregando ? "Gerando…" : analise ? "Gerar nova análise (IA)" : "Pedir análise da IA"}
       </Button>
 
-      {erro && <p className="w-full rounded-lg border border-debt/30 bg-debt/[0.06] p-3 text-xs text-debt">{erro}</p>}
+      {erro && <p className="w-full rounded-xl bg-secondary p-3 text-xs text-debt">{erro}</p>}
 
       <Sheet open={aberto} onOpenChange={setAberto}>
         <SheetContent>
@@ -62,7 +62,7 @@ export function AnaliseEvolucaoSheet({ sugestaoInicial, pontos, acaoGerar }: Pro
             {analise && <SheetDescription>Gerado em {formatarDataHora(analise.geradoEm)}</SheetDescription>}
           </SheetHeader>
 
-          <div className="flex flex-col gap-4 px-4">
+          <div className="flex flex-col gap-4 px-6">
             {analise ? (
               <>
                 <p className="whitespace-pre-wrap text-sm text-foreground">{analise.tendencia}</p>
@@ -90,9 +90,9 @@ export function AnaliseEvolucaoSheet({ sugestaoInicial, pontos, acaoGerar }: Pro
                     </h3>
                     <div className="flex flex-col gap-2">
                       {analise.pontosAtencao.map((ponto, indice) => (
-                        <div key={indice} className="rounded-2xl border border-debt/25 bg-debt/[0.06] p-3">
+                        <div key={indice} className="rounded-2xl bg-secondary p-3">
                           <p className="text-sm font-medium text-foreground">{ponto.item}</p>
-                          <div className="mt-2 flex items-start gap-2 rounded-xl bg-gold/10 p-2.5">
+                          <div className="mt-2 flex items-start gap-2 rounded-xl bg-card p-2.5">
                             <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-gold" />
                             <p className="text-xs text-foreground/90">{ponto.dica}</p>
                           </div>
@@ -126,7 +126,7 @@ export function AnaliseEvolucaoSheet({ sugestaoInicial, pontos, acaoGerar }: Pro
           </div>
 
           <SheetFooter>
-            <p className="text-[11px] text-muted-foreground/70">
+            <p className="text-[0.8125rem] text-muted-foreground">
               Envia os totais de entrada/despesa por mês e o detalhamento por categoria do mês atual (nunca suas
               transações individuais) pra API do Claude (Anthropic). Tem custo por chamada.
             </p>

@@ -3,8 +3,10 @@
 import type { ReactNode } from "react";
 import { motion } from "motion/react";
 
+// Título de página do design system "Vimeo": grande e pesado (44px / 800; 32px no celular), sem sobretítulo.
+// `eyebrow` continua aceito (as telas passam), mas não aparece — fica só para quem lê o código.
 export function PageHeader({
-  eyebrow,
+  eyebrow: _eyebrow,
   title,
   description,
   action,
@@ -14,6 +16,7 @@ export function PageHeader({
   description?: string;
   action?: ReactNode;
 }) {
+  void _eyebrow;
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
@@ -21,10 +24,9 @@ export function PageHeader({
       transition={{ duration: 0.4 }}
       className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
     >
-      <div>
-        <p className="text-[11px] uppercase tracking-[0.28em] text-gold">{eyebrow}</p>
-        <h1 className="mt-2 text-2xl font-black sm:text-3xl">{title}</h1>
-        {description && <p className="mt-1 max-w-xl text-sm text-muted-foreground">{description}</p>}
+      <div className="min-w-0">
+        <h1 className="text-[2rem] leading-[1.1] font-extrabold tracking-[-0.02em] break-words md:text-[2.75rem]">{title}</h1>
+        {description && <p className="mt-2 max-w-2xl text-base text-muted-foreground">{description}</p>}
       </div>
       {action}
     </motion.div>

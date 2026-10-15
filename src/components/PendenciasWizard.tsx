@@ -101,9 +101,9 @@ export function PendenciasWizard({ pendencias }: { pendencias: PendenciaWizard[]
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={salvar} className="flex flex-col gap-4 px-4">
+        <form onSubmit={salvar} className="flex flex-col gap-4 px-6">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-foreground">{tituloDaPendencia(atual)}</label>
+            <label className="text-[0.9375rem] font-bold text-foreground">{tituloDaPendencia(atual)}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -112,7 +112,7 @@ export function PendenciasWizard({ pendencias }: { pendencias: PendenciaWizard[]
               value={valor}
               onChange={(e) => setValor(e.target.value)}
               placeholder="0,00"
-              className="w-full rounded-lg border border-input bg-input/30 px-3 py-2 text-sm text-foreground"
+              className="min-h-[52px] w-full rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
             />
           </div>
 
@@ -129,7 +129,7 @@ export function PendenciasWizard({ pendencias }: { pendencias: PendenciaWizard[]
         </form>
 
         <SheetFooter>
-          <p className="text-[11px] text-muted-foreground/70">
+          <p className="text-[0.8125rem] text-muted-foreground">
             Isso aparece sozinho sempre que houver dado estrutural faltando ou alguma inconsistência — some assim
             que tudo estiver preenchido.
           </p>

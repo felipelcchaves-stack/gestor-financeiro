@@ -20,7 +20,7 @@ export function CategoriaForm({
             name="nome"
             defaultValue={categoria?.nome}
             required
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           />
         </Campo>
 
@@ -28,7 +28,7 @@ export function CategoriaForm({
           <select
             name="parentId"
             defaultValue={categoria?.parentId ?? ""}
-            className="w-full rounded-lg border border-input bg-input/30 px-2 py-1.5 text-sm text-foreground"
+            className="w-full min-h-[52px] rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground"
           >
             <option value="">(nenhuma — categoria raiz)</option>
             {raizesDisponiveis.map((r) => (
@@ -81,7 +81,7 @@ function Campo({
         {required && <span className="text-debt"> *</span>}
       </label>
       {children}
-      {hint && <span className="text-[11px] text-muted-foreground/70">{hint}</span>}
+      {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
     </div>
   );
 }
