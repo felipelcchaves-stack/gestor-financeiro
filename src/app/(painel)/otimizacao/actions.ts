@@ -39,7 +39,7 @@ export async function gerarRecomendacaoEstrategia(
 
     const movimentacaoDoMes = await calcularMovimentacaoDoMes(inicioDoPeriodo("mes"));
     const prompt = gerarPromptRecomendacaoEstrategia(resumoEstrategias, movimentacaoDoMes);
-    const textoJson = await chamarClaude(prompt, { schema: RECOMENDACAO_ESTRATEGIA_SCHEMA });
+    const textoJson = await chamarClaude(prompt, { schema: RECOMENDACAO_ESTRATEGIA_SCHEMA, rotulo: "recomendacao-estrategia" });
 
     const idsValidos = new Set<EstrategiaId>(resumoEstrategias.map((e) => e.id));
     const recomendacao = parseRecomendacaoEstrategia(textoJson, idsValidos, nomesProtegidos(movimentacaoDoMes));

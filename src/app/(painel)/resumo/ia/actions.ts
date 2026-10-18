@@ -63,7 +63,7 @@ export async function gerarSugestaoCorteIA(): Promise<ResultadoSugestaoIA> {
     );
 
     const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, undefined, comparacao);
-    const textoJson = await chamarClaude(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
+    const textoJson = await chamarClaude(prompt, { schema: SUGESTAO_CORTE_SCHEMA, rotulo: "corte-geral" });
     const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
 
     const geradoEm = new Date();

@@ -20,7 +20,34 @@ type OpcoesChamarClaude = {
   // nesse formato via "tool use" forçado — o jeito confiável de pedir
   // JSON pro Claude, em vez de confiar em regex sobre texto livre.
   schema?: object;
+  // Nome curto da tela/ação que chamou, só pra linha de uso no log.
+  rotulo?: string;
 };
+
+// Sem prompt caching de propósito (17/10/2026): o pedaço fixo de cada
+// chamada (instruções + schema da ferramenta) fica em ~400–1.000
+// tokens, bem abaixo do mínimo de 4.096 do Haiku 4.5 — a API só ignora
+// a marca. E as chamadas são cliques raros (resultado já fica guardado
+// em SugestaoIACache), quase sempre a mais de 5 min uma da outra: uma
+// gravação de cache (1,25×/2×) quase nunca seria lida. Se o modelo
+// mudar para um com mínimo de 512 tokens e o uso ficar frequente, a
+// marca vai no fim de `tools` (cache_control) — a linha de uso abaixo
+// mostra se compensaria.
+type UsoClaude = {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number | null;
+  cache_creation_input_tokens?: number | null;
+};
+
+export function linhaDeUso(modelo: string, uso: UsoClaude | undefined, rotulo?: string): string {
+  const n = (v: number | null | undefined) => (typeof v === "number" ? v : 0);
+  return (
+    `[claude] ${rotulo ?? "chamada"} modelo=${modelo}` +
+    ` entrada=${n(uso?.input_tokens)} saida=${n(uso?.output_tokens)}` +
+    ` cache_lido=${n(uso?.cache_read_input_tokens)} cache_gravado=${n(uso?.cache_creation_input_tokens)}`
+  );
+}
 
 export async function chamarClaude(prompt: string, opcoes?: OpcoesChamarClaude): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -76,6 +103,7 @@ export async function chamarClaude(prompt: string, opcoes?: OpcoesChamarClaude):
   }
 
   const dados = await resposta.json();
+  console.info(linhaDeUso(modelo, dados?.usage, opcoes?.rotulo));
 
   if (opcoes?.schema) {
     const blocoFerramenta = dados?.content?.find(

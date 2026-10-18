@@ -50,7 +50,7 @@ export async function gerarAnaliseEvolucao(): Promise<ResultadoAnaliseEvolucao> 
     ]);
 
     const prompt = gerarPromptAnaliseEvolucao(pontos, estado, movimentacaoDoMesAtual, movimentacaoDoMesAnterior, statusRateio);
-    const textoJson = await chamarClaude(prompt, { schema: ANALISE_EVOLUCAO_SCHEMA });
+    const textoJson = await chamarClaude(prompt, { schema: ANALISE_EVOLUCAO_SCHEMA, rotulo: "analise-evolucao" });
     const analise = parseAnaliseEvolucao(textoJson, nomesProtegidos(movimentacaoDoMesAtual));
 
     const geradoEm = new Date();

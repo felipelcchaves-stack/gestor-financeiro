@@ -99,7 +99,7 @@ export async function gerarSugestaoParaMeta(metaId: string): Promise<ResultadoSu
     );
 
     const prompt = gerarPromptCorteDeGastos(estado, movimentacaoDoMes, statusRateio, metaAlvo, comparacao);
-    const textoJson = await chamarClaude(prompt, { schema: SUGESTAO_CORTE_SCHEMA });
+    const textoJson = await chamarClaude(prompt, { schema: SUGESTAO_CORTE_SCHEMA, rotulo: "corte-meta" });
     const { resumo, cortes } = parseSugestaoCorte(textoJson, nomesProtegidos(movimentacaoDoMes));
 
     const geradoEm = new Date();
