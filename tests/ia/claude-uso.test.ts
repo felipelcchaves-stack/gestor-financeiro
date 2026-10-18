@@ -4,13 +4,13 @@ import { linhaDeUso } from "../../src/lib/claude";
 
 test("linha de uso traz entrada, saída e os dois campos de cache", () => {
   const linha = linhaDeUso(
-    "claude-haiku-4-5-20251001",
+    "claude-haiku-5-5",
     { input_tokens: 1200, output_tokens: 300, cache_read_input_tokens: 800, cache_creation_input_tokens: 0 },
     "corte-geral"
   );
   assert.equal(
     linha,
-    "[claude] corte-geral modelo=claude-haiku-4-5-20251001 entrada=1200 saida=300 cache_lido=800 cache_gravado=0"
+    "[claude] corte-geral modelo=claude-haiku-5-5 entrada=1200 saida=300 cache_lido=800 cache_gravado=0"
   );
 });
 

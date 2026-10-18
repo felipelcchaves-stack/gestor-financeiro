@@ -11,7 +11,7 @@
 // isso — a API é um produto separado, cobrado por uso, com chave
 // própria em console.anthropic.com.
 
-const MODELO_PADRAO = "claude-haiku-4-5-20251001";
+const MODELO_PADRAO = "claude-haiku-5-5";
 const VERSAO_API = "2023-06-01";
 const NOME_FERRAMENTA = "responder_sugestao_corte";
 
@@ -24,15 +24,17 @@ type OpcoesChamarClaude = {
   rotulo?: string;
 };
 
-// Sem prompt caching de propósito (17/10/2026): o pedaço fixo de cada
-// chamada (instruções + schema da ferramenta) fica em ~400–1.000
-// tokens, bem abaixo do mínimo de 4.096 do Haiku 4.5 — a API só ignora
-// a marca. E as chamadas são cliques raros (resultado já fica guardado
+// Sem prompt caching de propósito (reavaliado em 18/10/2026 com o Haiku
+// 5.5, cujo mínimo de cache é 512 tokens): (1) cada chamada manda UM
+// único texto de usuário em que instruções e dados do Felipe estão
+// misturados (as telas montam o prompt inteiro); separar o fixo dos
+// dados exigiria mexer nos 4 chamadores e mudaria o texto enviado ao
+// modelo. (2) As chamadas são cliques raros (resultado já fica guardado
 // em SugestaoIACache), quase sempre a mais de 5 min uma da outra: uma
-// gravação de cache (1,25×/2×) quase nunca seria lida. Se o modelo
-// mudar para um com mínimo de 512 tokens e o uso ficar frequente, a
-// marca vai no fim de `tools` (cache_control) — a linha de uso abaixo
-// mostra se compensaria.
+// gravação de cache (1,25×) quase nunca seria lida, e a 0,10/0,50 por
+// milhão a economia possível é de frações de centavo. Se o uso ficar
+// frequente, a marca vai no fim de `tools` (cache_control) — a linha de
+// uso abaixo mostra se compensaria.
 type UsoClaude = {
   input_tokens?: number;
   output_tokens?: number;
